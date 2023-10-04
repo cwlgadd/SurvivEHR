@@ -1,33 +1,22 @@
 import sqlite3
 import pandas as pd
-# from sqlalchemy import create_engine # database connection
 import os
-
-
-# class StaticDB:
-#     """A sample static observations class"""
-
-#     def __init__(self, identifier, sex, ethnicity, year_of_birth):
-#         self.identifier = identifier
-#         self.sex = sex
-#         self.ethnicity = ethnicity
-#         self.age = year_of_birth
-
-#     # def __repr__(self):
-#     #     return "Employee('{}', '{}', {})".format(self.first, self.last, self.pay)
-
+from tqdm import tqdm
+import numpy as np
 
 def get_diagnoses_by_PPID(identifier, cursor):
     cursor.execute("SELECT * FROM static_information WHERE PRACTICE_PATIENT_ID=:PRACTICE_PATIENT_ID", {'PRACTICE_PATIENT_ID': identifier})
     return cursor.fetchall()
 
 
-def insert_diagnosis(patient, cursor):
-    with conn:
-        cursor.execute("INSERT INTO diagnosis_table VALUES (:PRACTICE_PATIENT_ID, :CONDITION, :AGE_AT_DIAGNOSIS)", 
-                       {'PRACTICE_PATIENT_ID': patient.identifier,
-                        'CONDITION': patient.condition, 
-                        'AGE_AT_DIAGNOSIS': patient.condition_age})
+# def insert_diagnosis(patient, cursor):
+#     with conn:
+#         cursor.execute("INSERT INTO diagnosis_table VALUES (:PRACTICE_PATIENT_ID, :EVENT, :AGE_AT_EVENT)", 
+#                        {'PRACTICE_PATIENT_ID': patient.identifier,
+#                         'EVENT': patient.condition, 
+#                         'AGE_AT_EVENT': patient.condition_age,
+#                         'EVENT_TYPE': "multi_label_classification"
+#                        })
 
 
 def build_diagnosis_table(connector, path_to_data, chunksize=20000, verbose=0):
@@ -38,18 +27,17 @@ def build_diagnosis_table(connector, path_to_data, chunksize=20000, verbose=0):
     
     c.execute("""CREATE TABLE diagnosis_table (
                  PRACTICE_PATIENT_ID text,
-                 CONDITION text,
-                 AGE_AT_DIAGNOSIS text                 
+                 VALUE real, 
+                 EVENT text,
+                 AGE_AT_EVENT integer,
+                 EVENT_TYPE text
                  )""")
     
     index_start = 1
-    for df in pd.read_csv(path_to_data, chunksize=chunksize, iterator=True, encoding='utf-8'):
+    for df in tqdm(pd.read_csv(path_to_data, chunksize=chunksize, iterator=True, encoding='utf-8'), desc="Building diagnosis table"):
         
-        df = df.rename(columns={col: col.replace(' ', '') for col in df.columns}) # Remove spaces from columns (not used: dded for consistency)
+        # df = df.rename(columns={col: col.replace(' ', '') for col in df.columns}) # Remove spaces from columns 
         
-        # Convert to datetimes
-        # df['YEAR_OF_BIRTH'] = pd.to_datetime(df['YEAR_OF_BIRTH']) 
-    
         # Start counting indices from 1
         df.index += index_start
         
@@ -67,24 +55,31 @@ def build_diagnosis_table(connector, path_to_data, chunksize=20000, verbose=0):
             # Add condition as new column
             df_condition["condition"] = condition
             
+            # Add empty value for merging tables later
+            df_condition["value"] = np.nan
+            
             # and rename the condition column 
             df_condition = df_condition.rename(columns={condition: "age_at_diagnosis"}) 
             
             # and order them as we want to see them in the table
-            df_condition = df_condition[["PRACTICE_PATIENT_ID", "condition", "age_at_diagnosis"]]
+            df_condition = df_condition[["PRACTICE_PATIENT_ID", "value", "condition", "age_at_diagnosis"]]
+            
+            # Add data type
+            df_condition["event_type"] = "multi_label_classification"
 
             # Pull records from df to update SQLite .db with
             #   records or rows in a list of tuples [(ID, CONDITION, AGE_AT_DIAGNOSIS),]
-            records = df_condition.to_records(index=False)
+            records = df_condition.to_records(column_dtypes={"age_at_diagnosis": "int32"}, index=False)
+            # print(records)
 
             # Add rows to database
-            c.executemany('INSERT INTO diagnosis_table VALUES(?,?,?);', records);
+            c.executemany('INSERT INTO diagnosis_table VALUES(?,?,?,?,?);', records);
         
             if verbose > 0:
                 print('Inserted', c.rowcount, 'records to the table.')
 
     c.execute("SELECT COUNT(*) FROM diagnosis_table")
-    print('Diagnosis table built with', c.fetchone()[0], 'records.')
+    print('\t Diagnosis table built with', c.fetchone()[0], 'records.')
     
     #commit the changes to db			
     connector.commit()

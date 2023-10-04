@@ -1,8 +1,7 @@
 import sqlite3
 import pandas as pd
-# from sqlalchemy import create_engine # database connection
 import os
-
+from tqdm import tqdm
 
 # class StaticDB:
 #     """A sample static observations class"""
@@ -43,15 +42,15 @@ def build_static_table(connector, path_to_data, chunksize=20000, verbose=0):
                  )""")
     
     index_start = 1
-    for df in pd.read_csv(path_to_data, chunksize=chunksize, iterator=True, encoding='utf-8'):
+    for df in tqdm(pd.read_csv(path_to_data, chunksize=chunksize, iterator=True, encoding='utf-8'), desc="Building static table"):
         
         df = df.rename(columns={col: col.replace(' ', '') for col in df.columns}) # Remove spaces from columns (not used: dded for consistency)
         
         # Convert to datetimes
-        df['INDEX_DATE'] = pd.to_datetime(df['INDEX_DATE'])  
-        df['START_DATE'] = pd.to_datetime(df['START_DATE'])
-        df['END_DATE'] = pd.to_datetime(df['END_DATE']) 
-        df['YEAR_OF_BIRTH'] = pd.to_datetime(df['YEAR_OF_BIRTH']) 
+        # df['INDEX_DATE'] = pd.to_datetime(df['INDEX_DATE'])  
+        # df['START_DATE'] = pd.to_datetime(df['START_DATE'])
+        # df['END_DATE'] = pd.to_datetime(df['END_DATE']) 
+        # df['YEAR_OF_BIRTH'] = pd.to_datetime(df['YEAR_OF_BIRTH']) 
     
         # Start counting indices from 1
         df.index += index_start
@@ -73,7 +72,7 @@ def build_static_table(connector, path_to_data, chunksize=20000, verbose=0):
             print('Inserted', c.rowcount, 'records to the table.')
 
     c.execute("SELECT COUNT(*) FROM static_table")
-    print('Static table built with', c.fetchone()[0], 'records.')
+    print('\t Static table built with', c.fetchone()[0], 'records.')
     
     #commit the changes to db			
     connector.commit()
