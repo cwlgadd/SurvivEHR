@@ -87,16 +87,21 @@ class FoundationalDataModule(pl.LightningDataModule, ABC, EventStreamDataset):
     def collate_fn(data:list[dict]):     
         """ Collect separate dictionaries, and in doing so pad the sequence lengths to the maximum length seen within the batch
         """
+        
+        # Combine individual dictionaries into one
+        #     For dynamic rows (events, values, ages at event, and event types) these become a ragged list of lists.
         allkeys = set().union(*data)
         batch_dict = {k: [d[k] for d in data if k in d] for k in allkeys}
         
-        # for k in ["EVENT", "VALUE", "AGE_AT_EVENT"]:
+        # Pad dymamic columns
+        # for k in ["EVENT", "VALUE", "AGE_AT_EVENT", "EVENT_TYPE"]:
         #     batch_dict[k] =  pad_sequence(batch_dict[k], batch_first=True)
-            
+        
         print(batch_dict.keys())
         print(type(batch_dict["EVENT"]))
         print(batch_dict["EVENT"][0])
         
+    
         raise NotImplementedError
         
         worker_batch = {"labels": [None for i in range(random.randint(10,15))]}

@@ -34,6 +34,20 @@ class EventStreamDataset(DatasetBase):
         
 
     def _load_static(self, practice_patient_ids):
+        r"""
+        
+        Anonymized example:
+        ┌───────────────────────┬─────┬─────────────┬───────────────┐
+        │ PRACTICE_PATIENT_ID   ┆ SEX ┆ ETHNICITY   ┆ YEAR_OF_BIRTH │
+        │ ---                   ┆ --- ┆ ---         ┆ ---           │
+        │ str                   ┆ str ┆ str         ┆ str           │
+        ╞═══════════════════════╪═════╪═════════════╪═══════════════╡
+        │ <anonymous 1>         ┆ M   ┆ MISSING     ┆ yyy-mm-dd     │
+        │ <anonymous 2>         ┆ F   ┆ WHITE       ┆ yyy-mm-dd     │
+        │ …                     ┆ …   ┆ …           ┆ …             │
+        │ <anonymous N>         ┆ F   ┆ SOUTH_ASIAN ┆ yyy-mm-dd     │
+        └───────────────────────┴─────┴─────────────┴───────────────┘
+        """
         # TODO: doing this filtering in SQL, before polars, would be better.
         query = "SELECT * FROM static_table"
         static = (
@@ -45,6 +59,20 @@ class EventStreamDataset(DatasetBase):
 
     
     def _load_dynamic(self, practice_patient_ids):
+        r"""
+        
+        Anonymized example:
+        ┌──────────────────────┬───────────────────────┬───────────────────────────────────┬─────────────────────────┬───────────────────────────────────┐
+        │ PRACTICE_PATIENT_ID  ┆ VALUE                 ┆ EVENT                             ┆ AGE_AT_EVENT            ┆ EVENT_TYPE                        │
+        │ ---                  ┆ ---                   ┆ ---                               ┆ ---                     ┆ ---                               │
+        │ str                  ┆ list[f64]             ┆ list[str]                         ┆ list[i64]   (in days)   ┆ list[str]                         │
+        ╞══════════════════════╪═══════════════════════╪═══════════════════════════════════╪═════════════════════════╪═══════════════════════════════════╡
+        │ <anonymous 1>        ┆ [null, 21.92]         ┆ ["diagnosis name", "record name"  ┆ [age 1, age 2]          ┆ ["multi_label_classification", "un│
+        │ <anonymous 2>        ┆ [27.1, 75.0, … 91.0]  ┆ ["record name", ...]              ┆ [age 1, age 2, … ]      ┆ ["univariate_regression", "univa… │
+        │ …                    ┆ …                     ┆ …                                 ┆ …                       ┆ …                                 │
+        │ <anonymous N>        ┆ [70.0, 0.1, … 80.0]   ┆ ["record name", ...]              ┆ [age 1, age 2, … ]      ┆ ["univariate_regression", "univa… │
+        └──────────────────────┴───────────────────────┴───────────────────────────────────┴─────────────────────────┴───────────────────────────────────┘
+        """
         # TODO: can these reads be replaced with a lazy read, or be streamable (i.e. don't load entire tables before converting to lazyframe)
         # TODO: filtering patients in SQL, before polars, would be better.
 
@@ -71,18 +99,31 @@ class EventStreamDataset(DatasetBase):
         
     def save_cache(self):
         raise NotImplementedError
+        
+    def tokenizer(self):
+        return
     
     def build_DL_cached_representation(self,
                                        practice_patient_id: list,
                                        remove_empty_events:bool = False) -> pl.LazyFrame:
         r"""
-        build the DL-friendly representation in polars given the list of `practice_patient_id`s that 
-        fits study criteria
+        Build the DL-friendly representation in polars given the list of `practice_patient_id`s that fits study criteria
         
         TODO: 
             allow caching with saving/loading
             replace upstream data preprocessing (across Dexter -> R -> sqlite), to a single package
-            
+
+        Anonymized example:
+        ┌──────────────────────┬─────┬─────────────┬───────────────┬──────────────────────┬─────────────────────────┬─────────────────────┬────────────────────────┐
+        │ PRACTICE_PATIENT_ID  ┆ SEX ┆ ETHNICITY   ┆ YEAR_OF_BIRTH ┆ VALUE                ┆ EVENT                   ┆ AGE_AT_EVENT        ┆ EVENT_TYPE             │
+        │ ---                  ┆ --- ┆ ---         ┆ ---           ┆ ---                  ┆ ---                     ┆ ---                 ┆ ---                    │
+        │ str                  ┆ str ┆ str         ┆ str           ┆ list[f64]            ┆ list[str]               ┆ list[i64]           ┆ list[str]              │
+        ╞══════════════════════╪═════╪═════════════╪═══════════════╪══════════════════════╪═════════════════════════╪═════════════════════╪════════════════════════╡
+        │ <anonymous 1>        ┆ M   ┆ MISSING     ┆ yyy-mm-dd     │ [null, 21.92]        ┆ ["diagnosis name", ...] ┆ [age 1, age 2]      ┆ ["multi_label_cl...", ]│
+        │ <anonymous 2>        ┆ F   ┆ WHITE       ┆ yyy-mm-dd     │ [27.1, 75.0, … 91.0] ┆ ["record name", ...]    ┆ [age 1, age 2, … ]  ┆ ["univariate_reg...", ]│
+        │ …                    ┆ …                 ┆ …             ┆ …                    ┆ …                       ┆ …                   ┆ …                      │
+        │ <anonymous N>        ┆ F   ┆ SOUTH_ASIAN ┆ yyy-mm-dd     │ [70.0, 0.1, … 80.0]  ┆ ["record name", ...]    ┆ [age 1, age 2, … ]  ┆ ["univariate_reg...", ]│
+        └──────────────────────┴─────┴─────────────┴───────────────┴──────────────────────┴─────────────────────────┴─────────────────────┴────────────────────────┘
         
         ARGS:
             
@@ -91,11 +132,12 @@ class EventStreamDataset(DatasetBase):
             remove_empty_events (bool): True: remove patients which do not have any recorded
             dynamic (event stream) events. False: remove nulls with empty list.
         """
+        
         print("Building DL-friendly representation")
         static = self._load_static(practice_patient_id)
         dynamic = self._load_dynamic(practice_patient_id)
-        # print(static.collect())
-        # print(dynamic.collect())
+        print(static.collect())
+        print(dynamic.collect())
         
         static, dynamic = pl.align_frames(static, dynamic, on="PRACTICE_PATIENT_ID")
         # print(static.collect())
@@ -115,7 +157,6 @@ class EventStreamDataset(DatasetBase):
                 combined_frame = (
                     combined_frame.with_columns(pl.col('VALUE').fill_null(list()))
                 )
-        # print(combined_frame)
 
         return combined_frame
 
