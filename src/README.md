@@ -1,5 +1,6 @@
 # CPRD
 Datasets for the Clinical Practice Research Datalink (CPRD). Designed for Optimal and Mum-Predict research packages
 
-# Blue-BEAR modules
-Dependencies can be loaded using the bear_init.sh script
+## Description
+
+Foundational GPT model

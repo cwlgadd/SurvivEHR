@@ -7,33 +7,17 @@ import polars as pl
 import numpy as np
 from CPRD.data.database import queries
 
-class DatasetBase:
 
+class DatasetBase:
+    r"""
+    """
     
     def __init__(self):
         
         self.path_to_db = "/rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModel/preprocessing/processed/cprd.db"        
         #    Polars connection
         self.connection_token = 'sqlite://' + self.path_to_db  
-        
-        
-    def _filter_col_inclusion(self,
-                              df: pl.LazyFrame, 
-                              col_inclusion_targets: dict[str, bool | Sequence[Any]]) -> pl.LazyFrame:
-        """ Filter polars lazy frame by column
-        """
-        filter_exprs = []
-        for col, incl_targets in col_inclusion_targets.items():
-            match incl_targets:
-                case True:
-                    filter_exprs.append(pl.col(col).is_not_null())
-                case False:
-                    filter_exprs.append(pl.col(col).is_null())
-                case _:
-                    filter_exprs.append(pl.col(col).is_in(list(incl_targets)))
-
-        return df.filter(pl.all(filter_exprs))
-        
+      
             
 class EventStreamDataset(DatasetBase):
     r"""
@@ -50,46 +34,92 @@ class EventStreamDataset(DatasetBase):
         
 
     def _load_static(self, practice_patient_ids):
+        # TODO: doing this filtering in SQL, before polars, would be better.
         query = "SELECT * FROM static_table"
-        q1 = (
+        static = (
             pl.read_database(query=query, connection_uri=self.connection_token).lazy()
             .filter(pl.col("PRACTICE_PATIENT_ID").is_in(practice_patient_ids))
-            .collect(streaming=True)
         )
-        print(f"static: {type(q1)}: {q1}")
+        
+        return static
 
     
     def _load_dynamic(self, practice_patient_ids):
-        
-        # Can these reads be replaced with a lazy read (i.e. don't load entire tables before converting to lazyframe)
+        # TODO: can these reads be replaced with a lazy read, or be streamable (i.e. don't load entire tables before converting to lazyframe)
+        # TODO: filtering patients in SQL, before polars, would be better.
+
         query = "SELECT * FROM measurement_table"
         measurement_lazy_frame = pl.read_database(query=query, connection_uri=self.connection_token).lazy()
         
         query = "SELECT * FROM diagnosis_table"
         diagnosis_lazy_frame = pl.read_database(query=query, connection_uri=self.connection_token).lazy()
         
-        combined_frame = pl.concat([measurement_lazy_frame, diagnosis_lazy_frame])
+        combined_frame = pl.concat([measurement_lazy_frame, diagnosis_lazy_frame], how="diagonal")
         
-        q1 = (
+        event_stream = (
             combined_frame
-            # .join(diagnosis_lazy_frame, left_on=True, how="left")
             .sort("AGE_AT_EVENT")
             .filter(pl.col("PRACTICE_PATIENT_ID").is_in(practice_patient_ids))
-            .groupby("PRACTICE_PATIENT_ID")
-            .agg(["VALUE", "EVENT", "AGE_AT_EVENT", "EVENT_TYPE"])
-            .collect(streaming=True)
+            .groupby("PRACTICE_PATIENT_ID")     
+            .agg(["VALUE", "EVENT", "AGE_AT_EVENT", "EVENT_TYPE"])                  # Turn into lists
         )
-        print(f"measurements: {type(q1)}: {q1}")
         
-
+        return event_stream
+        
+    def load_cache(self):
+        raise NotImplementedError
+        
+    def save_cache(self):
+        raise NotImplementedError
+    
     def build_DL_cached_representation(self,
-                                       practice_patient_id: list) -> pl.LazyFrame:
+                                       practice_patient_id: list,
+                                       remove_empty_events:bool = False) -> pl.LazyFrame:
+        r"""
+        build the DL-friendly representation in polars given the list of `practice_patient_id`s that 
+        fits study criteria
+        
+        TODO: 
+            allow caching with saving/loading
+            replace upstream data preprocessing (across Dexter -> R -> sqlite), to a single package
+            
+        
+        ARGS:
+            
+        
+        KWARGS:
+            remove_empty_events (bool): True: remove patients which do not have any recorded
+            dynamic (event stream) events. False: remove nulls with empty list.
+        """
+        print("Building DL-friendly representation")
+        static = self._load_static(practice_patient_id)
+        dynamic = self._load_dynamic(practice_patient_id)
+        # print(static.collect())
+        # print(dynamic.collect())
+        
+        static, dynamic = pl.align_frames(static, dynamic, on="PRACTICE_PATIENT_ID")
+        # print(static.collect())
+        # print(dynamic.collect())
+        
+        combined_frame = (
+            pl.concat([static.collect(), 
+                       dynamic.drop("PRACTICE_PATIENT_ID").collect()], how="horizontal")
+        )
+        # print(combined_frame)
+        
+        # For cases with no dynamic values, replace with empty list, or drop
+        if remove_empty_events:
+            combined_frame = combined_frame.drop_nulls()
+        else:
+            for cols in ["VALUE", "EVENT", "AGE_AT_EVENT", "EVENT_TYPE"]:
+                combined_frame = (
+                    combined_frame.with_columns(pl.col('VALUE').fill_null(list()))
+                )
+        # print(combined_frame)
+
+        return combined_frame
 
         
-        self._load_static(practice_patient_id)
-        self._load_dynamic(practice_patient_id)
-        
-
 if __name__ == "__main__":
 
     # Connect to SQL db on file 
