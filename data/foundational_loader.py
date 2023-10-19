@@ -11,24 +11,40 @@ from typing import Optional
 from collections import defaultdict
 import os
 from CPRD.data.dataset.dataset_polars import EventStreamDataset
-
-import timeit
+from CPRD.data.utils.tokenizers.discrete import DiscreteTokenizer
 import random
 
 
-class FoundationalDataModule(pl.LightningDataModule, ABC, EventStreamDataset):
+class FoundationalDataModule(pl.LightningDataModule, ABC):
     r"""
     """
     
     def __init__(self, 
                  identifiers:list,
-                 batch_size:int,
+                 batch_size:int = 512,
                  min_workers:int = 2,
                  weighted_sampler:bool = False,
-                 load_cache:bool = False,
-                 save_cache = False
+                 load_event_stream:Optional[str] = None,
+                 save_event_stream:Optional[str] = None
                 ):
         """
+        PyTorch-Lightning datamodule for foundational models
+        
+        ARGS:
+            practice_patient_id (list[str])
+                List of practice patient identifiers which satisfy study criteria.
+                
+        KWARGS:
+            batch_size (int): 
+                
+            min_workers (int):
+                
+            weighted_sampler (bool):
+                NotImplemented. 
+            load_event_stream (optional, str):
+            
+            save_event_stream (optional, str):
+            
         """
         
         super(FoundationalDataModule, self).__init__()
@@ -36,29 +52,29 @@ class FoundationalDataModule(pl.LightningDataModule, ABC, EventStreamDataset):
         self.batch_size = batch_size
         self.min_workers = min_workers
         
-        if load_cache:
-            raise NotImplementedError
+        # Get DL friendly representation, either by loading or building from scratch.
+        if load_event_stream is not None:
+            event_stream = EventStreamDataset()
+            event_stream.load(load_event_stream)
         else:
-            self.event_stream = self.build_DL_cached_representation(identifiers, remove_empty_events=True)  
-            if save_cache:
-                raise NotImplementedError
+            event_stream = EventStreamDataset()
+            event_stream.fit(identifiers, empty_dynamic_strategy="drop", indexing_strategy=None)  
+            if save_event_stream is not None:
+                event_stream.save(save_event_stream)
                 
-        self.identifiers = self.event_stream["PRACTICE_PATIENT_ID"].to_list()
-        # print(self.event_stream)
-        # print(self.identifiers)
-        
-        
         # Train/test/validation split cohort
         ##############
-        (self.train_ids, self.test_ids, self.val_ids), weight_dict = self.train_test_split()
+        (self.train_ids, self.test_ids, self.val_ids), weight_dict = self.train_test_split(event_stream.identifiers)
         
         # Training, testing, and validation sets
         ##############
-        self.train_set = FoundationalDataset(self.event_stream.filter(plr.col("PRACTICE_PATIENT_ID").is_in(self.train_ids)))
-        self.test_set = FoundationalDataset(self.event_stream.filter(plr.col("PRACTICE_PATIENT_ID").is_in(self.test_ids)))
-        self.val_set = FoundationalDataset(self.event_stream.filter(plr.col("PRACTICE_PATIENT_ID").is_in(self.val_ids)))
+        splits = [event_stream.DL_frame.filter(plr.col("PRACTICE_PATIENT_ID").is_in(labels)) for labels in [self.train_ids, self.test_ids, self.val_ids]]
+        self.train_set = FoundationalDataset(splits[0], freq_threshold=1e-8)
+        self.test_set = FoundationalDataset(splits[1], tokenizer=self.train_set.tokenizer)
+        self.val_set = FoundationalDataset(splits[2], tokenizer=self.train_set.tokenizer)
         
-        # Weighted random sampler for training set
+        # TODO Weighted random sampler for training set. Naive approach to account for different event sequence lengths. TODO: better way without pre-slicing all the dataset rows
+        #    Up-sample larger sequences 
         #############
         if (weight_dict is not None) and weighted_sampler:        
             raise NotImplementedError
@@ -66,9 +82,9 @@ class FoundationalDataModule(pl.LightningDataModule, ABC, EventStreamDataset):
             self.train_sampler = None
             self.train_shuffle = True
             
-    def train_test_split(self):
+    def train_test_split(self, identifiers):
         # Split frame into training, validation, and test
-        train_ids, test_ids = sk_split(self.identifiers, test_size=0.2)
+        train_ids, test_ids = sk_split(identifiers, test_size=0.1)
         test_ids, val_ids = sk_split(test_ids, test_size=0.5)
 
         # Random sampler weights
@@ -85,7 +101,12 @@ class FoundationalDataModule(pl.LightningDataModule, ABC, EventStreamDataset):
     
     @staticmethod
     def collate_fn(data:list[dict]):     
-        """ Collect separate dictionaries, and in doing so pad the sequence lengths to the maximum length seen within the batch
+        r""" 
+        Collect and collate separate dictionaries.
+        
+        During this operation, pad the sequence lengths to the maximum length seen within the batch and tokenize
+        
+        # TODO: tokenization could also be pre-processed rather than done on the fly.
         """
         
         # Combine individual dictionaries into one
@@ -101,7 +122,6 @@ class FoundationalDataModule(pl.LightningDataModule, ABC, EventStreamDataset):
         print(type(batch_dict["EVENT"]))
         print(batch_dict["EVENT"][0])
         
-    
         raise NotImplementedError
         
         worker_batch = {"labels": [None for i in range(random.randint(10,15))]}
@@ -140,11 +160,49 @@ class FoundationalDataset(Dataset):
     r"""
     """
     
-    def __init__(self, event_stream):
+    @property
+    def event_frequency(self) -> plr.DataFrame:
+        r"""
+        Get polars dataframe with three columns: event, count and relative frequencies
+        
+        Returns 
+        ┌──────────────────────────┬─────────┬──────────┐
+        │ EVENT                    ┆ counts  ┆ freq     │
+        │ ---                      ┆ ---     ┆ ---      │
+        │ str                      ┆ u32     ┆ f64      │
+        ╞══════════════════════════╪═════════╪══════════╡
+        │ <event name 1>           ┆ n1      ┆ p1       │
+        │ <event name 2>           ┆ n2      ┆ p2       │
+        │ …                        ┆ …       ┆ …        │
+        └──────────────────────────┴─────────┴──────────┘
+        """
+        event_freq = (self.event_stream
+                      .select(plr.col("EVENT").explode())
+                      .to_series(index=0)
+                      .value_counts(sort=True)
+                     )                        
+        event_freq = event_freq.with_columns((plr.col('counts') / event_freq.select(plr.sum("counts"))).alias('freq'))
+        return event_freq
+    
+    def __init__(self,
+                 event_stream,
+                 tokenizer:Optional[DiscreteTokenizer] = None,
+                 **kwargs
+                ):
         super().__init__()
+        
         self.event_stream = event_stream        
-        # TODO: built representation can be cached via saving/loading instead of built every time
-        # print(self.event_stream)
+        
+        # Build vocabulary from training set. Vocabularly begins with UNK (unknown) token, and is then ordered by event frequency
+        if tokenizer is not None:
+            self.tokenizer = tokenizer
+        else:
+            self.tokenizer = DiscreteTokenizer()
+            self.tokenizer.fit_vocabulary(self.event_frequency, **kwargs)
+        print(f"vocab size {self.tokenizer.vocab_size}")
+        
+        # Pre-process tokenization
+        self.tokenize_stream()
         
     def __len__(self):
         # Number of patients after potentially removing some
@@ -157,7 +215,12 @@ class FoundationalDataset(Dataset):
         # print(self.event_stream.row(idx, named=True))
         return self.event_stream.row(idx, named=True)
     
-    
+    def tokenize_stream(self):
+        # tokenize even stream and convert to PyTorch tensors
+        
+        
+        return 
+        
 if __name__ == "__main__":
 
     # Report what is in the db

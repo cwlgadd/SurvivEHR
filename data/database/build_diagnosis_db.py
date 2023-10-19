@@ -20,7 +20,20 @@ def get_diagnoses_by_PPID(identifier, cursor):
 
 
 def build_diagnosis_table(connector, path_to_data, chunksize=20000, verbose=0):
-    """
+    r"""
+    Build measurements and tests table in database
+
+    Produced anonymized table:
+    ┌──────────────────────┬───────┬──────────────┬──────────────┬────────────────────────────┐
+    │ PRACTICE_PATIENT_ID  ┆ VALUE ┆ EVENT        ┆ AGE_AT_EVENT ┆ EVENT_TYPE                 │
+    │ ---                  ┆ ---   ┆ ---          ┆ ---          ┆ ---                        │
+    │ str                  ┆ f64   ┆ str          ┆ i64 (days)   ┆ str                        │
+    ╞══════════════════════╪═══════╪══════════════╪══════════════╪════════════════════════════╡
+    │ <anonymous 1>        ┆ null  ┆ HF           ┆ 11632        ┆ categorical                │
+    │ <anonymous 2>        ┆ null  ┆ HF           ┆ 25635        ┆ categorical                │
+    │ …                    ┆ …     ┆ …            ┆ …            ┆ …                          │
+    │ <anonymous N>        ┆ null  ┆ FIBROMYALGIA ┆ 8546         ┆ categorical                │
+    └──────────────────────┴───────┴──────────────┴──────────────┴────────────────────────────┘
     """
 
     c = connector.cursor()
@@ -65,7 +78,7 @@ def build_diagnosis_table(connector, path_to_data, chunksize=20000, verbose=0):
             df_condition = df_condition[["PRACTICE_PATIENT_ID", "value", "condition", "age_at_diagnosis"]]
             
             # Add data type
-            df_condition["event_type"] = "multi_label_classification"
+            df_condition["event_type"] = "categorical"
 
             # Pull records from df to update SQLite .db with
             #   records or rows in a list of tuples [(ID, CONDITION, AGE_AT_DIAGNOSIS),]

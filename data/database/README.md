@@ -10,7 +10,7 @@ Long term, this could be replaced by pure SQL code. After this, more sophisticat
 ## Function
 
 TODO: fill
-Three SQL tables: 1) static information; 2) diagnosis table, containing multi-class features; 3) measurement table, containing continous features.
+Three SQL tables: 1) static information; 2) diagnosis table, containing multi-class labels; 3) measurement table, containing labelled features.
 
 ### Static table
 

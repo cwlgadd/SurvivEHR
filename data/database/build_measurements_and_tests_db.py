@@ -19,7 +19,20 @@ sqlite3.register_adapter(np.int32, lambda val: int(val))
 
 
 def build_measurements_table(connector, path_to_data, chunksize=20000, verbose=0):
-    """ Build measurements and tests table in database
+    r""" 
+    Build measurements and tests table in database
+
+    Produced anonymized table:
+    ┌──────────────────────┬───────┬──────────────────┬──────────────┬───────────────────────┐
+    │ PRACTICE_PATIENT_ID  ┆ VALUE ┆ EVENT            ┆ AGE_AT_EVENT ┆ EVENT_TYPE            │
+    │ ---                  ┆ ---   ┆ ---              ┆ ---          ┆ ---                   │
+    │ str                  ┆ f64   ┆ str              ┆ i64 (days)   ┆ str                   │
+    ╞══════════════════════╪═══════╪══════════════════╪══════════════╪═══════════════════════╡
+    │ <anonymous 1>        ┆ 23.3  ┆ bmi              ┆ 10254        ┆ univariate_regression │
+    │ <anonymous 1>        ┆ 24.1  ┆ bmi              ┆ 11829        ┆ univariate_regression │
+    │ …                    ┆ …     ┆ …                ┆ …            ┆ …                     │
+    │ <anonymous N>        ┆ 0.17  ┆ eosinophil_count ┆ 12016        ┆ univariate_regression │
+    └──────────────────────┴───────┴──────────────────┴──────────────┴───────────────────────┘
     """
 
     c = connector.cursor()
@@ -41,11 +54,8 @@ def build_measurements_table(connector, path_to_data, chunksize=20000, verbose=0
         
         # Pull records from df to update SQLite .db with
         #   records or rows in a list of tuples [(ID, MEASUREMENT NAME, MEASUREMENT VALUE, AGE AT MEASUREMENT, EVENT TYPE),]
-        records = df.to_records(index=False, column_dtypes={#"PRACTICE_PATIENT_ID": str,
-                                                            #"event": str,
-                                                            "value": np.float64,
+        records = df.to_records(index=False, column_dtypes={"value": np.float64,
                                                             "age_at_event": np.float64,
-                                                            #"event_type": str,
                                                            })
                       
         # Add rows to database

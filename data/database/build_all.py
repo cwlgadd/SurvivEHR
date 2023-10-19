@@ -7,20 +7,9 @@ def build_tables(connector, path_to_static, path_to_diagnoses, path_to_measureme
     """
     """
     
-    try:
-        build_static_table(conn, path_to_static)
-    except:
-        print("Static table already built")
-    
-    try:
-        build_diagnosis_table(conn, path_to_diagnoses)
-    except:
-        print("Diagnosis table already built")
-        
-    try:
-        build_measurements_table(conn, path_to_measurements)
-    except:
-        print("Measurements table already built")
+    build_static_table(conn, path_to_static)
+    build_diagnosis_table(conn, path_to_diagnoses)
+    build_measurements_table(conn, path_to_measurements)
 
 
 if __name__ == "__main__":
