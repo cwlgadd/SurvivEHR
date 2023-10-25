@@ -12,23 +12,64 @@ class TokenizerBase():
         assert self._event_counts is not None, "Must first fit Vocabulary"
         return self._event_counts.select(plr.count()).to_numpy()[0][0]
     
+    @property
+    def fit_description(self):
+        assert self._event_counts is not None
+        return str(self._event_counts)
+    
     def __init__(self):
         self._event_counts = None
-    
-    def fit_vocabulary(self,
+        
+    def fit(self,
             event_counts:plr.DataFrame,
             **kwargs
            ):
+        r"""
         """
-        """
-        self._event_counts = self._filter(event_counts, **kwargs)
-        print(self._event_counts)
+        # Given some threshold, map low frequency tokens to unk token
+        self._event_counts = self._map_to_unk(event_counts, **kwargs)
         
-    def _filter(self,
+        # Tokens for each event, excluding numeric related tokens
+        event_tokens = self._event_counts.select('EVENT').to_series().to_list()
+        
+        # Combine with special tokens (padding, unknown=low frequency masked, and numeric digits)
+        all_tokens = ["PAD", "UNK"] + [str(i) for i in range(10)] + ["."] + event_tokens[1:]
+                
+        # Create a mapping from strings to integers, and vice versa
+        self._stoi = { ch:i for i,ch in enumerate(all_tokens) }
+        self._itos = { i:ch for i,ch in enumerate(all_tokens) }
+        
+        
+        # test = ["UNK", "SJOGRENSSYNDROME", "diastolic_blood_pressure", "9", "8", ".", "2"]
+        # z = self.encode(test)
+        # print(z)
+        # print(self.decode(z))
+        
+    def _map_to_unk(self,
                 event_counts:plr.DataFrame,
                 freq_threshold:float = 0.00001,
                ):
-        """
+        r"""
+        Remove low frequency tokens, replacing with unk token. 
+        
+        ARGS:
+            event_counts: (polars.DataFrame)
+            
+        KWARGS:
+            freq_threshold (float): 
+            
+        RETURNS:
+            polars.DataFrame
+            ┌──────────────────────────┬─────────┬──────────┐
+            │ EVENT                    ┆ counts  ┆ freq     │
+            │ ---                      ┆ ---     ┆ ---      │
+            │ str                      ┆ u32     ┆ f64      │
+            ╞══════════════════════════╪═════════╪══════════╡
+            │ "UNK"                    ┆ n1      ┆ p1       │
+            │ <event name 1>           ┆ n2      ┆ p2       │
+            │ …                        ┆ …       ┆ …        │
+            └──────────────────────────┴─────────┴──────────┘
+            
         """
         # The low-occurrence tokens which will be treated as UNK token
         unk = event_counts.filter(plr.col("freq") <= freq_threshold)
@@ -42,16 +83,12 @@ class TokenizerBase():
         )
         return event_counts
     
-    def str_to_token(self, string):
-        raise NotImplementedError
+    def encode(self, sequence:list[str]):
+        r"""
+        Take a <> of strings, output a list of integers
+        """
+        return [self._stoi[c] if c in self._stoi.keys() else self._stoi["UNK"] for c in sequence] 
     
-    def token_to_str(self, string):
-        raise NotImplementedError
+    def decode(self, sequence:list[str]):
+        return ' '.join([self._itos[i] for i in sequence])
     
-    
-    
-if __name__ == "__main__":
-    
-    tokenizer = TokenizerBase()
-    print(tokenizer)
-

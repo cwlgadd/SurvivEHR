@@ -122,10 +122,12 @@ class EventStreamDataset(DatasetBase):
         event_stream = (
             combined_frame
             .sort("AGE_AT_EVENT")
+            .filter(pl.col("AGE_AT_EVENT") > -300)                                  # Remove entries before conception - include pregnancy period due to genetic conditions
             .filter(pl.col("PRACTICE_PATIENT_ID").is_in(practice_patient_ids))
             .groupby("PRACTICE_PATIENT_ID")     
             .agg(["VALUE", "EVENT", "AGE_AT_EVENT", "EVENT_TYPE"])                  # Turn into lists
         )
+        
         # TODO: Example of an outlier with negative age of blood pressure reading (apparently taken in 19th century) which hasn't been removed. 
         #       Need to perform more outlier detections.
         # measurement_print = (measurement_lazy_frame.collect()
@@ -133,6 +135,7 @@ class EventStreamDataset(DatasetBase):
         #             .filter(pl.col("PRACTICE_PATIENT_ID").is_in(["p20485_2548264020485"]))
         #            )
         # print(measurement_print)
+                
         return event_stream
         
     def _build_DL_representation(self,

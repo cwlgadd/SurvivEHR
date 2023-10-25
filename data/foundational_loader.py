@@ -6,12 +6,15 @@ from torch.nn.utils.rnn import pad_sequence
 import pytorch_lightning as pl
 import polars as plr
 from abc import ABC
+from textwrap import wrap
 import sqlite3
 from typing import Optional
 from collections import defaultdict
 import os
 from CPRD.data.dataset.dataset_polars import EventStreamDataset
-from CPRD.data.utils.tokenizers.discrete import DiscreteTokenizer
+from CPRD.data.utils.tokenizers.tokenizer import TokenizerBase as Tokenizer
+# from CPRD.data.utils.tokenizers.discrete import Tokenizer
+
 import random
 
 
@@ -69,18 +72,22 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         # Training, testing, and validation sets
         ##############
         splits = [event_stream.DL_frame.filter(plr.col("PRACTICE_PATIENT_ID").is_in(labels)) for labels in [self.train_ids, self.test_ids, self.val_ids]]
-        self.train_set = FoundationalDataset(splits[0], freq_threshold=1e-8)
+        self.train_set = FoundationalDataset(splits[0], freq_threshold=1e-2)
         self.test_set = FoundationalDataset(splits[1], tokenizer=self.train_set.tokenizer)
         self.val_set = FoundationalDataset(splits[2], tokenizer=self.train_set.tokenizer)
-        
-        # TODO Weighted random sampler for training set. Naive approach to account for different event sequence lengths. TODO: better way without pre-slicing all the dataset rows
-        #    Up-sample larger sequences 
+                
+        # TODO Weighted random sampler for training set. Naive approach to account for different event sequence lengths.
+        # TODO: better way without pre-slicing all the dataset rows?
+        #    Up-sample larger sequences?
         #############
         if (weight_dict is not None) and weighted_sampler:        
             raise NotImplementedError
         else:        
             self.train_sampler = None
             self.train_shuffle = True
+        
+        # print(f"Tokenizer description: \n {self.train_set.tokenizer.fit_description}")
+
             
     def train_test_split(self, identifiers):
         # Split frame into training, validation, and test
@@ -99,6 +106,9 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
 
         return (train_ids, test_ids, val_ids), weight_dict
     
+    def decode(self, sequence:list[int]):
+        return self.train_set.tokenizer.decode(sequence)
+    
     @staticmethod
     def collate_fn(data:list[dict]):     
         r""" 
@@ -106,26 +116,23 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         
         During this operation, pad the sequence lengths to the maximum length seen within the batch and tokenize
         
-        # TODO: tokenization could also be pre-processed rather than done on the fly.
         """
-        
         # Combine individual dictionaries into one
         #     For dynamic rows (events, values, ages at event, and event types) these become a ragged list of lists.
         allkeys = set().union(*data)
+        
         batch_dict = {k: [d[k] for d in data if k in d] for k in allkeys}
         
-        # Pad dymamic columns
-        # for k in ["EVENT", "VALUE", "AGE_AT_EVENT", "EVENT_TYPE"]:
-        #     batch_dict[k] =  pad_sequence(batch_dict[k], batch_first=True)
+        batch_dict["attention_mask"] = [torch.ones_like(d) for d in batch_dict["input_ids"]]
+        print(batch_dict["input_ids"][0])
+        print(batch_dict["attention_mask"][0])
         
-        print(batch_dict.keys())
-        print(type(batch_dict["EVENT"]))
-        print(batch_dict["EVENT"][0])
+        print(f"New: \n IDs:{batch_dict['input_ids'][0]} \nMask:{batch_dict['attention_mask'][0]}")
         
-        raise NotImplementedError
-        
-        worker_batch = {"labels": [None for i in range(random.randint(10,15))]}
-        # print(worker_batch)
+        worker_batch = {"input_ids": pad_sequence(batch_dict["input_ids"]),
+                        "input_positions": pad_sequence(batch_dict["input_positions"]),
+                        "attention_mask": pad_sequence(batch_dict["attention_mask"])
+                       }
         return worker_batch
     
     def train_dataloader(self):
@@ -186,41 +193,69 @@ class FoundationalDataset(Dataset):
     
     def __init__(self,
                  event_stream,
-                 tokenizer:Optional[DiscreteTokenizer] = None,
+                 max_seq_length:int = 256,
+                 tokenizer:Optional[Tokenizer] = None,
                  **kwargs
                 ):
         super().__init__()
         
-        self.event_stream = event_stream        
+        self.event_stream = event_stream    
+        self.max_seq_length = max_seq_length
         
         # Build vocabulary from training set. Vocabularly begins with UNK (unknown) token, and is then ordered by event frequency
         if tokenizer is not None:
             self.tokenizer = tokenizer
         else:
-            self.tokenizer = DiscreteTokenizer()
-            self.tokenizer.fit_vocabulary(self.event_frequency, **kwargs)
-        print(f"vocab size {self.tokenizer.vocab_size}")
+            self.tokenizer = Tokenizer()
+            self.tokenizer.fit(self.event_frequency, **kwargs)
         
-        # Pre-process tokenization
-        self.tokenize_stream()
+        # TODO: Pre-process tokenization
+        # self.tokenize_stream()
         
     def __len__(self):
         # Number of patients after potentially removing some
         return self.event_stream.select(plr.count())["count"][0]
     
     def __getitem__(self, idx):
-        # Return event stream and static variables
+        r"""
+        Return tokenized and padded event stream and static variables
+        
+        # TODO: tokenization could also be pre-processed rather than done on the fly.        
+        """
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        # print(self.event_stream.row(idx, named=True))
-        return self.event_stream.row(idx, named=True)
+        
+        # Get row from the DL representation frame
+        row_dict = self.event_stream.row(idx, named=True)
+        
+        # Zip together events and their values. When no value (None) do not include it. 
+        #    Inside of this, split value by character
+        #    Delimeter everything with a comma
+        # Then, turn sequence into a list, splitting via delimeter, and encode
+        sequence_tokens = ",".join([f"{_e},{','.join(wrap(str(_v),1))}"  if _v is not None else str(_e) for _e, _v in zip(row_dict["EVENT"], row_dict["VALUE"])])
+        sequence_ages = ",".join([",".join([str(_a)]*(1+len(str(_v)))) if _v is not None else str(_a) for _a, _v in zip(row_dict["AGE_AT_EVENT"], row_dict["VALUE"])])
+        encoded_sequence = self.tokenizer.encode(sequence_tokens.split(","))
+        sequence_ages = [int(_a) for _a in sequence_ages.split(",")]
+        
+        # Sub-sample a maximum number of tokens
+        if len(encoded_sequence) > self.max_seq_length:
+            start_pos = np.random.randint(low=0, high=len(encoded_sequence)-self.max_seq_length, size=1)[0]
+            encoded_sequence = encoded_sequence[start_pos:start_pos+self.max_seq_length]
+            sequence_ages = sequence_ages[start_pos:start_pos+self.max_seq_length]
+        
+        # print(len(sequence_tokens.split(",")))
+        # print(len(sequence_ages.split(",")))
+        # print(encoded_sequence)
+        
+        return {"identifier": row_dict["PRACTICE_PATIENT_ID"],
+                "sex": row_dict["SEX"],
+                "ethnicity": row_dict["ETHNICITY"],
+                "year_of_birth": row_dict["YEAR_OF_BIRTH"],
+                "input_ids": torch.tensor(encoded_sequence),
+                "input_positions": torch.tensor(sequence_ages),
+               }
     
-    def tokenize_stream(self):
-        # tokenize even stream and convert to PyTorch tensors
-        
-        
-        return 
-        
+    
 if __name__ == "__main__":
 
     # Report what is in the db
@@ -250,14 +285,16 @@ if __name__ == "__main__":
         cursor.execute("SELECT practice_patient_id FROM static_table")
         identifiers = [ppid[0] for ppid in cursor.fetchall()]
         
-    # "SELECT * FROM static_table WHERE PRACTICE_PATIENT_ID=:PRACTICE_PATIENT_ID", {'PRACTICE_PATIENT_ID': identifier}
     foundational_dm = FoundationalDataModule(identifiers=identifiers, batch_size=256)
-    # print(foundational_dm.identifiers[:20])
-    # print(len(foundational_dm.identifiers))
-    # print(len(foundational_dm.train_set))
-    # print(len(foundational_dm.test_set))
-    # print(len(foundational_dm.val_set))
     
     for idx, batch in enumerate(foundational_dm.train_dataloader()):
-        print(f"Batch {idx}")
-        print(batch)
+        break
+    print(batch["input_positions"])
+    print(batch["attention_mask"])
+    model_inputs = batch["input_ids"].numpy()
+    print(model_inputs)
+    print(type(model_inputs))
+
+    decoded_sequences = [foundational_dm.decode([model_inputs[j, i] for j in range(model_inputs.shape[0])]) 
+                         for i in range(model_inputs.shape[1])]
+    print(decoded_sequences[0])

@@ -1,1 +1,1 @@
-from . import discrete
+from . import tokenizer
