@@ -4,6 +4,7 @@ def query_static(conditions:list, cursor):
     ARGS:
         conditions (list of strings): 
             inputs for an sql query string which returns a list of the PRACTICE_PATIENT_IDs which were diagnosed with a condition
+            
     """
     raise NotImplementedError
     cursor.execute("""SELECT practice_patient_id FROM static_table
@@ -21,6 +22,7 @@ def query_measurement(measurements:list, cursor):
         measurements (list of strings): 
             inputs for an sql query string which returns a list of the PRACTICE_PATIENT_IDs which have measurements
 
+    TODO: add table with all compiled measurements
     """
 
     cursor.execute("""SELECT practice_patient_id FROM measurement_table
@@ -37,6 +39,8 @@ def query_diagnosis(conditions:list, cursor):
     ARGS:
         conditions (list of strings): 
             inputs for an sql query string which returns a list of the PRACTICE_PATIENT_IDs which were diagnosed with a condition
+            
+    TODO: add table with all diagnoses
     """
     cursor.execute("""SELECT practice_patient_id FROM diagnosis_table
                             WHERE

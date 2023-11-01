@@ -1,0 +1,61 @@
+
+class GPTModelForCausalLM(GPTPreTrainedModel):
+    r"""    
+    The GPT Neo Model transformer with a large language modeling head on top
+    """
+    
+    def __init__(self, config):
+        super().__init__(config)        
+        self.transformer = GPTNeoModel(config)
+        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        
+        # weight tying on embedding and softmax layer. See https://paperswithcode.com/method/weight-tying
+        self.transformer.wte.weight = self.lm_head.weight
+        
+        # initialise all the weights
+        self.apply(self._init_weights)
+
+        # apply special scaled init to the residual projections, per GPT-2 paper
+        for pn, p in self.named_parameters():
+            if pn.endswith('c_proj.weight'):
+                torch.nn.init.normal_(p, mean=0.0, std=0.02/math.sqrt(2 * config.n_layer))
+         
+        # report number of parameters
+        print("number of parameters: %.2fM" % (self.get_num_params()/1e6,))
+    
+    def forward(self):
+        pass
+    
+
+class GPTModelForCausalSurv(GPTPreTrainedModel):
+    r"""    
+    The GPT Neo Model transformer with a competing risk survival modeling head on top 
+    """
+    
+    def __init__(self, config):
+        super().__init__(config)
+        self.transformer = GPTNeoModel(config)
+
+        raise NotImplementedError
+
+        
+def test_clm():
+    """ Test model on a simple language generation task
+    
+    note: Would be nice to also test temporal positional encoding at this stage? Is there a dataset for simple language modelling where time is included. E.g. accounting for pauses in speech.
+          Could also just model a time series dataset to test it
+    """
+    raise NotImplementedError
+    
+
+def test_slm():
+    """ Test model with survival head
+    """
+    raise NotImplementedError
+    
+
+    
+if __name__ == "__main__":
+    
+    test_llm()
+    test_surv()

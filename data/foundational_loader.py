@@ -7,15 +7,16 @@ import pytorch_lightning as pl
 import polars as plr
 from abc import ABC
 from textwrap import wrap
-import sqlite3
 from typing import Optional
 from collections import defaultdict
 import os
 from CPRD.data.dataset.dataset_polars import EventStreamDataset
 from CPRD.data.utils.tokenizers.tokenizer import TokenizerBase as Tokenizer
-# from CPRD.data.utils.tokenizers.discrete import Tokenizer
-
 import random
+
+# Testing modules
+from CPRD.data.database import queries
+import sqlite3
 
 
 class FoundationalDataModule(pl.LightningDataModule, ABC):
@@ -24,7 +25,9 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
     
     def __init__(self, 
                  identifiers:list,
+                 max_seq_length:int = 256,
                  batch_size:int = 512,
+                 unk_freq_threshold=1e-2,
                  min_workers:int = 2,
                  weighted_sampler:bool = False,
                  load_event_stream:Optional[str] = None,
@@ -39,6 +42,10 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
                 
         KWARGS:
             batch_size (int): 
+            
+            unk_freq_threshold (float). 
+                Value between 0 and 1, controlling at what level of frequency rare tokens (equiv. conditions/measurements 
+                with this tokenizer) are mapped to the UNK token. Used to reduce vocabulary size
                 
             min_workers (int):
                 
@@ -72,9 +79,15 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         # Training, testing, and validation sets
         ##############
         splits = [event_stream.DL_frame.filter(plr.col("PRACTICE_PATIENT_ID").is_in(labels)) for labels in [self.train_ids, self.test_ids, self.val_ids]]
-        self.train_set = FoundationalDataset(splits[0], freq_threshold=1e-2)
-        self.test_set = FoundationalDataset(splits[1], tokenizer=self.train_set.tokenizer)
-        self.val_set = FoundationalDataset(splits[2], tokenizer=self.train_set.tokenizer)
+        self.train_set = FoundationalDataset(splits[0], 
+                                             max_seq_length=max_seq_length,
+                                             freq_threshold=unk_freq_threshold)
+        self.test_set = FoundationalDataset(splits[1],
+                                            max_seq_length=max_seq_length, 
+                                            tokenizer=self.train_set.tokenizer)
+        self.val_set = FoundationalDataset(splits[2],
+                                           max_seq_length=max_seq_length, 
+                                           tokenizer=self.train_set.tokenizer)
                 
         # TODO Weighted random sampler for training set. Naive approach to account for different event sequence lengths.
         # TODO: better way without pre-slicing all the dataset rows?
@@ -124,10 +137,11 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         batch_dict = {k: [d[k] for d in data if k in d] for k in allkeys}
         
         batch_dict["attention_mask"] = [torch.ones_like(d) for d in batch_dict["input_ids"]]
-        print(batch_dict["input_ids"][0])
-        print(batch_dict["attention_mask"][0])
-        
-        print(f"New: \n IDs:{batch_dict['input_ids'][0]} \nMask:{batch_dict['attention_mask'][0]}")
+
+#         print(batch_dict["input_ids"][0])
+#         print(batch_dict["input_positions"][0].shape)
+#         print(batch_dict["attention_mask"][0])
+#         print(f"New: \n IDs:{batch_dict['input_ids'][0]} \nMask:{batch_dict['attention_mask'][0]}")
         
         worker_batch = {"input_ids": pad_sequence(batch_dict["input_ids"]),
                         "input_positions": pad_sequence(batch_dict["input_positions"]),
