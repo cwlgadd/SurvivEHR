@@ -11,7 +11,7 @@ from typing import Optional
 from collections import defaultdict
 import os
 from CPRD.data.dataset.dataset_polars import EventStreamDataset
-from CPRD.data.utils.tokenizers.tokenizer import TokenizerBase as Tokenizer
+from CPRD.data.tokenizers.base import TokenizerBase as Tokenizer
 import random
 
 # Testing modules
