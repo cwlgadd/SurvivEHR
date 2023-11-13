@@ -139,7 +139,7 @@ class GPTModel(nn.Module, ModuleUtilsMixin):
             if "embedding" in encoder_setup:
                 positional_info = torch.arange(seq_len, device=tokens.device).tile((bsz, 1))
             elif "encoding" in encoder_setup:
-                assert positions is not None, "If using a non-temporal positional encoder you must supply positions"   
+                assert positions is not None, "If using an index positional encoder you must supply positions"   
                 positional_info = positions
             else:
                 raise NotImplementedError
