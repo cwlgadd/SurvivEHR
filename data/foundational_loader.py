@@ -122,6 +122,9 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
     def decode(self, sequence:list[int]):
         return self.train_set.tokenizer.decode(sequence)
     
+    def encode(self, sequence:list[str]):
+        return self.train_set.tokenizer.encode(sequence)
+    
     @staticmethod
     def collate_fn(data:list[dict]):     
         r""" 
@@ -143,9 +146,13 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
 #         print(batch_dict["attention_mask"][0])
 #         print(f"New: \n IDs:{batch_dict['input_ids'][0]} \nMask:{batch_dict['attention_mask'][0]}")
         
-        worker_batch = {"input_ids": pad_sequence(batch_dict["input_ids"]),
-                        "input_positions": pad_sequence(batch_dict["input_positions"]),
-                        "attention_mask": pad_sequence(batch_dict["attention_mask"])
+        worker_batch = {"input_ids": pad_sequence(batch_dict["input_ids"]).T,
+                        "target_ids": pad_sequence(batch_dict["target_ids"]).T,
+                        "input_pos": pad_sequence(batch_dict["input_pos"]).T,
+                        "target_pos": pad_sequence(batch_dict["target_pos"]).T,
+                        "input_ages": pad_sequence(batch_dict["input_ages"]).T,
+                        "target_ages": pad_sequence(batch_dict["target_ages"]).T,
+                        "attention_mask": pad_sequence(batch_dict["attention_mask"]).T
                        }
         return worker_batch
     
@@ -161,7 +168,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
 
     def val_dataloader(self):
         return DataLoader(
-            dataset=self.validation_set,
+            dataset=self.val_set,
             batch_size=self.batch_size,
             num_workers=np.min((self.min_workers,os.cpu_count())),
             collate_fn=self.collate_fn,
@@ -245,18 +252,31 @@ class FoundationalDataset(Dataset):
         # Zip together events and their values. When no value (None) do not include it. 
         #    Inside of this, split value by character
         #    Delimeter everything with a comma
-        # Then, turn sequence into a list, splitting via delimeter, and encode
         sequence_tokens = ",".join([f"{_e},{','.join(wrap(str(_v),1))}"  if _v is not None else str(_e) for _e, _v in zip(row_dict["EVENT"], row_dict["VALUE"])])
         sequence_ages = ",".join([",".join([str(_a)]*(1+len(str(_v)))) if _v is not None else str(_a) for _a, _v in zip(row_dict["AGE_AT_EVENT"], row_dict["VALUE"])])
+        
+        # Then, turn sequence into a list, splitting via delimeter, and encode        
         encoded_sequence = self.tokenizer.encode(sequence_tokens.split(","))
+        sequence_pos = np.arange(len(encoded_sequence))
         sequence_ages = [int(_a) for _a in sequence_ages.split(",")]
         
         # Sub-sample a maximum number of tokens
-        if len(encoded_sequence) > self.max_seq_length:
-            start_pos = np.random.randint(low=0, high=len(encoded_sequence)-self.max_seq_length, size=1)[0]
-            encoded_sequence = encoded_sequence[start_pos:start_pos+self.max_seq_length]
-            sequence_ages = sequence_ages[start_pos:start_pos+self.max_seq_length]
+        if len(encoded_sequence) > self.max_seq_length + 1:
+            start_pos = np.random.randint(low=0, high=len(encoded_sequence)-self.max_seq_length-1, size=1)[0]
+            sequence_pos = np.arange(start_pos, start_pos+self.max_seq_length+1)
+            encoded_sequence = encoded_sequence[start_pos:start_pos+self.max_seq_length+1]            
+            sequence_ages = sequence_ages[start_pos:start_pos+self.max_seq_length+1]
+
+        # stagger and split for input and targets
+        encoded_sequence_in = encoded_sequence[:-1]
+        encoded_sequence_out = encoded_sequence[1:]
+
+        sequence_pos_in = sequence_pos[:-1]
+        sequence_pos_out = sequence_pos[1:]
         
+        sequence_ages_in = sequence_ages[:-1]
+        sequence_ages_out = sequence_ages[1:]
+            
         # print(len(sequence_tokens.split(",")))
         # print(len(sequence_ages.split(",")))
         # print(encoded_sequence)
@@ -265,8 +285,12 @@ class FoundationalDataset(Dataset):
                 "sex": row_dict["SEX"],
                 "ethnicity": row_dict["ETHNICITY"],
                 "year_of_birth": row_dict["YEAR_OF_BIRTH"],
-                "input_ids": torch.tensor(encoded_sequence),
-                "input_positions": torch.tensor(sequence_ages),
+                "input_ids": torch.tensor(encoded_sequence_in),
+                "input_pos": torch.tensor(sequence_pos_in),                
+                "input_ages": torch.tensor(sequence_ages_in),
+                "target_ids": torch.tensor(encoded_sequence_out),
+                "target_pos": torch.tensor(sequence_pos_out),                
+                "target_ages": torch.tensor(sequence_ages_out),
                }
     
     

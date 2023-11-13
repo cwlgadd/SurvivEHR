@@ -3,7 +3,7 @@ import torch
 import math
 from typing import Optional
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+import logging
 
 class PositionalEncoding(torch.nn.Module):
     r"""
@@ -14,52 +14,46 @@ class PositionalEncoding(torch.nn.Module):
         P\left(k, 2i + 1\right) = \cos \left(\frac{k}{n**{2i/d}}\right)
 
     ARGS:
-        embedding_dim: (d) The desired size of the output embedding.
+        encoding_dim: (d) The desired size of the output embedding.
         
     KWARGS:
-        n_scalar: (n) The scalar used to initialize the frequency space. 
-        max_length: The maximum sequence length, for precomputing positional encoding
-        dropout (Optional): Amount of dropout to apply to the output of combined emebedding and positional embedding
+        n_scalar: (n) The scalar used to initialize the frequency space. Defaults to 10,000 following "Attention Is All You Need".
+        max_length: The maximum sequence length, for precomputing positional encoding.
     """
 
-    def __init__(self, embedding_dim: int,
+    def __init__(self, encoding_dim: int,
                  n_scalar: float = 10000.0,
                  max_length: int = 5000, 
-                 dropout: Optional[float] = 0.1):
+                ):
         """
         """
-        assert embedding_dim % 2 == 0, "Positional encoding dimension must be even"
+        assert encoding_dim % 2 == 0, "Positional encoding dimension must be even"
         
         super().__init__()
-        self.embedding_dim = embedding_dim
-        self.dropout = torch.nn.Dropout(p=dropout) if dropout is not None else None
+        self.encoding_dim = encoding_dim
 
         # pre-compute positional encoding matrix        
         position = torch.arange(max_length, device=device).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, embedding_dim, 2, device=device) * (-math.log(n_scalar) / embedding_dim))
+        div_term = torch.exp(torch.arange(0, encoding_dim, 2, device=device) * (-math.log(n_scalar) / encoding_dim))
         div_term = torch.nn.Parameter(div_term, requires_grad=False)
-        self.pe = torch.zeros(max_length, 1, embedding_dim, device=device)
-        self.pe[:, 0, 0::2] = torch.sin(position * div_term)
-        self.pe[:, 0, 1::2] = torch.cos(position * div_term)
-        
+        self.pe = torch.zeros(1, max_length, encoding_dim, device=device)
+        self.pe[0, :, 0::2] = torch.sin(position * div_term)
+        self.pe[0, :, 1::2] = torch.cos(position * div_term)
+        logging.debug("Initialised PositionalEncoder")
 
-    def forward(self, x: torch.Tensor, *args) -> torch.Tensor:
+    def forward(self, positions: torch.Tensor) -> torch.Tensor:
         """
         
         ARGS: 
-            x: Token embeddings
-                Tensor, shape ``[seq_len, bsz, embedding_dim]``
+            positions: positions
+                Tensor, shape ``[bsz, seq_len]`` 
             
         Returns
-            The combined token and index-based positional embeddings 
-                Tensor, shape ``[seq_len, bsz]``
+                Tensor, shape ``[1, seq_len, encoding_dim]``
 
         """
-        x += self.pe[:x.size(0)]
-        if self.dropout is not None:
-            x = self.dropout(x)
-            
-        return x
+        seq_len = positions.size(1)
+        return self.pe[:, :seq_len, :]
 
     
 class TemporalPositionalEncoding(torch.nn.Module):
@@ -74,58 +68,50 @@ class TemporalPositionalEncoding(torch.nn.Module):
         embedding_dim: (d) The desired size of the output embedding.
         
     KWARGS:
-        n_scalar: (n) The maximum observed timepoint, used to initialize the frequency space. 
-        dropout (Optional): Amount of dropout to apply to the output of combined emebedding and positional embedding
+        n_scalar: (n) The maximum observed timepoint, used to initialize the frequency space. Defaults to 10,000 following "Attention Is All You Need".
     """
     
-    def __init__(self, embedding_dim: int,
+    def __init__(self, 
+                 encoding_dim: int,
                  n_scalar: float = 10000.0,
-                 dropout: Optional[float] = 0.1):
+                ):
         """
         """
-        assert embedding_dim % 2 == 0, "Temporal positional encoding dimension must be even"
+        assert encoding_dim % 2 == 0, "Temporal positional encoding dimension must be even"
         
         super().__init__()
-        self.embedding_dim = embedding_dim
-        self.dropout = torch.nn.Dropout(p=dropout) if dropout is not None else None
+        self.encoding_dim = encoding_dim
 
         # pre-compute positional encoding matrix        
-        div_term = torch.exp(torch.arange(0, embedding_dim, 2) * (-math.log(n_scalar) / embedding_dim))
+        div_term = torch.exp(torch.arange(0, encoding_dim, 2) * (-math.log(n_scalar) / encoding_dim))
         self.div_term = torch.nn.Parameter(div_term, requires_grad=False)
-        
+        logging.debug("Initialised TemporalPositionalEncoding")
 
-    def forward(self, x: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+    def forward(self, positions: torch.Tensor) -> torch.Tensor:
         """Forward pass.
 
         Args:
-            x: Token embeddings
-                Tensor, shape ``[seq_len, bsz, embedding_dim]``
-            t: Time points (assumed in days)
-                Tensor, shape ``[seq_len, bsz]``
+            positions: Time points
+                Tensor, shape ``[bsz, seq_len]``
 
         Returns:
-            The combined token and temporal positional embeddings 
-                Tensor, shape ``[seq_len, bsz]``
+                Tensor, shape ``[bsz, seq_len, encoding_dim]``
         """
-        seq_len, bsz, _ = x.shape
-        t = t.unsqueeze(-1)                    # Unsqueeze for broadcasting through the hidden dim.
+        bsz, seq_len = positions.shape
+        positions = positions.unsqueeze(-1)                    # Unsqueeze for broadcasting through the encoding dim
  
-        temporal_embeddings = torch.zeros(seq_len, bsz, self.embedding_dim)
-
-        temporal_embeddings[:, :, 0::2] = torch.sin(t * self.div_term.unsqueeze(0).unsqueeze(0))
-        temporal_embeddings[:, :, 1::2] = torch.cos(t * self.div_term.unsqueeze(0).unsqueeze(0))
-
-        x += temporal_embeddings
-        if self.dropout is not None:
-            x = self.dropout(x)
-            
-        return x    
+        temporal_encodings = torch.zeros(bsz, seq_len, self.encoding_dim, device=positions.device)
+        temporal_encodings[:, :, 0::2] = torch.sin(positions * self.div_term.unsqueeze(0).unsqueeze(0))    # [bsz, seq_len, 1] * [1, 1, encoding_dim / 2]
+        temporal_encodings[:, :, 1::2] = torch.cos(positions * self.div_term.unsqueeze(0).unsqueeze(0))
+        
+        logging.debug(f"TPE: {positions.shape} maps to -> {temporal_encodings.shape} ")
+        return temporal_encodings
     
 
 def test(bsz=1, seq_len=10, embed_dim=6):
     
-    pe = PositionalEncoding(embed_dim, dropout=None)
-    tpe = TemporalPositionalEncoding(embed_dim, dropout=None)
+    pe = PositionalEncoding(embed_dim)
+    tpe = TemporalPositionalEncoding(embed_dim)
     
     we = torch.zeros(seq_len, bsz, embed_dim)        # Zeros so i can just check the positional encoding part
     

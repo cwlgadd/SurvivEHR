@@ -9,8 +9,9 @@ class TokenizerBase():
     
     @property
     def vocab_size(self):
-        assert self._event_counts is not None, "Must first fit Vocabulary"
-        return self._event_counts.select(plr.count()).to_numpy()[0][0]
+        assert self._event_counts is not None, "Must first fit Vocabulary"        
+        # return self._event_counts.select(plr.count()).to_numpy()[0][0]
+        return self._vocab_size
     
     @property
     def fit_description(self):
@@ -34,11 +35,11 @@ class TokenizerBase():
         
         # Combine with special tokens (padding, unknown=low frequency masked, and numeric digits)
         all_tokens = ["PAD", "UNK"] + [str(i) for i in range(10)] + ["."] + event_tokens[1:]
+        self._vocab_size = len(all_tokens)
                 
         # Create a mapping from strings to integers, and vice versa
         self._stoi = { ch:i for i,ch in enumerate(all_tokens) }
         self._itos = { i:ch for i,ch in enumerate(all_tokens) }
-        
         
         # test = ["UNK", "SJOGRENSSYNDROME", "diastolic_blood_pressure", "9", "8", ".", "2"]
         # z = self.encode(test)

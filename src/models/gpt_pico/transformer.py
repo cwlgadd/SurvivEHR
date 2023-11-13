@@ -6,9 +6,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 import numpy as np
 
-
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+import logging
 
 class Head(nn.Module):
     """ one head of self-attention """
@@ -98,12 +96,12 @@ class GPTLanguageModel(nn.Module):
         self.ln_f = nn.LayerNorm(config.n_embd) # final layer norm
         self.lm_head = nn.Linear(config.n_embd, vocab_size)
 
-    def forward(self, idx, targets=None):
+    def forward(self, idx, targets=None, **kwargs):
         B, T = idx.shape
 
         # idx and targets are both (B,T) tensor of integers
         tok_emb = self.token_embedding_table(idx) # (B,T,C)
-        pos_emb = self.position_embedding_table(torch.arange(T, device=device)) # (T,C)
+        pos_emb = self.position_embedding_table(torch.arange(T, device=idx.device)) # (T,C)
         x = tok_emb + pos_emb # (B,T,C)
         x = self.blocks(x) # (B,T,C)
         x = self.ln_f(x) # (B,T,C)
@@ -113,8 +111,8 @@ class GPTLanguageModel(nn.Module):
             loss = None
         else:
             B, T, C = logits.shape
-            logits = logits.view(B*T, C)
-            targets = targets.view(B*T)
+            logits = logits.contiguous().view(B*T, C)
+            targets = targets.contiguous().view(B*T)
             loss = F.cross_entropy(logits, targets)
 
         return logits, loss
@@ -134,4 +132,4 @@ class GPTLanguageModel(nn.Module):
             idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
             # append sampled index to the running sequence
             idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
-        return idx
+        return idx, None, None

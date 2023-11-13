@@ -57,9 +57,9 @@ class Block(nn.Module):
         if use_cache:
             outputs = (hidden_states,) + outputs
         else:
-            outputs = (hidden_states,) + outputs[1:]
+            outputs = (hidden_states,) + outputs[1:]     # hidden_states, present, (attentions, cross_attentions)
 
-        return hidden_states  # outputs  # hidden_states, present, (attentions, cross_attentions)
+        return hidden_states  
     
 def test(bsz=1, seq_len=10):
     from CPRD.src.models.gpt_neo.config import GPTCNeoConfig

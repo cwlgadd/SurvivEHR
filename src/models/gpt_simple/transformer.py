@@ -4,10 +4,13 @@ from typing import Tuple
 import torch
 from torch import nn, Tensor
 from torch.nn import functional as F
-from transformers import PreTrainedModel
-from CPRD.src.modules.positional_encodings import PositionalEncoding as PositionalEncoding
+# from transformers import PreTrainedModel
+from transformers.modeling_utils import ModuleUtilsMixin               
+from CPRD.src.modules.positional_encodings import PositionalEncoding, TemporalPositionalEncoding
 from CPRD.src.modules.block import Block
 
+import logging
+from typing import Optional
 
 # class GPTPreTrainedModel(PreTrainedModel):
 #     """
@@ -48,95 +51,123 @@ from CPRD.src.modules.block import Block
 
 
             
-class GPTModel(nn.Module):
+class GPTModel(nn.Module, ModuleUtilsMixin):
     r"""The bare GPT Model transformer outputting raw hidden-states without any specific head on top.
+    
+    TODO: ModuleUtilsMixin can be inherited from PreTrainedModel instead later
+    
+    Encoder only example: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
+    Simplified version of this decoder only model: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt_neo/modeling_gpt_neo.py#L355
     """
-    # Encoder only example: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
-    # Simplified version of this decoder only model: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt_neo/modeling_gpt_neo.py#L355
-
     def __init__(self, config, vocab_size):
         super().__init__()
         self.config = config
+        self.config.is_decoder = True             # For transformers module internals
         
         # config (add to hydra later)
         self.embed_dim = config.n_embd    # 512
-        nhead = config.n_head
-        # embedding_type = "temporal"
         layer_norm_epsilon = 1e-5
-        self.learn_position_encoding = config.learn_position_encoding
+        self.drop = torch.nn.Dropout(p=config.dropout) if config.dropout is not None else None      # embed dropout
         
-        if self.learn_position_encoding:
-            wpe = nn.Embedding(config.block_size, self.embed_dim)
-        else:
-            wpe = PositionalEncoding(embedding_dim=self.embed_dim, dropout=0.0)
+        match config.pos_encoding.lower():
+            case "index-embedding":
+                wpe = nn.Embedding(config.block_size, self.embed_dim)
+            case "index-encoding":
+                wpe = PositionalEncoding(encoding_dim=self.embed_dim)
+            case "temporal-encoding":
+                wpe = TemporalPositionalEncoding(encoding_dim=self.embed_dim)
+            case _:
+                raise NotImplementedError
         
-        self.transformer = nn.ModuleDict(dict(
-            wte = nn.Embedding(vocab_size, self.embed_dim),
-            wpe = wpe,
-            blocks = nn.Sequential(*[Block(config) for _ in range(config.n_layer)]),
-            ln_f = nn.LayerNorm(self.embed_dim, eps=layer_norm_epsilon),
-        ))
+        self.wte = nn.Embedding(vocab_size, self.embed_dim)
+        self.wpe = wpe
+        self.blocks = nn.ModuleList([Block(config) for _ in range(config.n_layer)])
+        self.ln_f = nn.LayerNorm(self.embed_dim, eps=layer_norm_epsilon)
 
-        self.lm_head = nn.Linear(config.n_embd, vocab_size)
-        # self.init_weights()
-
-    def forward(self, idx, targets=None, t=None):
+        # init all weights  
+        self.apply(self._init_weights)   #  (TODO: does this need to be done here if its called inside headed modules)
+        
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            
+    def forward(self, 
+                tokens: torch.tensor, 
+                positions: Optional[torch.tensor] = None,
+                ages: Optional[torch.tensor] = None,
+                attention_mask: Optional[torch.tensor] = None
+               ):
         """
         
-        idx:
+        tokens: 
+            Tensor, shape ``[bsz, seq_len]``
+        positions:
+            Optional[Tensor], shape ``[bsz, seq_len]``
+        ages: 
         
-        t:
+        attention_mask:
+            Optional[torch.tensor], shape ``[bsz, seq_len]``
+
         
         targets:
+        
+        
+        return:
         """
-        device = idx.device
-        b, t = idx.size()
-        assert t <= self.config.block_size, f"Cannot forward sequence of length {t}, block size is only {self.config.block_size}"
+        bsz, seq_len = tokens.size()
+        assert seq_len <= self.config.block_size, f"Cannot forward sequence of length {seq_len}, block size is only {self.config.block_size}"
 
-        # forward the GPT model itself
-        
-        if self.learn_position_encoding:
-            tok_emb = self.transformer.wte(idx) # (B,T,C)
-            pos_emb = self.transformer.wpe(torch.arange(t, device=device)) # (T,C)
-            x = tok_emb + pos_emb
+        # Handle positional vs. temporal encoding/embedding
+        # Cases: 
+        #     temporal-encoding:     use age along a patient's timeline
+        #     index-encoding:        use index position along a patient's timeline
+        #     index-embedding:       use index position along the batch
+        encoder_setup = self.config.pos_encoding.lower().split("-")
+        if "temporal" in encoder_setup:
+            if "embedding" in encoder_setup:
+                raise NotImplementedError
+            elif "encoding" in encoder_setup:
+                assert ages is not None, "If using a temporal positional encoder you must supply ages"
+                positional_info = ages
+            else:
+                raise NotImplementedError
+        elif "index" in encoder_setup:
+            if "embedding" in encoder_setup:
+                positional_info = torch.arange(seq_len, device=tokens.device).tile((bsz, 1))
+            elif "encoding" in encoder_setup:
+                assert positions is not None, "If using a non-temporal positional encoder you must supply positions"   
+                positional_info = positions
+            else:
+                raise NotImplementedError
         else:
-            tok_emb = self.transformer.wte(idx)     # token embeddings of shape (b, t, n_embd)
-            x = self.transformer.wpe(tok_emb, t) # position embeddings of shape (t, n_embd)
+            raise NotImplementedError
         
-        x = self.transformer.blocks(x)
-        x = self.transformer.ln_f(x)
-        logits = self.lm_head(x)
+        if attention_mask is not None:
+            attention_mask = self.get_extended_attention_mask(attention_mask, tokens.shape)
+        
+        # Forward
+        ############
+        
+        # Get token embeddings
+        tok_emb = self.wte(tokens)                          # token embeddings of shape (bsz, seq_len, embed_dim)
+        # Get positional embeddings/encodings
+        pos_emb = self.wpe(positional_info)                 # positional embeddings of shape (bsz or 1, seq_len, embed_dim)
+        # Combine (broadcasts for some choices of encodings)
+        x = tok_emb + pos_emb
+        
+        if self.drop is not None:
+            x = self.drop(x)
+            
+        for block in self.blocks:
+            x = block(x, attention_mask=attention_mask)
 
-        if targets is not None:
-            B, T, C = logits.shape
-            logits = logits.view(B*T, C)
-            targets = targets.view(B*T)
-            loss = F.cross_entropy(logits, targets)
-            # if we are given some desired targets also calculate the loss
-            # loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
-        else:
-            # inference-time mini-optimization: only forward the lm_head on the very last position
-            # logits = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
-            loss = None
-
-        return logits, loss
-    
-    def generate(self, idx, max_new_tokens):
-        # idx is (B, T) array of indices in the current context
-        for _ in range(max_new_tokens):
-            # crop idx to the last block_size tokens
-            idx_cond = idx[:, -16:]
-            # get the predictions
-            logits, loss = self(idx_cond)
-            # focus only on the last time step
-            logits = logits[:, -1, :] # becomes (B, C)
-            # apply softmax to get probabilities
-            probs = F.softmax(logits, dim=-1) # (B, C)
-            # sample from the distribution
-            idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
-            # append sampled index to the running sequence
-            idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
-        return idx
+        x = self.ln_f(x)
+        
+        return x
 
 
 def test():

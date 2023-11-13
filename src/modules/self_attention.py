@@ -11,7 +11,7 @@ class MultiHeadedSelfAttention(nn.Module):
     """
     def __init__(self, 
                  config,
-                 attention_type: str = "local"
+                 attention_type: str = "global"
                 ):
         
         super().__init__()
@@ -30,7 +30,7 @@ class MultiHeadedSelfAttention(nn.Module):
         # However, modules supported on bear currently doesn't allow so I'm not supporting yet.
         self.flash = hasattr(torch.nn.functional, 'scaled_dot_product_attention')
         if self.flash:
-            logging.info("Implement flash attention, but only supported for PyTorch >= 2.0")
+            logging.info("TODO: Implement flash attention, but only supported for PyTorch >= 2.0")
         
         bias = torch.tril(torch.ones((max_positions, max_positions), dtype=bool)).view(1, 1, max_positions, max_positions)
         # local causal self attention is a sliding window where each token can only attend to the previous
@@ -38,6 +38,10 @@ class MultiHeadedSelfAttention(nn.Module):
         # all other tokens are masked except the previous window_size tokens.
         if attention_type == "local":
             bias = torch.bitwise_xor(bias, torch.tril(bias, -window_size))
+        elif  attention_type == "global":
+            pass
+        else:
+            raise NotImplementedError
         
         self.register_buffer("bias", bias, persistent=False)
         # self.register_buffer("masked_bias", torch.tensor(-1e9), persistent=False)   # idk what this does in the hugging face 
@@ -47,10 +51,8 @@ class MultiHeadedSelfAttention(nn.Module):
         
         self.head_dim = self.embed_dim // self.num_heads
         if self.head_dim * self.num_heads != self.embed_dim:
-            raise ValueError(
-                f"embed_dim must be divisible by num_heads (got `embed_dim`: {self.embed_dim} and `num_heads`:"
-                f" {self.num_heads})."
-            )
+            raise ValueError(f"""embed_dim must be divisible by num_heads (got `embed_dim`: {self.embed_dim} 
+                                 and `num_heads`: {self.num_heads}).""")
 
         self.k_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=False)
         self.v_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=False)
@@ -65,7 +67,6 @@ class MultiHeadedSelfAttention(nn.Module):
         tensor = tensor.view(new_shape)
         return tensor.permute(0, 2, 1, 3)  # (batch, head, seq_length, head_features)
         
-    
     def _merge_heads(self, tensor, num_heads, attn_head_size):
         """
         Merges attn_head_size dim and num_attn_heads dim into embed_dim
@@ -73,7 +74,6 @@ class MultiHeadedSelfAttention(nn.Module):
         tensor = tensor.permute(0, 2, 1, 3).contiguous()
         new_shape = tensor.size()[:-2] + (num_heads * attn_head_size,)
         return tensor.view(new_shape)
-    
     
     def _attn(self, query, key, value, attention_mask=None, head_mask=None):
         # Keep the attention weights computation in fp32 to avoid overflow issues
@@ -92,6 +92,7 @@ class MultiHeadedSelfAttention(nn.Module):
 
         if attention_mask is not None:
             # Apply the attention mask
+            logging.debug(f"attn_weights {attn_weights.shape} AND attention_mask {attention_mask.shape}")
             attn_weights = attn_weights + attention_mask
 
         attn_weights = nn.functional.softmax(attn_weights, dim=-1)
@@ -105,7 +106,6 @@ class MultiHeadedSelfAttention(nn.Module):
         attn_output = torch.matmul(attn_weights, value)
 
         return attn_output, attn_weights
-    
 
     def forward(self,
                 hidden_states,
