@@ -6,7 +6,8 @@ from torch import nn, Tensor
 from torch.nn import functional as F
 # from transformers import PreTrainedModel
 from transformers.modeling_utils import ModuleUtilsMixin               
-from CPRD.src.modules.positional_encodings import PositionalEncoding, TemporalPositionalEncoding
+from CPRD.src.modules.positions.positional_encoding import PositionalEncoding, TemporalPositionalEncoding
+from CPRD.src.modules.positions.positional_embedding import PositionalEmbedding
 from CPRD.src.modules.block import Block
 
 import logging
@@ -67,20 +68,18 @@ class GPTModel(nn.Module, ModuleUtilsMixin):
         # config (add to hydra later)
         self.embed_dim = config.n_embd    # 512
         layer_norm_epsilon = 1e-5
-        self.drop = torch.nn.Dropout(p=config.dropout) if config.dropout is not None else None      # embed dropout
         
         match config.pos_encoding.lower():
             case "index-embedding":
-                wpe = nn.Embedding(config.block_size, self.embed_dim)
+                self.wpe = PositionalEmbedding(config.block_size, self.embed_dim)
             case "index-encoding":
-                wpe = PositionalEncoding(encoding_dim=self.embed_dim)
+                self.wpe = PositionalEncoding(encoding_dim=self.embed_dim, max_length=config.block_size)
             case "temporal-encoding":
-                wpe = TemporalPositionalEncoding(encoding_dim=self.embed_dim)
+                self.wpe = TemporalPositionalEncoding(encoding_dim=self.embed_dim)
             case _:
                 raise NotImplementedError
-        
         self.wte = nn.Embedding(vocab_size, self.embed_dim)
-        self.wpe = wpe
+        self.drop = torch.nn.Dropout(p=config.dropout) if config.dropout is not None else None      # embed dropout
         self.blocks = nn.ModuleList([Block(config) for _ in range(config.n_layer)])
         self.ln_f = nn.LayerNorm(self.embed_dim, eps=layer_norm_epsilon)
 
@@ -97,7 +96,6 @@ class GPTModel(nn.Module, ModuleUtilsMixin):
             
     def forward(self, 
                 tokens: torch.tensor, 
-                positions: Optional[torch.tensor] = None,
                 ages: Optional[torch.tensor] = None,
                 attention_mask: Optional[torch.tensor] = None
                ):
@@ -105,8 +103,6 @@ class GPTModel(nn.Module, ModuleUtilsMixin):
         
         tokens: 
             Tensor, shape ``[bsz, seq_len]``
-        positions:
-            Optional[Tensor], shape ``[bsz, seq_len]``
         ages: 
         
         attention_mask:
@@ -121,42 +117,14 @@ class GPTModel(nn.Module, ModuleUtilsMixin):
         bsz, seq_len = tokens.size()
         assert seq_len <= self.config.block_size, f"Cannot forward sequence of length {seq_len}, block size is only {self.config.block_size}"
 
-        # Handle positional vs. temporal encoding/embedding
-        # Cases: 
-        #     temporal-encoding:     use age along a patient's timeline
-        #     index-encoding:        use index position along a patient's timeline
-        #     index-embedding:       use index position along the batch
-        encoder_setup = self.config.pos_encoding.lower().split("-")
-        if "temporal" in encoder_setup:
-            if "embedding" in encoder_setup:
-                raise NotImplementedError
-            elif "encoding" in encoder_setup:
-                assert ages is not None, "If using a temporal positional encoder you must supply ages"
-                positional_info = ages
-            else:
-                raise NotImplementedError
-        elif "index" in encoder_setup:
-            if "embedding" in encoder_setup:
-                positional_info = torch.arange(seq_len, device=tokens.device).tile((bsz, 1))
-            elif "encoding" in encoder_setup:
-                assert positions is not None, "If using an index positional encoder you must supply positions"   
-                positional_info = positions
-            else:
-                raise NotImplementedError
-        else:
-            raise NotImplementedError
-        
         if attention_mask is not None:
             attention_mask = self.get_extended_attention_mask(attention_mask, tokens.shape)
-        
-        # Forward
-        ############
         
         # Get token embeddings
         tok_emb = self.wte(tokens)                          # token embeddings of shape (bsz, seq_len, embed_dim)
         # Get positional embeddings/encodings
-        pos_emb = self.wpe(positional_info)                 # positional embeddings of shape (bsz or 1, seq_len, embed_dim)
-        # Combine (broadcasts for some choices of encodings)
+        pos_emb = self.wpe(tokens=tokens, ages=ages)       # positional embeddings of shape (bsz or 1, seq_len, embed_dim)
+        # Combine (broadcasts in some choices of encodings)
         x = tok_emb + pos_emb
         
         if self.drop is not None:
@@ -168,22 +136,3 @@ class GPTModel(nn.Module, ModuleUtilsMixin):
         x = self.ln_f(x)
         
         return x
-
-
-def test():
-    from CPRD.src.models.gpt_neo.config import GPTCNeoConfig
-    import torch
-
-    cfg = GPTCNeoConfig()
-    model = GPTModel(cfg)
-    print(model)
-    
-    token_indices = torch.arange(128).reshape((2,-1))
-    print(token_indices.shape)
-    logits, loss = model(token_indices)
-    print(logits.shape)
-    print(loss)
-    
-if __name__ == "__main__":
-    
-    test()

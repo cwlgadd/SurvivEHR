@@ -27,7 +27,7 @@ class PositionalEncoding(torch.nn.Module):
                 ):
         """
         """
-        assert encoding_dim % 2 == 0, "Positional encoding dimension must be even"
+        assert encoding_dim % 2 == 0, "PositionalEncoding: encoding_dim must be even"
         
         super().__init__()
         self.encoding_dim = encoding_dim
@@ -39,21 +39,21 @@ class PositionalEncoding(torch.nn.Module):
         self.pe = torch.zeros(1, max_length, encoding_dim, device=device)
         self.pe[0, :, 0::2] = torch.sin(position * div_term)
         self.pe[0, :, 1::2] = torch.cos(position * div_term)
-        logging.debug("Initialised PositionalEncoder")
+        
+        logging.info("Using Positional Encoding. This module uses the index position of an event within the block of events.")
 
-    def forward(self, positions: torch.Tensor) -> torch.Tensor:
+    def forward(self, tokens: torch.Tensor, **kwargs) -> torch.Tensor:
         """
         
         ARGS: 
-            positions: positions
+            tokens: 
                 Tensor, shape ``[bsz, seq_len]`` 
             
         Returns
                 Tensor, shape ``[1, seq_len, encoding_dim]``
 
         """
-        seq_len = positions.size(1)
-        return self.pe[:, :seq_len, :]
+        return self.pe[:, :tokens.size(1), :]
 
     
 class TemporalPositionalEncoding(torch.nn.Module):
@@ -77,7 +77,7 @@ class TemporalPositionalEncoding(torch.nn.Module):
                 ):
         """
         """
-        assert encoding_dim % 2 == 0, "Temporal positional encoding dimension must be even"
+        assert encoding_dim % 2 == 0, "TemporalPositionalEncoding: encoding_dim must be even"
         
         super().__init__()
         self.encoding_dim = encoding_dim
@@ -85,26 +85,29 @@ class TemporalPositionalEncoding(torch.nn.Module):
         # pre-compute positional encoding matrix        
         div_term = torch.exp(torch.arange(0, encoding_dim, 2) * (-math.log(n_scalar) / encoding_dim))
         self.div_term = torch.nn.Parameter(div_term, requires_grad=False)
-        logging.debug("Initialised TemporalPositionalEncoding")
 
-    def forward(self, positions: torch.Tensor) -> torch.Tensor:
+        logging.info("Using Temporal Positional Encoding. This module uses the patient's age at an event within their time series.")
+
+    def forward(self, ages: torch.Tensor, **kwargs) -> torch.Tensor:
         """Forward pass.
 
         Args:
-            positions: Time points
+            ages: Time points for token observation
                 Tensor, shape ``[bsz, seq_len]``
 
         Returns:
                 Tensor, shape ``[bsz, seq_len, encoding_dim]``
         """
-        bsz, seq_len = positions.shape
-        positions = positions.unsqueeze(-1)                    # Unsqueeze for broadcasting through the encoding dim
+        assert ages is not None, "If using a temporal positional encoder you must supply ages at tokenized events"
+
+        bsz, seq_len = ages.shape
+        ages = ages.unsqueeze(-1)                    # Unsqueeze for broadcasting through the encoding dim
  
-        temporal_encodings = torch.zeros(bsz, seq_len, self.encoding_dim, device=positions.device)
-        temporal_encodings[:, :, 0::2] = torch.sin(positions * self.div_term.unsqueeze(0).unsqueeze(0))    # [bsz, seq_len, 1] * [1, 1, encoding_dim / 2]
-        temporal_encodings[:, :, 1::2] = torch.cos(positions * self.div_term.unsqueeze(0).unsqueeze(0))
+        temporal_encodings = torch.zeros(bsz, seq_len, self.encoding_dim, device=ages.device)
+        temporal_encodings[:, :, 0::2] = torch.sin(ages * self.div_term.unsqueeze(0).unsqueeze(0))    # [bsz, seq_len, 1] * [1, 1, encoding_dim / 2]
+        temporal_encodings[:, :, 1::2] = torch.cos(ages * self.div_term.unsqueeze(0).unsqueeze(0))
         
-        logging.debug(f"TPE: {positions.shape} maps to -> {temporal_encodings.shape} ")
+        logging.debug(f"TPE: {ages.shape} maps to -> {temporal_encodings.shape} ")
         return temporal_encodings
     
 

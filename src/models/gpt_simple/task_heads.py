@@ -37,12 +37,11 @@ class GPTModelForCausalLM(nn.Module):
     
     def forward(self, 
                 tokens: torch.tensor, 
-                positions: Optional[torch.tensor] = None,
                 ages: Optional[torch.tensor] = None,
                 attention_mask: Optional[torch.tensor] = None,
                 targets: Optional[torch.tensor] = None):
         
-        x = self.transformer(tokens=tokens, positions=positions, ages=ages, attention_mask=attention_mask)
+        x = self.transformer(tokens=tokens, ages=ages, attention_mask=attention_mask)
         
         logits = self.lm_head(x)
 
@@ -62,9 +61,8 @@ class GPTModelForCausalLM(nn.Module):
     
     def generate(self, 
                  tokens: torch.tensor,
-                 eos_token: Optional[int] = None,               # add this later
-                 positions: Optional[torch.tensor] = None,
                  ages: Optional[torch.tensor] = None,
+                 eos_token: Optional[int] = None,               # add this later
                  max_new_tokens: int = 50, 
                  default_age_interval: int = 50):
         """ Generate future samples.
@@ -79,8 +77,6 @@ class GPTModelForCausalLM(nn.Module):
         
         
         # tokens is (B, T) array of indices in the current context
-        if positions is None:
-            positions = torch.arange(tokens.shape[1]).tile((tokens.shape[0], 1)).to(tokens.device)              # [bsz, seq_len]
         if ages is None:
             default_age_interval = 28
             ages = torch.arange(tokens.shape[1]).tile((tokens.shape[0], 1)).to(tokens.device) * default_age_interval   # [bsz, seq_len]
@@ -89,26 +85,24 @@ class GPTModelForCausalLM(nn.Module):
         for _ in range(max_new_tokens):
             # crop tokens to the last block_size tokens
             tokens_window = tokens[:, -self.config.block_size:]
-            positions_window = positions[:, -self.config.block_size:] 
             ages_window = ages[:, -self.config.block_size:] 
             # get the predictions
-            logits, loss = self(tokens_window, positions=positions_window, ages=ages_window)
+            logits, loss = self(tokens_window, ages=ages_window)
             # focus only on the last time step
             logits = logits[:, -1, :] # becomes (B, C)
             # apply softmax to get probabilities
             probs = F.softmax(logits, dim=-1) # (B, C)
             # sample from the distribution
             token_next = torch.multinomial(probs, num_samples=1) # (B, 1)
-            # append sampled index to the running sequence
+            # append samples to the running sequence
             tokens = torch.cat((tokens, token_next), dim=1) # (B, T+1)
-            positions = torch.cat((positions, positions[:, [-1]]+1), dim=1) 
             ages = torch.cat((ages, ages[:, [-1]]+default_age_interval), dim=1) 
             
             # if token_next == eos_token:
             #     raise NotImplementedError
             #     break
             
-        return tokens, positions, ages
+        return tokens, ages
     
 
 # class GPTModelForCausalSurv(GPTPreTrainedModel):
