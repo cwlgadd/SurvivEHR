@@ -71,9 +71,9 @@ class GPTModelForCausalLM(nn.Module):
         """
         
         if np.any([_pos_config in self.config.pos_encoding.lower().split("-") for _pos_config in ["temporal"]]):
-            logging.warning(f"""Using positional {self.config.pos_encoding} requires ages, 
-                                but this head has no way of sampling age at next event.
-                                Using {default_age_interval} days as intervals""")
+            logging.warning(f"Using positional {self.config.pos_encoding} requires ages, " +
+                            f"but this head has no way of sampling age at next event. " +
+                            f"Using {default_age_interval} days as intervals")
         
         
         # tokens is (B, T) array of indices in the current context

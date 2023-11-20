@@ -49,3 +49,13 @@ def query_diagnosis(conditions:list, cursor):
                         conditions
                        )
     return [ppid[0] for ppid in cursor.fetchall()]
+
+# # Check what measurements are available
+# cursor.execute("SELECT DISTINCT * FROM measurement_table")
+# measurements = cursor.fetchall()
+# print(measurements)
+
+# Check what diagnoses are available
+# cursor.execute("SELECT DISTINCT * FROM diagnosis_table")
+# diagnoses = cursor.fetchall()
+# print(diagnoses)

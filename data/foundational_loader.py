@@ -36,9 +36,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
             with this tokenizer) are mapped to the UNK token. Used to reduce vocabulary size
             
         min_workers (int):
-            
-        weighted_sampler (bool):
-            NotImplemented. 
+
         load_event_stream (optional, str):
         
         save_event_stream (optional, str):
@@ -47,11 +45,11 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
     
     def __init__(self, 
                  identifiers:list,
+                 tabular:bool = True,
                  max_seq_length:int = 256,
                  batch_size:int = 512,
                  unk_freq_threshold=1e-2,
                  min_workers:int = 2,
-                 weighted_sampler:bool = False,
                  load_event_stream:Optional[str] = None,
                  save_event_stream:Optional[str] = None
                 ):
@@ -60,32 +58,37 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         super(FoundationalDataModule, self).__init__()
         
         self.batch_size = batch_size
-        self.min_workers = min_workers
+        self.min_workers = min_workers 
+        use_weighted_sampler = False     # Not implemented
+        empty_dynamic_strategy = "drop"
+        indexing_strategy = None
         
         # Get DL friendly representation, either by loading or building from scratch.
+        event_stream = EventStreamDataset()
         if load_event_stream is not None:
-            event_stream = EventStreamDataset()
             event_stream.load(load_event_stream)
         else:
-            event_stream = EventStreamDataset()
-            event_stream.fit(identifiers, empty_dynamic_strategy="drop", indexing_strategy=None)  
+            event_stream.fit(identifiers, 
+                             empty_dynamic_strategy=empty_dynamic_strategy,
+                             indexing_strategy=indexing_strategy)  
             if save_event_stream is not None:
                 event_stream.save(save_event_stream)
                 
-        # Train/test/validation split cohort
-        ##############
-        (self.train_ids, self.test_ids, self.val_ids), weight_dict = self.train_test_split(event_stream.identifiers)
+        # Train/test/validation splits on cohort
+        (train_split, test_split, val_split), weight_dict = self._train_test_val_split(event_stream)        
+
+        # Tokenizer
+        # TODO: define tokenizer based on training split before Foundational/GenerativeDataset instead of as an option inside
         
-        # Training, testing, and validation sets
-        ##############
-        splits = [event_stream.DL_frame.filter(plr.col("PRACTICE_PATIENT_ID").is_in(labels)) for labels in [self.train_ids, self.test_ids, self.val_ids]]
-        self.train_set = FoundationalDataset(splits[0], 
+        # Train/test/validation GenerativeDatasets
+        self.train_set = FoundationalDataset(train_split, 
+                                             tabular=tabular,
                                              max_seq_length=max_seq_length,
                                              freq_threshold=unk_freq_threshold)
-        self.test_set = FoundationalDataset(splits[1],
+        self.test_set = FoundationalDataset(test_split,
                                             max_seq_length=max_seq_length, 
                                             tokenizer=self.train_set.tokenizer)
-        self.val_set = FoundationalDataset(splits[2],
+        self.val_set = FoundationalDataset(val_split,
                                            max_seq_length=max_seq_length, 
                                            tokenizer=self.train_set.tokenizer)
                 
@@ -93,7 +96,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         # TODO: better way without pre-slicing all the dataset rows?
         #    Up-sample larger sequences?
         #############
-        if (weight_dict is not None) and weighted_sampler:        
+        if (weight_dict is not None) and use_weighted_sampler:        
             raise NotImplementedError
         else:        
             self.train_sampler = None
@@ -101,14 +104,15 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         
         # print(f"Tokenizer description: \n {self.train_set.tokenizer.fit_description}")
 
-            
-    def train_test_split(self, identifiers):
-        # Split frame into training, validation, and test
-        train_ids, test_ids = sk_split(identifiers, test_size=0.1)
+    def _train_test_val_split(self, event_stream):
+        # Split identifiers into training, validation, and test
+        train_ids, test_ids = sk_split(event_stream.identifiers, test_size=0.1)
         test_ids, val_ids = sk_split(test_ids, test_size=0.5)
+        # Split frame into training, validation, and test
+        splits = [event_stream.DL_frame.filter(plr.col("PRACTICE_PATIENT_ID").is_in(labels)) 
+                  for labels in [train_ids, test_ids, val_ids]]
         weight_dict = None
-
-        return (train_ids, test_ids, val_ids), weight_dict
+        return (splits[0], splits[1], splits[2]), weight_dict
     
     def decode(self, sequence:list[int]):
         return self.train_set.tokenizer.decode(sequence)
@@ -130,21 +134,18 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         
         batch_dict = {k: [d[k] for d in data if k in d] for k in allkeys}
         
-        batch_dict["attention_mask"] = [torch.ones_like(d) for d in batch_dict["input_ids"]]
+        batch_dict["attention_mask"] = [torch.ones_like(d) for d in batch_dict["in_tokens"]]
 
-#         print(batch_dict["input_ids"][0])
-#         print(batch_dict["input_positions"][0].shape)
-#         print(batch_dict["attention_mask"][0])
-#         print(f"New: \n IDs:{batch_dict['input_ids'][0]} \nMask:{batch_dict['attention_mask'][0]}")
-        
-        worker_batch = {"input_ids": pad_sequence(batch_dict["input_ids"]).T,
-                        "target_ids": pad_sequence(batch_dict["target_ids"]).T,
-                        "input_pos": pad_sequence(batch_dict["input_pos"]).T,
-                        "target_pos": pad_sequence(batch_dict["target_pos"]).T,
-                        "input_ages": pad_sequence(batch_dict["input_ages"]).T,
-                        "target_ages": pad_sequence(batch_dict["target_ages"]).T,
-                        "attention_mask": pad_sequence(batch_dict["attention_mask"]).T
-                       }
+        # TODO: re-do this so GPT models do the input/target splitting in the forward
+        worker_batch = {
+            "tokens": pad_sequence(batch_dict["in_tokens"], padding_value=0).T,
+            "ages": pad_sequence(batch_dict["in_ages"]).T,
+            "values": pad_sequence(batch_dict["in_values"], padding_value=torch.nan).T,
+            "target_tokens": pad_sequence(batch_dict["target_tokens"], padding_value=0).T,
+            "target_ages": pad_sequence(batch_dict["target_ages"]).T,
+            "target_values": pad_sequence(batch_dict["target_values"], padding_value=torch.nan).T,
+            "attention_mask": pad_sequence(batch_dict["attention_mask"]).T
+            }
         return worker_batch
     
     def train_dataloader(self):
@@ -205,6 +206,7 @@ class FoundationalDataset(Dataset):
     
     def __init__(self,
                  event_stream,
+                 tabular:bool = False,
                  max_seq_length:int = 256,
                  tokenizer:Optional[TokenizerBase] = None,
                  **kwargs
@@ -218,8 +220,12 @@ class FoundationalDataset(Dataset):
         if tokenizer is not None:
             self.tokenizer = tokenizer
         else:
-            self.tokenizer = NonTabular()
-            self.tokenizer.fit(self.event_frequency, **kwargs)
+            if tabular:
+                self.tokenizer = Tabular()
+                self.tokenizer.fit(self.event_frequency, **kwargs)
+            else:
+                self.tokenizer = NonTabular()
+                self.tokenizer.fit(self.event_frequency, **kwargs)
         
         # TODO: Pre-process tokenization
         # self.tokenize_stream()
@@ -239,49 +245,54 @@ class FoundationalDataset(Dataset):
         
         # Get row from the DL representation frame
         row_dict = self.event_stream.row(idx, named=True)
+
+        sequence_tokens = row_dict["EVENT"]                                                        # e.g. ["bmi", "DEPRESSION", "bmi"] 
+        sequence_ages = [int(_a) for _a in row_dict["AGE_AT_EVENT"]]                               #      [6661, 7569, 7866]
+        sequence_values = [float(_v) if _v is not None else np.nan for _v in row_dict["VALUE"]]    #      [23.3, np.nan, 27.7]
         
-        # Zip together events and their values. When no value (None) do not include it. 
-        #    Inside of this, split value by character
-        #    Delimeter everything with a comma
-        sequence_tokens = ",".join([f"{_e},{','.join(wrap(str(_v),1))}"  if _v is not None else str(_e) for _e, _v in zip(row_dict["EVENT"], row_dict["VALUE"])])
-        sequence_ages = ",".join([",".join([str(_a)]*(1+len(str(_v)))) if _v is not None else str(_a) for _a, _v in zip(row_dict["AGE_AT_EVENT"], row_dict["VALUE"])])
+        if not self.tokenizer.is_tabular:
+            # Merge together events and their values. When value is None, do not include it. 
+            # E.g. events = ["bmi", "DEPRESSION", "bmi"] and values = [23.3, None, 27.7] --> merge to --> "bmi", "2", "3", ".", "3", "DEPRESSION", "bmi", "2", "7", ".", "7""
+            #      ages   = [6661, 7569, 7866] --> merge to --> [6661,6661,6661,6661,6661,7569, ...]
+            sequence_tokens = [[_event] + wrap(str(_value), 1) if _value is not np.nan else [_event] for _event, _value in zip(sequence_tokens, sequence_values)]
+            sequence_tokens = sum(sequence_tokens, [])        # concat list of lists            
+            sequence_ages = [[_age] + [_age for _ in range(len(str(_value)))] if _value is not np.nan else [_age] for _age, _value in zip(sequence_ages, sequence_values)]
+            sequence_ages = sum(sequence_ages, [])            # concat list of lists
+            sequence_values = [np.nan for _ in range(len(sequence_tokens))]
+            
+        # Then encode the sequence
+        encoded_sequence = self.tokenizer.encode(sequence_tokens)
         
-        # Then, turn sequence into a list, splitting via delimeter, and encode        
-        encoded_sequence = self.tokenizer.encode(sequence_tokens.split(","))
-        sequence_pos = np.arange(len(encoded_sequence))
-        sequence_ages = [int(_a) for _a in sequence_ages.split(",")]
-        
-        # Sub-sample a maximum number of tokens
+        # Sub-sample if number of tokens exceeds requested block size
         if len(encoded_sequence) > self.max_seq_length + 1:
             start_pos = np.random.randint(low=0, high=len(encoded_sequence)-self.max_seq_length-1, size=1)[0]
-            sequence_pos = np.arange(start_pos, start_pos+self.max_seq_length+1)
             encoded_sequence = encoded_sequence[start_pos:start_pos+self.max_seq_length+1]            
             sequence_ages = sequence_ages[start_pos:start_pos+self.max_seq_length+1]
-
+            if sequence_values is not None:
+                sequence_values = sequence_values[start_pos:start_pos+self.max_seq_length+1]
+            # sequence_tokens = sequence_tokens[start_pos:start_pos+self.max_seq_length+1]
+        # print(f"{sequence_tokens} \n\t-> {encoded_sequence} \n\t-> {self.tokenizer.decode(encoded_sequence)}")
+        
         # stagger and split for input and targets
         encoded_sequence_in = encoded_sequence[:-1]
-        encoded_sequence_out = encoded_sequence[1:]
+        encoded_sequence_trg = encoded_sequence[1:]
 
-        sequence_pos_in = sequence_pos[:-1]
-        sequence_pos_out = sequence_pos[1:]
-        
         sequence_ages_in = sequence_ages[:-1]
-        sequence_ages_out = sequence_ages[1:]
-            
-        # print(len(sequence_tokens.split(",")))
-        # print(len(sequence_ages.split(",")))
-        # print(encoded_sequence)
+        sequence_ages_trg = sequence_ages[1:]
+        
+        sequence_values_in = sequence_values[:-1]
+        sequence_values_trg = sequence_values[1:]
         
         return {"identifier": row_dict["PRACTICE_PATIENT_ID"],
-                "sex": row_dict["SEX"],
-                "ethnicity": row_dict["ETHNICITY"],
-                "year_of_birth": row_dict["YEAR_OF_BIRTH"],
-                "input_ids": torch.tensor(encoded_sequence_in),
-                "input_pos": torch.tensor(sequence_pos_in),                
-                "input_ages": torch.tensor(sequence_ages_in),
-                "target_ids": torch.tensor(encoded_sequence_out),
-                "target_pos": torch.tensor(sequence_pos_out),                
-                "target_ages": torch.tensor(sequence_ages_out),
+                #"sex": row_dict["SEX"],
+                #"ethnicity": row_dict["ETHNICITY"],
+                #"year_of_birth": row_dict["YEAR_OF_BIRTH"],
+                "in_tokens": torch.tensor(encoded_sequence_in),
+                "in_ages": torch.tensor(sequence_ages_in),
+                "in_values": torch.tensor(sequence_values_in),
+                "target_tokens": torch.tensor(encoded_sequence_trg),
+                "target_ages": torch.tensor(sequence_ages_trg),
+                "target_values": torch.tensor(sequence_values_trg),
                }
     
     

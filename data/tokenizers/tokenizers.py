@@ -16,7 +16,8 @@ class NonTabular(TokenizerBase):
 
     .. footbibliography::
     """
-    
+    is_tabular = False
+
     def __init__(self):
         super().__init__()
     
@@ -47,9 +48,11 @@ class Tabular(TokenizerBase):
     Tokenizer which will not tokenize values.
     """
     
+    is_tabular = True
+    
     def __init__(self):
         super().__init__()
-    
+        
     def fit(self,
             event_counts:plr.DataFrame,
             **kwargs
