@@ -6,6 +6,7 @@ import pandas as pd
 import polars as pl
 import numpy as np
 from CPRD.data.database import queries
+import logging
 
 
 class DatasetBase:
@@ -139,7 +140,8 @@ class EventStreamDataset(DatasetBase):
         return event_stream
         
     def _build_DL_representation(self,
-                                 practice_patient_id: list
+                                 practice_patient_id: list,
+                                 exclude_pre_index_age: bool = False                                
                                 ) -> pl.LazyFrame:
         r"""
         Build the DL-friendly representation in polars given the list of `practice_patient_id`s which fit study criteria
@@ -153,20 +155,21 @@ class EventStreamDataset(DatasetBase):
         
         RETURNS:
             Polars lazy frame, of the (anonymized) form:
-            ┌──────────────────────┬─────┬─────────────┬───────────────┬───────────┬──────────────────────┬─────────────────────────┬─────────────────────┬────────────────────────┐
-            │ PRACTICE_PATIENT_ID  ┆ SEX ┆ ETHNICITY   ┆ YEAR_OF_BIRTH ┆ index cols┆ VALUE                ┆ EVENT                   ┆ AGE_AT_EVENT        ┆ EVENT_TYPE             │
-            │ ---                  ┆ --- ┆ ---         ┆ ---           ┆  ---      ┆ ---                  ┆ ---                     ┆ ---                 ┆ ---                    │
-            │ str                  ┆ str ┆ str         ┆ str           ┆int/int/int┆ list[f64]            ┆ list[str]               ┆ list[i64]           ┆ list[str]              │
-            ╞══════════════════════╪═════╪═════════════╪═══════════════╪═══┬═══┬═══╪══════════════════════╪═════════════════════════╪═════════════════════╪════════════════════════╡
-            │ <anonymous 1>        ┆ M   ┆ MISSING     ┆ yyy-mm-dd     │dd │dd │dd ┆ [null, 21.92]        ┆ ["diagnosis name", ...] ┆ [age 1, age 2]      ┆ ["multi_label_cl...", ]│
-            │ <anonymous 2>        ┆ F   ┆ WHITE       ┆ yyy-mm-dd     │dd │dd │dd ┆ [27.1, 75.0, … 91.0] ┆ ["record name", ...]    ┆ [age 1, age 2, … ]  ┆ ["univariate_reg...", ]│
-            │ …                    ┆ …                 ┆ …             ┆dd │dd │dd ┆ …                    ┆ …                       ┆ …                   ┆ …                      │
-            │ <anonymous N>        ┆ F   ┆ SOUTH_ASIAN ┆ yyy-mm-dd     │dd │dd │dd ┆ [70.0, 0.1, … 80.0]  ┆ ["record name", ...]    ┆ [age 1, age 2, … ]  ┆ ["univariate_reg...", ]│
-            └──────────────────────┴─────┴─────────────┴───────────────┴───┴───┴───┴──────────────────────┴─────────────────────────┴─────────────────────┴────────────────────────┘
+            ┌──────────────────────┬─────┬─────────────┬───────────────┬──────────────────────┬─────────────────────────┬─────────────────────┬────────────────────────┐
+            │ PRACTICE_PATIENT_ID  ┆ SEX ┆ ETHNICITY   ┆ YEAR_OF_BIRTH ┆ VALUE                ┆ EVENT                   ┆ AGE_AT_EVENT        ┆ EVENT_TYPE             │
+            │ ---                  ┆ --- ┆ ---         ┆ ---           ┆ ---                  ┆ ---                     ┆ ---                 ┆ ---                    │
+            │ str                  ┆ str ┆ str         ┆ str           ┆ list[f64]            ┆ list[str]               ┆ list[i64]           ┆ list[str]              │
+            ╞══════════════════════╪═════╪═════════════╪═══════════════╪══════════════════════╪═════════════════════════╪═════════════════════╪════════════════════════╡
+            │ <anonymous 1>        ┆ M   ┆ MISSING     ┆ yyy-mm-dd     ┆ [null, 21.92]        ┆ ["diagnosis name", ...] ┆ [age 1, age 2]      ┆ ["multi_label_cl...", ]│
+            │ <anonymous 2>        ┆ F   ┆ WHITE       ┆ yyy-mm-dd     ┆ [27.1, 75.0, … 91.0] ┆ ["record name", ...]    ┆ [age 1, age 2, … ]  ┆ ["univariate_reg...", ]│
+            │ …                    ┆ …                 ┆ …             ┆ …                    ┆ …                       ┆ …                   ┆ …                      │
+            │ <anonymous N>        ┆ F   ┆ SOUTH_ASIAN ┆ yyy-mm-dd     ┆ [70.0, 0.1, … 80.0]  ┆ ["record name", ...]    ┆ [age 1, age 2, … ]  ┆ ["univariate_reg...", ]│
+            └──────────────────────┴─────┴─────────────┴───────────────┴──────────────────────┴─────────────────────────┴─────────────────────┴────────────────────────┘
             with index cols: (age at index, age at start, age at end)
 
         """
-        
+        logging.info("Building DL-friendly representation")            
+
         static = self._load_static(practice_patient_id)
         dynamic = self._load_dynamic(practice_patient_id)
         
@@ -179,7 +182,7 @@ class EventStreamDataset(DatasetBase):
         
         self._DL_frame = combined_frame
     
-    def _remove_empty(self, drop:bool = True):
+    def _filter_empty(self, method:Optional[str] = None):
         """
         Handle strategies for subjects with no temporal data.
         
@@ -187,25 +190,32 @@ class EventStreamDataset(DatasetBase):
             drop (bool): 
                 True: remove patients which do not have any recorded. False: replace with empty list
         """        
-        assert self._DL_frame is not None
+        assert self._DL_frame is not None, "DL frame must be build before it can be filtered"
         
         # Catch cases with no dynamic values,
-        if drop:
-            # drop
-            self._DL_frame = self._DL_frame.drop_nulls()
-        else:
-            # replace with empty list
+        if method == None:
+            logging.info("Keeping samples with no dynamic events. Replacing empty entries with with empty lists")
             for col in ["VALUE", "EVENT", "AGE_AT_EVENT", "EVENT_TYPE"]:
                 self._DL_frame = self._DL_frame.with_columns(pl.col(col).fill_null(list()))
             raise NotImplementedError #TODO: check this isn't deprecated
             
-    def _exclude_events_before_index_age(self):
+        elif method.lower() == "drop":
+            logging.info("Dropping samples with no dynamic events")
+            self._DL_frame = self._DL_frame.drop_nulls()
+            
+        else:
+            raise NotImplementedError
+            
+    def _filter_index_start_end(self, method:Optional[str] = None):
         """
-        Handle starting point for temporal sequences
+        Handle any filtering based on `index_age`, `start_age`, or `end_age`.
         """
-        assert self._DL_frame is not None
-
-        raise NotImplementedError
+        assert self._DL_frame is not None, "DL frame must be build before it can be filtered"
+        
+        if method == None:
+            logging.debug("Not filtering based on index, start, or end date")
+        else: 
+            raise NotImplementedError
     
     def fit(self,
             practice_patient_id: list,
@@ -225,21 +235,19 @@ class EventStreamDataset(DatasetBase):
             indexing_strategy (str): 
                 TODO: Strategy used to dictate at what cut-off do we begin including events. E.g. Remove entries in pre-index CPRD history
         """
-            
-        print("Building DL-friendly representation")            
+        # Load information from SQL tables into polars frames for each table. Then combine and align frames
         self._build_DL_representation(practice_patient_id=practice_patient_id)
+
+        # Filter patients with no temporal events     
+        self._filter_empty(method=empty_dynamic_strategy)
         
-        if empty_dynamic_strategy is not None:
-            match empty_dynamic_strategy:
-                case "drop":
-                    print("Dropping samples with no temporal events")
-                    self._remove_empty(drop=True)
-                case _:
-                    self._remove_empty(drop=False)
-                    
-        if indexing_strategy is not None:            
-            print("Removing entries before index date")
-            self._exclude_events_before_index_age()
+        # Filter strategies based on their index, start, and end dates
+        self._filter_index_start_end(method=indexing_strategy)
+        
+        # Remove meta columns from final dataframe (columns which were used for filtering only)
+        self._DL_frame = (
+            self._DL_frame.drop(["INDEX_AGE", "START_AGE", "END_AGE"])
+        )
     
         
 if __name__ == "__main__":

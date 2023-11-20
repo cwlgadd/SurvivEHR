@@ -21,7 +21,8 @@ class PositionalEncoding(torch.nn.Module):
         max_length: The maximum sequence length, for precomputing positional encoding.
     """
 
-    def __init__(self, encoding_dim: int,
+    def __init__(self, 
+                 encoding_dim: int,
                  n_scalar: float = 10000.0,
                  max_length: int = 5000, 
                 ):

@@ -20,7 +20,28 @@ import sqlite3
 
 
 class FoundationalDataModule(pl.LightningDataModule, ABC):
-    r"""
+    """
+    PyTorch-Lightning datamodule for foundational models
+    
+    ARGS:
+        practice_patient_id (list[str])
+            List of practice patient identifiers which satisfy study criteria.
+            
+    KWARGS:
+        batch_size (int): 
+        
+        unk_freq_threshold (float). 
+            Value between 0 and 1, controlling at what level of frequency rare tokens (equiv. conditions/measurements 
+            with this tokenizer) are mapped to the UNK token. Used to reduce vocabulary size
+            
+        min_workers (int):
+            
+        weighted_sampler (bool):
+            NotImplemented. 
+        load_event_stream (optional, str):
+        
+        save_event_stream (optional, str):
+        
     """
     
     def __init__(self, 
@@ -33,29 +54,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
                  load_event_stream:Optional[str] = None,
                  save_event_stream:Optional[str] = None
                 ):
-        """
-        PyTorch-Lightning datamodule for foundational models
-        
-        ARGS:
-            practice_patient_id (list[str])
-                List of practice patient identifiers which satisfy study criteria.
-                
-        KWARGS:
-            batch_size (int): 
-            
-            unk_freq_threshold (float). 
-                Value between 0 and 1, controlling at what level of frequency rare tokens (equiv. conditions/measurements 
-                with this tokenizer) are mapped to the UNK token. Used to reduce vocabulary size
-                
-            min_workers (int):
-                
-            weighted_sampler (bool):
-                NotImplemented. 
-            load_event_stream (optional, str):
-            
-            save_event_stream (optional, str):
-            
-        """
+       
         
         super(FoundationalDataModule, self).__init__()
         

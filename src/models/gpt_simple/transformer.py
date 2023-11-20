@@ -78,6 +78,7 @@ class GPTModel(nn.Module, ModuleUtilsMixin):
                 self.wpe = TemporalPositionalEncoding(encoding_dim=self.embed_dim)
             case _:
                 raise NotImplementedError
+                
         self.wte = nn.Embedding(vocab_size, self.embed_dim)
         self.drop = torch.nn.Dropout(p=config.dropout) if config.dropout is not None else None      # embed dropout
         self.blocks = nn.ModuleList([Block(config) for _ in range(config.n_layer)])

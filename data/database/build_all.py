@@ -1,6 +1,6 @@
-from build_static_db import build_static_table
-from build_diagnosis_db import build_diagnosis_table
-from build_measurements_and_tests_db import build_measurements_table
+from CPRD.data.database.build_static_db import build_static_table
+from CPRD.data.database.build_diagnosis_db import build_diagnosis_table
+from CPRD.data.database.build_measurements_and_tests_db import build_measurements_table
 import sqlite3
 
 def build_tables(connector, path_to_static, path_to_diagnoses, path_to_measurements):
