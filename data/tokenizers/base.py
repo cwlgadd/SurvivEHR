@@ -27,24 +27,7 @@ class TokenizerBase():
            ):
         r"""
         """
-        # Given some threshold, map low frequency tokens to unk token
-        self._event_counts = self._map_to_unk(event_counts, **kwargs)
-        
-        # Tokens for each event, excluding numeric related tokens
-        event_tokens = self._event_counts.select('EVENT').to_series().to_list()
-        
-        # Combine with special tokens (padding, unknown=low frequency masked, and numeric digits)
-        all_tokens = ["PAD", "UNK"] + [str(i) for i in range(10)] + ["."] + event_tokens[1:]
-        self._vocab_size = len(all_tokens)
-                
-        # Create a mapping from strings to integers, and vice versa
-        self._stoi = { ch:i for i,ch in enumerate(all_tokens) }
-        self._itos = { i:ch for i,ch in enumerate(all_tokens) }
-        
-        # test = ["UNK", "SJOGRENSSYNDROME", "diastolic_blood_pressure", "9", "8", ".", "2"]
-        # z = self.encode(test)
-        # print(z)
-        # print(self.decode(z))
+        raise NotImplementedError
         
     def _map_to_unk(self,
                 event_counts:plr.DataFrame,

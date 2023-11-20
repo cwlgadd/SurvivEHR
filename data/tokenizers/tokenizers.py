@@ -1,0 +1,75 @@
+import sqlite3
+import polars as plr
+from CPRD.data.tokenizers.base import TokenizerBase
+
+
+class NonTabular(TokenizerBase):
+    r"""
+    Tokenizer based on :footcite:t:`gruver2023large` (`link`_).
+
+    The simplest, and most naive tokenizer which ignores tabular structure of the data. 
+    Events and consequent measurements are treated as subsequent tokens. For example,
+    the event and measurement pair ["bmi", 23.3] is tokenised as a sequence
+    ["bmi", "2", "3", ".", "3"].
+
+    .. _link: https://arxiv.org/abs/2310.07820
+
+    .. footbibliography::
+    """
+    
+    def __init__(self):
+        super().__init__()
+    
+    def fit(self,
+            event_counts:plr.DataFrame,
+            **kwargs
+           ):
+        """
+        Given a polars dataframe with a token, it's count, and frequency on each row, define:
+        1) the token to integer map and 2) the integer to token map.
+        """
+        # Given some threshold, map low frequency tokens to unk token
+        self._event_counts = self._map_to_unk(event_counts, **kwargs)
+        
+        # Tokens for each event, excluding numeric related tokens
+        event_tokens = self._event_counts.select('EVENT').to_series().to_list()
+        
+        # Combine with special tokens (padding; unknown=low frequency, masked, or unobsered in training set; and numeric digits)
+        all_tokens = ["PAD", "UNK"] + [str(i) for i in range(10)] + ["."] + event_tokens[1:]
+        self._vocab_size = len(all_tokens)
+                
+        # Create a mapping from strings to integers, and vice versa
+        self._stoi = { ch:i for i,ch in enumerate(all_tokens) }
+        self._itos = { i:ch for i,ch in enumerate(all_tokens) }
+
+class Tabular(TokenizerBase):
+    r"""
+    Tokenizer which will not tokenize values.
+    """
+    
+    def __init__(self):
+        super().__init__()
+    
+    def fit(self,
+            event_counts:plr.DataFrame,
+            **kwargs
+           ):
+        """
+        Given a polars dataframe with a token, it's count, and frequency on each row, define:
+        1) the token to integer map and 2) the integer to token map.
+        """
+        # Given some threshold, map low frequency tokens to unk token
+        self._event_counts = self._map_to_unk(event_counts, **kwargs)
+        
+        # Tokens for each event, excluding numeric related tokens
+        event_tokens = self._event_counts.select('EVENT').to_series().to_list()
+        
+        # Combine with special tokens (padding; unknown=low frequency, masked, or unobsered in training set)
+        all_tokens = ["PAD", "UNK"] + event_tokens[1:]
+        self._vocab_size = len(all_tokens)
+                
+        # Create a mapping from strings to integers, and vice versa
+        self._stoi = { ch:i for i,ch in enumerate(all_tokens) }
+        self._itos = { i:ch for i,ch in enumerate(all_tokens) }
+
+

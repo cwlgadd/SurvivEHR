@@ -11,7 +11,8 @@ from typing import Optional
 from collections import defaultdict
 import os
 from CPRD.data.dataset.dataset_polars import EventStreamDataset
-from CPRD.data.tokenizers.base import TokenizerBase as Tokenizer
+from CPRD.data.tokenizers.base import TokenizerBase
+from CPRD.data.tokenizers.tokenizers import NonTabular, Tabular
 import random
 
 # Testing modules
@@ -105,15 +106,6 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         # Split frame into training, validation, and test
         train_ids, test_ids = sk_split(identifiers, test_size=0.1)
         test_ids, val_ids = sk_split(test_ids, test_size=0.5)
-
-        # Random sampler weights
-        # TODO: Add weighted sampler if we later choose to aggregate samples?
-        # weight_dict = {}
-        # ntrain_unique_samples = len(train_df.index.unique())
-        # for cancer_id, group in train_df.groupby('cancer_type'):
-        #     unique_samples = len(group.index.unique()) / ntrain_unique_samples
-        #     if unique_samples > 0:
-        #         weight_dict[cancer_id] = 1 / unique_samples
         weight_dict = None
 
         return (train_ids, test_ids, val_ids), weight_dict
@@ -214,7 +206,7 @@ class FoundationalDataset(Dataset):
     def __init__(self,
                  event_stream,
                  max_seq_length:int = 256,
-                 tokenizer:Optional[Tokenizer] = None,
+                 tokenizer:Optional[TokenizerBase] = None,
                  **kwargs
                 ):
         super().__init__()
@@ -226,7 +218,7 @@ class FoundationalDataset(Dataset):
         if tokenizer is not None:
             self.tokenizer = tokenizer
         else:
-            self.tokenizer = Tokenizer()
+            self.tokenizer = NonTabular()
             self.tokenizer.fit(self.event_frequency, **kwargs)
         
         # TODO: Pre-process tokenization
