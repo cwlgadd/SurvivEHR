@@ -17,6 +17,30 @@ class TokenizerBase():
     def fit_description(self):
         assert self._event_counts is not None
         return str(self._event_counts)
+
+    @staticmethod
+    def event_frequency(event_stream) -> plr.DataFrame:
+        r"""
+        Get polars dataframe with three columns: event, count and relative frequencies
+        
+        Returns 
+        ┌──────────────────────────┬─────────┬──────────┐
+        │ EVENT                    ┆ counts  ┆ freq     │
+        │ ---                      ┆ ---     ┆ ---      │
+        │ str                      ┆ u32     ┆ f64      │
+        ╞══════════════════════════╪═════════╪══════════╡
+        │ <event name 1>           ┆ n1      ┆ p1       │
+        │ <event name 2>           ┆ n2      ┆ p2       │
+        │ …                        ┆ …       ┆ …        │
+        └──────────────────────────┴─────────┴──────────┘
+        """
+        event_freq = (event_stream
+                      .select(plr.col("EVENT").explode())
+                      .to_series(index=0)
+                      .value_counts(sort=True)
+                     )                        
+        event_freq = event_freq.with_columns((plr.col('counts') / event_freq.select(plr.sum("counts"))).alias('freq'))
+        return event_freq
     
     def __init__(self):
         self._event_counts = None

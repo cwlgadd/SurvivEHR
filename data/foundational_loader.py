@@ -14,6 +14,7 @@ from CPRD.data.dataset.dataset_polars import EventStreamDataset
 from CPRD.data.tokenizers.base import TokenizerBase
 from CPRD.data.tokenizers.tokenizers import NonTabular, Tabular
 import random
+import logging
 
 # Testing modules
 from CPRD.data.database import queries
@@ -45,7 +46,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
     
     def __init__(self, 
                  identifiers:list,
-                 tabular:bool = True,
+                 tokenizer:str = "tabular",
                  max_seq_length:int = 256,
                  batch_size:int = 512,
                  unk_freq_threshold=1e-2,
@@ -77,20 +78,23 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         # Train/test/validation splits on cohort
         (train_split, test_split, val_split), weight_dict = self._train_test_val_split(event_stream)        
 
-        # Tokenizer
-        # TODO: define tokenizer based on training split before Foundational/GenerativeDataset instead of as an option inside
+        # Build tokenizer based on vocabulary from training set. Vocabularly begins with UNK (unknown) token, and is then ordered by token frequency
+        match tokenizer:
+            case "tabular":
+                logging.info("Using tabular tokenizer")
+                self.tokenizer = Tabular()
+            case _:
+                logging.info("Using non-tabular tokenizer")
+                self.tokenizer = NonTabular()
+        self.tokenizer.fit(train_split, freq_threshold=unk_freq_threshold)
+        logging.debug(self.tokenizer._stoi)
+        logging.debug(self.tokenizer._itos)
         
         # Train/test/validation GenerativeDatasets
-        self.train_set = FoundationalDataset(train_split, 
-                                             tabular=tabular,
-                                             max_seq_length=max_seq_length,
-                                             freq_threshold=unk_freq_threshold)
-        self.test_set = FoundationalDataset(test_split,
-                                            max_seq_length=max_seq_length, 
-                                            tokenizer=self.train_set.tokenizer)
-        self.val_set = FoundationalDataset(val_split,
-                                           max_seq_length=max_seq_length, 
-                                           tokenizer=self.train_set.tokenizer)
+        [self.train_set, self.test_set, self.val_set] = [FoundationalDataset(split, 
+                                                                             max_seq_length=max_seq_length,
+                                                                             tokenizer=self.tokenizer)
+                                                         for split in [train_split, test_split, val_split]]
                 
         # TODO Weighted random sampler for training set. Naive approach to account for different event sequence lengths.
         # TODO: better way without pre-slicing all the dataset rows?
@@ -179,59 +183,21 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
 class FoundationalDataset(Dataset):
     r"""
     """
-    
-    @property
-    def event_frequency(self) -> plr.DataFrame:
-        r"""
-        Get polars dataframe with three columns: event, count and relative frequencies
-        
-        Returns 
-        ┌──────────────────────────┬─────────┬──────────┐
-        │ EVENT                    ┆ counts  ┆ freq     │
-        │ ---                      ┆ ---     ┆ ---      │
-        │ str                      ┆ u32     ┆ f64      │
-        ╞══════════════════════════╪═════════╪══════════╡
-        │ <event name 1>           ┆ n1      ┆ p1       │
-        │ <event name 2>           ┆ n2      ┆ p2       │
-        │ …                        ┆ …       ┆ …        │
-        └──────────────────────────┴─────────┴──────────┘
-        """
-        event_freq = (self.event_stream
-                      .select(plr.col("EVENT").explode())
-                      .to_series(index=0)
-                      .value_counts(sort=True)
-                     )                        
-        event_freq = event_freq.with_columns((plr.col('counts') / event_freq.select(plr.sum("counts"))).alias('freq'))
-        return event_freq
-    
     def __init__(self,
                  event_stream,
-                 tabular:bool = False,
+                 tokenizer:TokenizerBase,
                  max_seq_length:int = 256,
-                 tokenizer:Optional[TokenizerBase] = None,
                  **kwargs
                 ):
         super().__init__()
         
         self.event_stream = event_stream    
         self.max_seq_length = max_seq_length
-        
-        # Build vocabulary from training set. Vocabularly begins with UNK (unknown) token, and is then ordered by event frequency
-        if tokenizer is not None:
-            self.tokenizer = tokenizer
-        else:
-            if tabular:
-                self.tokenizer = Tabular()
-                self.tokenizer.fit(self.event_frequency, **kwargs)
-            else:
-                self.tokenizer = NonTabular()
-                self.tokenizer.fit(self.event_frequency, **kwargs)
-        
-        # TODO: Pre-process tokenization
-        # self.tokenize_stream()
+        self.tokenizer = tokenizer
+        # self.tokenize_stream()         # TODO: Pre-process tokenization
         
     def __len__(self):
-        # Number of patients after potentially removing some
+        # Number of samples in dataset
         return self.event_stream.select(plr.count())["count"][0]
     
     def __getitem__(self, idx):

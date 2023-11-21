@@ -22,15 +22,18 @@ class NonTabular(TokenizerBase):
         super().__init__()
     
     def fit(self,
-            event_counts:plr.DataFrame,
-            **kwargs
+            event_stream:plr.DataFrame,
+            freq_threshold:float = 0.00001
            ):
         """
         Given a polars dataframe with a token, it's count, and frequency on each row, define:
         1) the token to integer map and 2) the integer to token map.
         """
+        # 
+        event_counts = self.event_frequency(event_stream)
+        
         # Given some threshold, map low frequency tokens to unk token
-        self._event_counts = self._map_to_unk(event_counts, **kwargs)
+        self._event_counts = self._map_to_unk(event_counts, freq_threshold=freq_threshold)
         
         # Tokens for each event, excluding numeric related tokens
         event_tokens = self._event_counts.select('EVENT').to_series().to_list()
@@ -54,15 +57,18 @@ class Tabular(TokenizerBase):
         super().__init__()
         
     def fit(self,
-            event_counts:plr.DataFrame,
-            **kwargs
+            event_stream:plr.DataFrame,
+            freq_threshold:float = 0.00001
            ):
         """
         Given a polars dataframe with a token, it's count, and frequency on each row, define:
         1) the token to integer map and 2) the integer to token map.
         """
+        # 
+        event_counts = self.event_frequency(event_stream)
+        
         # Given some threshold, map low frequency tokens to unk token
-        self._event_counts = self._map_to_unk(event_counts, **kwargs)
+        self._event_counts = self._map_to_unk(event_counts, freq_threshold=freq_threshold)
         
         # Tokens for each event, excluding numeric related tokens
         event_tokens = self._event_counts.select('EVENT').to_series().to_list()
