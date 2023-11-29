@@ -30,7 +30,7 @@ class MultiHeadedSelfAttention(nn.Module):
         # However, modules supported on bear currently doesn't allow so I'm not supporting yet.
         self.flash = hasattr(torch.nn.functional, 'scaled_dot_product_attention')
         if self.flash:
-            logging.info("TODO: Implement flash attention, but only supported for PyTorch >= 2.0")
+            logging.warning("TODO: Flash attention is available on this system but not implemented.")
         
         bias = torch.tril(torch.ones((max_positions, max_positions), dtype=bool)).view(1, 1, max_positions, max_positions)
         # local causal self attention is a sliding window where each token can only attend to the previous
@@ -38,21 +38,27 @@ class MultiHeadedSelfAttention(nn.Module):
         # all other tokens are masked except the previous window_size tokens.
         if attention_type == "local":
             bias = torch.bitwise_xor(bias, torch.tril(bias, -window_size))
-        elif  attention_type == "global":
+        elif attention_type == "global":
+            # Just calculate attention over the full block
             pass
+        elif attention_type == "sparse":
+            # TODO: add sparse attention. This will be the last record of each token,
+            #       and longer ranges with specified tokens (e.g. diagnoses)
+            raise NotImplementedError
         else:
             raise NotImplementedError
         
         self.register_buffer("bias", bias, persistent=False)
-        # self.register_buffer("masked_bias", torch.tensor(-1e9), persistent=False)   # idk what this does in the hugging face 
+        # idk what this does in the hugging face 
+        # self.register_buffer("masked_bias", torch.tensor(-1e9), persistent=False)   
         
         self.attn_dropout = nn.Dropout(float(dropout))
         self.resid_dropout = nn.Dropout(float(dropout))
         
         self.head_dim = self.embed_dim // self.num_heads
         if self.head_dim * self.num_heads != self.embed_dim:
-            raise ValueError(f"""embed_dim must be divisible by num_heads (got `embed_dim`: {self.embed_dim} 
-                                 and `num_heads`: {self.num_heads}).""")
+            raise ValueError(f"embed_dim must be divisible by num_heads (got `embed_dim`: {self.embed_dim} " +
+                             f"and `num_heads`: {self.num_heads}).")
 
         self.k_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=False)
         self.v_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=False)

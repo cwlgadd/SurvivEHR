@@ -52,7 +52,9 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
                  unk_freq_threshold=1e-2,
                  min_workers:int = 2,
                  load_event_stream:Optional[str] = None,
-                 save_event_stream:Optional[str] = None
+                 save_event_stream:Optional[str] = None,
+                 include_diagnoses: bool = True,
+                 include_measurements: bool = True
                 ):
        
         
@@ -64,28 +66,34 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         empty_dynamic_strategy = "drop"
         indexing_strategy = None
         
-        # Get DL friendly representation, either by loading or building from scratch.
+        # Get the DL friendly representation, either by loading or building from scratch.
         event_stream = EventStreamDataset()
         if load_event_stream is not None:
             event_stream.load(load_event_stream)
         else:
             event_stream.fit(identifiers, 
                              empty_dynamic_strategy=empty_dynamic_strategy,
-                             indexing_strategy=indexing_strategy)  
+                             indexing_strategy=indexing_strategy,
+                             include_diagnoses=include_diagnoses,
+                             include_measurements=include_measurements)
             if save_event_stream is not None:
                 event_stream.save(save_event_stream)
                 
         # Train/test/validation splits on cohort
         (train_split, test_split, val_split), weight_dict = self._train_test_val_split(event_stream)        
 
-        # Build tokenizer based on vocabulary from training set. Vocabularly begins with UNK (unknown) token, and is then ordered by token frequency
+        # Create tokenizer
         match tokenizer:
             case "tabular":
                 logging.info("Using tabular tokenizer")
                 self.tokenizer = Tabular()
-            case _:
+            case "non-tabular":
                 logging.info("Using non-tabular tokenizer")
                 self.tokenizer = NonTabular()
+            case _:
+                logging.warning(f"Tokenizer {tokenizer} doesn't exist")
+        # and build based on vocabulary from training set. 
+        #   Vocabularly begins with the PAD (padding) token, then the UNK (unknown) token, and is then ordered by token frequency
         self.tokenizer.fit(train_split, freq_threshold=unk_freq_threshold)
         logging.debug(self.tokenizer._stoi)
         logging.debug(self.tokenizer._itos)
@@ -138,16 +146,15 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         
         batch_dict = {k: [d[k] for d in data if k in d] for k in allkeys}
         
-        batch_dict["attention_mask"] = [torch.ones_like(d) for d in batch_dict["in_tokens"]]
-
-        # TODO: re-do this so GPT models do the input/target splitting in the forward
+        batch_dict["attention_mask"] = [torch.ones_like(d) for d in batch_dict["tokens"]]
+        
         worker_batch = {
-            "tokens": pad_sequence(batch_dict["in_tokens"], padding_value=0).T,
-            "ages": pad_sequence(batch_dict["in_ages"]).T,
-            "values": pad_sequence(batch_dict["in_values"], padding_value=torch.nan).T,
-            "target_tokens": pad_sequence(batch_dict["target_tokens"], padding_value=0).T,
-            "target_ages": pad_sequence(batch_dict["target_ages"]).T,
-            "target_values": pad_sequence(batch_dict["target_values"], padding_value=torch.nan).T,
+            "tokens": pad_sequence(batch_dict["tokens"], padding_value=0).T,
+            "ages": pad_sequence(batch_dict["ages"]).T,
+            "values": pad_sequence(batch_dict["values"], padding_value=torch.nan).T,
+            # "target_tokens": pad_sequence(batch_dict["target_tokens"], padding_value=0).T,
+            # "target_ages": pad_sequence(batch_dict["target_ages"]).T,
+            # "target_values": pad_sequence(batch_dict["target_values"], padding_value=torch.nan).T,
             "attention_mask": pad_sequence(batch_dict["attention_mask"]).T
             }
         return worker_batch
@@ -227,38 +234,29 @@ class FoundationalDataset(Dataset):
             sequence_values = [np.nan for _ in range(len(sequence_tokens))]
             
         # Then encode the sequence
-        encoded_sequence = self.tokenizer.encode(sequence_tokens)
+        encoded_tokens = self.tokenizer.encode(sequence_tokens)
         
         # Sub-sample if number of tokens exceeds requested block size
-        if len(encoded_sequence) > self.max_seq_length + 1:
-            start_pos = np.random.randint(low=0, high=len(encoded_sequence)-self.max_seq_length-1, size=1)[0]
-            encoded_sequence = encoded_sequence[start_pos:start_pos+self.max_seq_length+1]            
-            sequence_ages = sequence_ages[start_pos:start_pos+self.max_seq_length+1]
-            if sequence_values is not None:
-                sequence_values = sequence_values[start_pos:start_pos+self.max_seq_length+1]
-            # sequence_tokens = sequence_tokens[start_pos:start_pos+self.max_seq_length+1]
-        # print(f"{sequence_tokens} \n\t-> {encoded_sequence} \n\t-> {self.tokenizer.decode(encoded_sequence)}")
+        if len(encoded_tokens) > self.max_seq_length:
+            start_pos = np.random.randint(low=0, high=len(encoded_tokens)-self.max_seq_length, size=1)[0]
+            encoded_tokens = encoded_tokens[start_pos:start_pos+self.max_seq_length]            
+            sequence_ages = sequence_ages[start_pos:start_pos+self.max_seq_length]
+            sequence_values = sequence_values[start_pos:start_pos+self.max_seq_length]
+            # sequence_tokens = sequence_tokens[start_pos:start_pos+self.max_seq_length]
+        # print(f"{sequence_tokens} \n\t-> {encoded_tokens} \n\t-> {self.tokenizer.decode(encoded_tokens)}")
         
         # stagger and split for input and targets
-        encoded_sequence_in = encoded_sequence[:-1]
-        encoded_sequence_trg = encoded_sequence[1:]
+        encoded_tokens = torch.tensor(encoded_tokens)    # [:-1]
+        sequence_ages = torch.tensor(sequence_ages)
+        sequence_values = torch.tensor(sequence_values)
 
-        sequence_ages_in = sequence_ages[:-1]
-        sequence_ages_trg = sequence_ages[1:]
-        
-        sequence_values_in = sequence_values[:-1]
-        sequence_values_trg = sequence_values[1:]
-        
         return {"identifier": row_dict["PRACTICE_PATIENT_ID"],
                 #"sex": row_dict["SEX"],
                 #"ethnicity": row_dict["ETHNICITY"],
                 #"year_of_birth": row_dict["YEAR_OF_BIRTH"],
-                "in_tokens": torch.tensor(encoded_sequence_in),
-                "in_ages": torch.tensor(sequence_ages_in),
-                "in_values": torch.tensor(sequence_values_in),
-                "target_tokens": torch.tensor(encoded_sequence_trg),
-                "target_ages": torch.tensor(sequence_ages_trg),
-                "target_values": torch.tensor(sequence_values_trg),
+                "tokens": encoded_tokens,
+                "ages": sequence_ages,
+                "values": sequence_values,
                }
     
     

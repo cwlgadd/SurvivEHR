@@ -82,7 +82,9 @@ class EventStreamDataset(DatasetBase):
         return static
 
     
-    def _load_dynamic(self, practice_patient_ids
+    def _load_dynamic(self, practice_patient_ids,
+                      include_measurements: bool = True,
+                      include_diagnoses: bool = True
                      ) -> pl.LazyFrame:
         r"""    
         Load and merge dynamic tables from SQL
@@ -92,7 +94,10 @@ class EventStreamDataset(DatasetBase):
                 List of practice patient identifiers which satisfy study criteria.
             
         KWARGS:
-        
+            include_measurements: bool = True,
+                Flag of whether to include measurements and tests in polars dataframe
+            include_diagnoses: bool = True
+                Flag of whether to include diagnoses in polars dataframe
         
         RETURNS:
             Polars lazy frame, of the (anonymized) form:
@@ -109,16 +114,23 @@ class EventStreamDataset(DatasetBase):
         """
         # TODO: can these reads be replaced with a lazy read, or be streamable (i.e. don't load entire tables before converting to lazyframe)
         # TODO: filtering patients in SQL, before polars, would be better.
+        if include_measurements:
+            query = "SELECT * FROM measurement_table"
+            measurement_lazy_frame = pl.read_database(query=query, connection_uri=self.connection_token).lazy()
 
-        query = "SELECT * FROM measurement_table"
-        measurement_lazy_frame = pl.read_database(query=query, connection_uri=self.connection_token).lazy()
-
-        query = "SELECT * FROM diagnosis_table"
-        diagnosis_lazy_frame = pl.read_database(query=query, connection_uri=self.connection_token).lazy()
+        if include_diagnoses:
+            query = "SELECT * FROM diagnosis_table"
+            diagnosis_lazy_frame = pl.read_database(query=query, connection_uri=self.connection_token).lazy()
 
         # TODO: Any filtering of what subset of events (both diagnosis and records) we are interesting in could be done here, and/or in a downstream tokenizer
-        
-        combined_frame = pl.concat([measurement_lazy_frame, diagnosis_lazy_frame], how="diagonal")
+        if include_measurements and include_diagnoses:
+            combined_frame = pl.concat([measurement_lazy_frame, diagnosis_lazy_frame], how="diagonal")
+        elif include_measurements:
+            combined_frame = measurement_lazy_frame
+        elif include_diagnoses:
+            combined_frame = diagnosis_lazy_frame
+        else:
+            raise NotImplementedErrror
         
         event_stream = (
             combined_frame
@@ -141,7 +153,9 @@ class EventStreamDataset(DatasetBase):
         
     def _build_DL_representation(self,
                                  practice_patient_id: list,
-                                 exclude_pre_index_age: bool = False                                
+                                 exclude_pre_index_age: bool = False,
+                                 include_measurements: bool = True,
+                                 include_diagnoses: bool = True
                                 ) -> pl.LazyFrame:
         r"""
         Build the DL-friendly representation in polars given the list of `practice_patient_id`s which fit study criteria
@@ -170,8 +184,11 @@ class EventStreamDataset(DatasetBase):
         """
         logging.info("Building DL-friendly representation")            
 
+        if exclude_pre_index_age:
+            raise NotImplementedError
+        
         static = self._load_static(practice_patient_id)
-        dynamic = self._load_dynamic(practice_patient_id)
+        dynamic = self._load_dynamic(practice_patient_id, include_measurements=include_measurements, include_diagnoses=include_diagnoses)
         
         static, dynamic = pl.align_frames(static, dynamic, on="PRACTICE_PATIENT_ID")
         
@@ -220,7 +237,9 @@ class EventStreamDataset(DatasetBase):
     def fit(self,
             practice_patient_id: list,
             empty_dynamic_strategy:Optional[str] = None,
-            indexing_strategy:Optional[str] = None
+            indexing_strategy:Optional[str] = None,
+            include_measurements: bool = True,
+            include_diagnoses: bool = True
            ) -> pl.LazyFrame:
         r"""
         Create Deep-Learning friendly dataset
@@ -236,7 +255,9 @@ class EventStreamDataset(DatasetBase):
                 TODO: Strategy used to dictate at what cut-off do we begin including events. E.g. Remove entries in pre-index CPRD history
         """
         # Load information from SQL tables into polars frames for each table. Then combine and align frames
-        self._build_DL_representation(practice_patient_id=practice_patient_id)
+        self._build_DL_representation(practice_patient_id=practice_patient_id,
+                                      include_measurements=include_measurements,
+                                      include_diagnoses=include_diagnoses)
 
         # Filter patients with no temporal events     
         self._filter_empty(method=empty_dynamic_strategy)
