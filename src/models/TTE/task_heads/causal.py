@@ -2,13 +2,13 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 import numpy as np
-from CPRD.src.models.TPP.base import TPPTransformer
-from CPRD.src.models.TPP.tte_layers import GeometricTTELayer, ExponentialTTELayer
+from CPRD.src.models.TTE.base import TTETransformer
+from CPRD.src.models.TTE.tte_layers import GeometricTTELayer, ExponentialTTELayer
 
 from typing import Optional
 import logging
 
-class TPPTransformerForCausalSequenceModelling(nn.Module):
+class TTETransformerForCausalSequenceModelling(nn.Module):
     r"""    
     """
     
@@ -18,7 +18,7 @@ class TPPTransformerForCausalSequenceModelling(nn.Module):
         self.token_weight = 1/2
         self.age_weight = 1/2
         
-        self.transformer = TPPTransformer(config, vocab_size)
+        self.transformer = TTETransformer(config, vocab_size)
 
         # lm head with weight tying on embedding and softmax layer. 
         self.lm_head = nn.Linear(config.n_embd, vocab_size, bias=False)
@@ -113,10 +113,7 @@ class TPPTransformerForCausalSequenceModelling(nn.Module):
                                                     ages=ages, 
                                                     attention_mask=attention_mask,
                                                     is_generation=is_generation)
-            
-        # regression head
-        # values = None
-
+        
         if not is_generation:
             loss = (self.token_weight * loss_clf) + (self.age_weight * loss_tte)
         else:

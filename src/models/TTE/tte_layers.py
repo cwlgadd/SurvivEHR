@@ -22,8 +22,8 @@ class GeometricTTELayer(torch.nn.Module):
 
     The geometric distribution is the discrete analogue of the exponential distribution.
 
-    This module is used to predict time to event in the ForCausalSequenceModelling set of heads. The input tensor is
-    projected to get the implied geometric distribution.
+    This module is used to predict time to event in the ForCausalSequenceModelling and CausalTimeSeriesModelling sets of heads. 
+    The input tensor is projected to get the implied geometric distribution.
     
     Args:
         in_dim: The dimensionality of the input.
@@ -41,7 +41,7 @@ class GeometricTTELayer(torch.nn.Module):
 
     def predict(self,
                 hidden_states: torch.tensor,                    # shape: torch.Size([bsz, seq_len, n_embd])
-                ages: Optional[torch.tensor] = None,             
+                target_ages: Optional[torch.tensor] = None,             
                 attention_mask: Optional[torch.tensor] = None,
                 is_generation: bool = False
                 ):
@@ -49,6 +49,11 @@ class GeometricTTELayer(torch.nn.Module):
         """
 
         if not is_generation:
+            assert target_ages is not None
+            
+            if attention_mask is None:
+                raise NotImplementedError
+                
             tte_dist = self(hidden_states[:, :-1, :])           # Exponential(rate: torch.Size([bsz, seq_len - 1]))
 
             # We are predicting the delta of time, but each element in the seq_len just has the time of event. 
@@ -57,7 +62,7 @@ class GeometricTTELayer(torch.nn.Module):
             tte_obs_mask = attention_mask[:, :-1] & attention_mask[:, 1:]   # shape: torch.Size([bsz, seq_len - 1])
             
             # Get time to event, excluding first in sequence as we do not know what time the one pre-dating it occurred
-            tte_deltas = ages[:, 1:] - ages[:, :-1]                         # shape: torch.Size([bsz, seq_len - 1])
+            tte_deltas = target_ages[:, 1:] - target_ages[:, :-1]                         # shape: torch.Size([bsz, seq_len - 1])
             tte_deltas = torch.where(tte_obs_mask == 1, tte_deltas, torch.ones_like(tte_deltas)) 
             assert torch.all(tte_deltas >= 0), f"events must be given in time order, {tte_deltas[tte_deltas<0]}"
 
@@ -116,8 +121,8 @@ class ExponentialTTELayer(torch.nn.Module):
     is dependent on the hidden states, which depend on the entire block. The exponential distribution is the continuous 
     analogue of the geometric distribution.
 
-    This module is used to predict time to event in the ForCausalSequenceModelling set of heads. The input tensor is
-    projected to get the implied exponential distribution.
+    This module is used to predict time to event in the ForCausalSequenceModelling and CausalTimeSeriesModelling sets of 
+    heads. The input tensor is projected to get the implied exponential distribution.
 
     Args:
         in_dim: The dimensionality of the input.
@@ -132,7 +137,7 @@ class ExponentialTTELayer(torch.nn.Module):
 
     def predict(self,
                 hidden_states: torch.tensor,                    # shape: torch.Size([bsz, seq_len, n_embd])
-                ages: Optional[torch.tensor] = None,             
+                target_ages: Optional[torch.tensor] = None,             
                 attention_mask: Optional[torch.tensor] = None,
                 is_generation: bool = False
                 ):
@@ -140,6 +145,11 @@ class ExponentialTTELayer(torch.nn.Module):
         """
 
         if not is_generation:
+            assert target_ages is not None
+            
+            if attention_mask is None:
+                raise NotImplementedError
+            
             tte_dist = self(hidden_states[:, :-1, :])           # Exponential(rate: torch.Size([bsz, seq_len - 1]))
 
             # We are predicting the delta of time, but each element in the seq_len just has the time of event. 
@@ -148,7 +158,7 @@ class ExponentialTTELayer(torch.nn.Module):
             tte_obs_mask = attention_mask[:, :-1] & attention_mask[:, 1:]   # shape: torch.Size([bsz, seq_len - 1])
             
             # Get time to event, excluding first in sequence as we do not know what time the one pre-dating it occurred
-            tte_deltas = ages[:, 1:] - ages[:, :-1]                         # shape: torch.Size([bsz, seq_len - 1])
+            tte_deltas = target_ages[:, 1:] - target_ages[:, :-1]                         # shape: torch.Size([bsz, seq_len - 1])
             tte_deltas = tte_deltas / self._normalising_scaling_constant  
             tte_deltas = torch.where(tte_obs_mask == 1, tte_deltas, torch.ones_like(tte_deltas)) 
             assert torch.all(tte_deltas >= 0), f"events must be given in time order, {tte_deltas[tte_deltas<0]}"

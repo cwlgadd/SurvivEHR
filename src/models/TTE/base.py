@@ -51,7 +51,7 @@ from typing import Optional
 #             module.gradient_checkpointing = gradient_checkpointing_func is not None
 
             
-class TPPTransformer(nn.Module, ModuleUtilsMixin):
+class TTETransformer(nn.Module, ModuleUtilsMixin):
     r"""The bare GPT Model transformer for modelling time-to-event, outputting raw hidden-states without any specific head on top.
     
     TODO: ModuleUtilsMixin can be inherited from PreTrainedModel instead later
@@ -65,8 +65,8 @@ class TPPTransformer(nn.Module, ModuleUtilsMixin):
 
         # Data and positional encodings
         self.wpe = TemporalPositionalEncoding(encoding_dim=self.embed_dim)                
-        # self.wte = DataEmbeddingLayer(vocab_size, self.embed_dim)
-        self.wte = nn.Embedding(vocab_size, self.embed_dim)
+        self.wte = DataEmbeddingLayer(vocab_size, self.embed_dim)
+        # self.wte = nn.Embedding(vocab_size, self.embed_dim)
 
         # Define transformer
         self.drop = torch.nn.Dropout(p=config.dropout) if config.dropout is not None else None      # embed dropout
@@ -87,6 +87,7 @@ class TPPTransformer(nn.Module, ModuleUtilsMixin):
     def forward(self, 
                 tokens: torch.tensor, 
                 ages: torch.tensor,
+                values: Optional[torch.Tensor] = None,           # bsz, seq_len
                 attention_mask: Optional[torch.tensor] = None
                ):
         """
@@ -111,8 +112,7 @@ class TPPTransformer(nn.Module, ModuleUtilsMixin):
             attention_mask = self.get_extended_attention_mask(attention_mask, tokens.shape)
             
         # Get token embeddings
-        tok_emb = self.wte(tokens)                         #  shape (bsz, seq_len, embed_dim)
-        assert not torch.isnan(tok_emb).any(), f"tok_emb {tok_emb.shape},\n {tokens}, {tok_emb}, {self.wte.weight}"
+        tok_emb = self.wte(tokens=tokens, values=values)   #  shape (bsz, seq_len, embed_dim)
 
         # Get positional embeddings/encodings
         pos_emb = self.wpe(tokens=tokens, ages=ages)       # positional embeddings of shape (bsz or 1, seq_len, embed_dim)

@@ -3,7 +3,7 @@
 <html lang="en">
 <head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>TemporalPointProcess</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>TTE_tabular</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -7482,7 +7482,7 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Demo-Notebook:">Demo Notebook:<a class="anchor-link" href="#Demo-Notebook:">¶</a></h1><h2 id="Temporal-Point-Process-Transformer-For-Causal-Sequence-Modelling">Temporal Point Process Transformer For Causal Sequence Modelling<a class="anchor-link" href="#Temporal-Point-Process-Transformer-For-Causal-Sequence-Modelling">¶</a></h2><p>Including time (and TODO: values)</p>
+<h1 id="Demo-Notebook:">Demo Notebook:<a class="anchor-link" href="#Demo-Notebook:">¶</a></h1><h2 id="Time-to-Event-Transformer-For-Causal-Time-Series-Modelling">Time to Event Transformer For Causal Time Series Modelling<a class="anchor-link" href="#Time-to-Event-Transformer-For-Causal-Time-Series-Modelling">¶</a></h2><p>Including time (and TODO: values)</p>
 </div>
 </div>
 </div>
@@ -7503,7 +7503,7 @@ a.anchor-link {
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">CPRD.data.foundational_loader</span> <span class="kn">import</span> <span class="n">FoundationalDataModule</span>
-<span class="kn">from</span> <span class="nn">CPRD.src.models.TPP.task_heads.causal_tpp</span> <span class="kn">import</span> <span class="n">TPPTransformerForCausalSequenceModelling</span>
+<span class="kn">from</span> <span class="nn">CPRD.src.models.TTE.task_heads.causal_tabular</span> <span class="kn">import</span> <span class="n">TTETransformerForCausalTimeSeriesModelling</span>
 
 <span class="c1"># TODO:</span>
 <span class="c1"># replace experiment boilerplate with pytorch lightning</span>
@@ -7513,7 +7513,7 @@ a.anchor-link {
 <span class="n">device</span> <span class="o">=</span> <span class="s1">'cuda'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">'cpu'</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 
-<span class="c1"># device = "cpu"    # just for if i need more informative debugging statements</span>
+<span class="c1"># device = "cpu"    # if more informative debugging statements are needed</span>
 <span class="o">!</span>pwd
 </pre></div>
 </div>
@@ -7556,7 +7556,7 @@ a.anchor-link {
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Set config to be equivalent architecture of kaparthy benchmark, however they are not comparable tasks.</span>
 <span class="nd">@dataclass</span>
 <span class="k">class</span> <span class="nc">DemoConfig</span><span class="p">:</span>
-    <span class="n">block_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span>        <span class="c1"># what is the maximum context length for predictions?</span>
+    <span class="n">block_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span>   <span class="c1">#256        # what is the maximum context length for predictions?</span>
     <span class="n">n_layer</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span>
     <span class="n">n_head</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span>
     <span class="n">n_embd</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">384</span>
@@ -7564,6 +7564,8 @@ a.anchor-link {
     <span class="n">attention_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"global"</span>    
     <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
     <span class="n">unk_freq_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">TTELayer</span> <span class="o">=</span> <span class="s2">"Exponential"</span>                                  <span class="c1"># "Geometric"</span>
+    <span class="n">tokens_for_univariate_regression</span> <span class="o">=</span> <span class="kc">None</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">DemoConfig</span><span class="p">()</span>
 
@@ -7625,7 +7627,7 @@ a.anchor-link {
                             <span class="n">batch_size</span><span class="o">=</span><span class="n">opt</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
                             <span class="n">max_seq_length</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">block_size</span><span class="p">,</span>
                             <span class="n">unk_freq_threshold</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">unk_freq_threshold</span><span class="p">,</span>
-                            <span class="n">include_measurements</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                            <span class="n">include_measurements</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                             <span class="n">include_diagnoses</span><span class="o">=</span><span class="kc">True</span>
                            <span class="p">)</span>
 
@@ -7648,7 +7650,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>INFO:root:Building DL-friendly representation
+<pre>INFO:root:Building polars dataset
 </pre>
 </div>
 </div>
@@ -7670,10 +7672,179 @@ INFO:root:Using tabular tokenizer
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>107680 training samples
+<pre>107683 training samples
 5983 validation samples
 5982 test samples
-74 vocab elements
+90 vocab elements
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="View-the-frequency-of-tokens-in-the-extracted-data">View the frequency of tokens in the extracted data<a class="anchor-link" href="#View-the-frequency-of-tokens-in-the-extracted-data">¶</a></h2>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">polars</span> <span class="k">as</span> <span class="nn">pl</span>
+<span class="n">pl</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">set_tbl_rows</span><span class="p">(</span><span class="n">vocab_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">_event_counts</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>shape: (89, 3)
+┌───────────────────────────────────┬─────────┬──────────┐
+│ EVENT                             ┆ counts  ┆ freq     │
+│ ---                               ┆ ---     ┆ ---      │
+│ str                               ┆ u32     ┆ f64      │
+╞═══════════════════════════════════╪═════════╪══════════╡
+│ UNK                               ┆ 0       ┆ 0.0      │
+│ diastolic_blood_pressure          ┆ 2223992 ┆ 0.42246  │
+│ bmi                               ┆ 865264  ┆ 0.164362 │
+│ eosinophil_count                  ┆ 810927  ┆ 0.15404  │
+│ basophil_count                    ┆ 531915  ┆ 0.10104  │
+│ corrected_serum_calcium_level     ┆ 149201  ┆ 0.028342 │
+│ DEPRESSION                        ┆ 86568   ┆ 0.016444 │
+│ serum_level                       ┆ 76301   ┆ 0.014494 │
+│ calculated_LDL_cholesterol_level  ┆ 68992   ┆ 0.013105 │
+│ ANXIETY                           ┆ 48206   ┆ 0.009157 │
+│ HYPERTENSION                      ┆ 32843   ┆ 0.006239 │
+│ TYPE2DIABETES                     ┆ 27293   ┆ 0.005184 │
+│ OSTEOARTHRITIS                    ┆ 25333   ┆ 0.004812 │
+│ ASTHMA_PUSHASTHMA                 ┆ 25238   ┆ 0.004794 │
+│ ATOPICECZEMA                      ┆ 23115   ┆ 0.004391 │
+│ ALLERGICRHINITISCONJ              ┆ 18441   ┆ 0.003503 │
+│ ANY_DEAFNESS_HEARING_LOSS         ┆ 17206   ┆ 0.003268 │
+│ aspartate_transam                 ┆ 17206   ┆ 0.003268 │
+│ PREVALENT_IBS                     ┆ 11757   ┆ 0.002233 │
+│ ALLCA_NOBCC_VFINAL                ┆ 11656   ┆ 0.002214 │
+│ IHD_NOMI                          ┆ 11262   ┆ 0.002139 │
+│ ALCOHOLMISUSE                     ┆ 11179   ┆ 0.002124 │
+│ CKDSTAGE3TO5                      ┆ 10388   ┆ 0.001973 │
+│ blood_urea                        ┆ 9617    ┆ 0.001827 │
+│ PERIPHERAL_NEUROPATHY             ┆ 8836    ┆ 0.001678 │
+│ calcium_adjusted_level            ┆ 8514    ┆ 0.001617 │
+│ HYPOTHYROIDISM_DRAFT_V1           ┆ 8038    ┆ 0.001527 │
+│ COPD                              ┆ 7725    ┆ 0.001467 │
+│ AF                                ┆ 6235    ┆ 0.001184 │
+│ OSTEOPOROSIS                      ┆ 5785    ┆ 0.001099 │
+│ HF                                ┆ 5781    ┆ 0.001098 │
+│ combined_total_vitamin_D2_and_D3… ┆ 5764    ┆ 0.001095 │
+│ PSORIASIS                         ┆ 5657    ┆ 0.001075 │
+│ SUBSTANCEMISUSE                   ┆ 5566    ┆ 0.001057 │
+│ GOUT                              ┆ 5324    ┆ 0.001011 │
+│ MINFARCTION                       ┆ 4940    ┆ 0.000938 │
+│ STROKEUNSPECIFIED                 ┆ 4541    ┆ 0.000863 │
+│ ALL_DEMENTIA                      ┆ 4410    ┆ 0.000838 │
+│ hydroxyvitamin3                   ┆ 3786    ┆ 0.000719 │
+│ hydroxyvitamin2                   ┆ 3452    ┆ 0.000656 │
+│ VALVULARDISEASES                  ┆ 3221    ┆ 0.000612 │
+│ PAD_STRICT                        ┆ 3213    ┆ 0.00061  │
+│ OTHER_CHRONIC_LIVER_DISEASE_OPTI… ┆ 2939    ┆ 0.000558 │
+│ TYPE1DM                           ┆ 2859    ┆ 0.000543 │
+│ EPILEPSY                          ┆ 2585    ┆ 0.000491 │
+│ OSA                               ┆ 2437    ┆ 0.000463 │
+│ FIBROMYALGIA                      ┆ 2379    ┆ 0.000452 │
+│ POLYCYSTIC_OVARIAN_SYNDROME_PCOS  ┆ 2188    ┆ 0.000416 │
+│ NAFLD                             ┆ 2138    ┆ 0.000406 │
+│ RHEUMATOIDARTHRITIS               ┆ 2068    ┆ 0.000393 │
+│ EATINGDISORDERS                   ┆ 1983    ┆ 0.000377 │
+│ HYPERTHYROIDISM                   ┆ 1910    ┆ 0.000363 │
+│ PMRANDGCA                         ┆ 1878    ┆ 0.000357 │
+│ ENDOMETRIOSIS_ADENOMYOSIS_V2      ┆ 1830    ┆ 0.000348 │
+│ PTSDDIAGNOSIS                     ┆ 1689    ┆ 0.000321 │
+│ ISCHAEMICSTROKE                   ┆ 1535    ┆ 0.000292 │
+│ creatinine_ratio                  ┆ 1508    ┆ 0.000286 │
+│ VISUAL_IMPAIRMENT                 ┆ 1420    ┆ 0.00027  │
+│ BIPOLAR                           ┆ 1381    ┆ 0.000262 │
+│ SCHIZOPHRENIAMM                   ┆ 1321    ┆ 0.000251 │
+│ BRONCHIECTASIS                    ┆ 1081    ┆ 0.000205 │
+│ CHRONIC_LIVER_DISEASE_ALCOHOL     ┆ 922     ┆ 0.000175 │
+│ AORTICANEURYSM                    ┆ 890     ┆ 0.000169 │
+│ CHRONICFATIGUESYNDROMEMM          ┆ 845     ┆ 0.000161 │
+│ ULCERATIVE_COLITIS                ┆ 831     ┆ 0.000158 │
+│ LEARNINGDISABILITY                ┆ 740     ┆ 0.000141 │
+│ MENIERESDISEASE                   ┆ 715     ┆ 0.000136 │
+│ PARKINSONS                        ┆ 701     ┆ 0.000133 │
+│ PERNICIOUSANAEMIA                 ┆ 697     ┆ 0.000132 │
+│ STROKE_HAEMRGIC                   ┆ 689     ┆ 0.000131 │
+│ LYMPHOMA_PREVALENCE               ┆ 586     ┆ 0.000111 │
+│ brain_natriuretic_peptide_level   ┆ 565     ┆ 0.000107 │
+│ ILD_SH                            ┆ 538     ┆ 0.000102 │
+│ CROHNS_DISEASE                    ┆ 536     ┆ 0.000102 │
+│ AUTISM                            ┆ 514     ┆ 0.000098 │
+│ PSORIATICARTHRITIS2021            ┆ 466     ┆ 0.000089 │
+│ MS                                ┆ 425     ┆ 0.000081 │
+│ LEUKAEMIA_PREVALENCE              ┆ 402     ┆ 0.000076 │
+│ HIVAIDS                           ┆ 297     ┆ 0.000056 │
+│ SJOGRENSSYNDROME                  ┆ 241     ┆ 0.000046 │
+│ SYSTEMIC_LUPUS_ERYTHEMATOSUS      ┆ 221     ┆ 0.000042 │
+│ HAEMOCHROMATOSIS                  ┆ 197     ┆ 0.000037 │
+│ blood_calcium                     ┆ 135     ┆ 0.000026 │
+│ PLASMACELL_NEOPLASM               ┆ 124     ┆ 0.000024 │
+│ ADDISON_DISEASE                   ┆ 101     ┆ 0.000019 │
+│ SYSTEMIC_SCLEROSIS                ┆ 75      ┆ 0.000014 │
+│ CYSTICFIBROSIS                    ┆ 46      ┆ 0.000009 │
+│ DOWNSSYNDROME                     ┆ 42      ┆ 0.000008 │
+│ SICKLE_CELL_DISEASE               ┆ 21      ┆ 0.000004 │
+└───────────────────────────────────┴─────────┴──────────┘
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Extract the measurements, using the fact that the diagnoses are all up upper case. This is needed for automatically setting the configuration below</span>
+<span class="n">measurements_for_univariate_regression</span> <span class="o">=</span> <span class="p">[</span><span class="n">record</span> <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">dm</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">_event_counts</span><span class="p">[</span><span class="s2">"EVENT"</span><span class="p">]</span> <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">!=</span> <span class="n">record</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">measurements_for_univariate_regression</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">measurements_for_univariate_regression</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">decode</span><span class="p">([</span><span class="mi">7</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>['diastolic_blood_pressure', 'bmi', 'eosinophil_count', 'basophil_count', 'corrected_serum_calcium_level', 'serum_level', 'calculated_LDL_cholesterol_level', 'aspartate_transam', 'blood_urea', 'calcium_adjusted_level', 'combined_total_vitamin_D2_and_D3_level', 'hydroxyvitamin3', 'hydroxyvitamin2', 'creatinine_ratio', 'brain_natriuretic_peptide_level', 'blood_calcium']
+[2, 3, 4, 5, 6, 8, 9, 18, 24, 26, 32, 39, 40, 57, 72, 83]
+DEPRESSION eosinophil_count bmi diastolic_blood_pressure
 </pre>
 </div>
 </div>
@@ -7695,15 +7866,23 @@ INFO:root:Using tabular tokenizer
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">models</span><span class="p">,</span> <span class="n">m_names</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
 
 <span class="c1"># My development model</span>
-<span class="n">config</span> <span class="o">=</span> <span class="n">DemoConfig</span><span class="p">()</span>
-<span class="n">models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TPPTransformerForCausalSequenceModelling</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">))</span>
-<span class="n">m_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"TPPTransformerForCausalSequenceModelling"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">tte_layer</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"Exponential"</span><span class="p">]:</span> <span class="c1">#, "Geometric"]:</span>
+    
+    <span class="c1">## Create configuration</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">DemoConfig</span><span class="p">()</span>
+    <span class="c1"># Specify which TTE layer to use</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">TTELayer</span> <span class="o">=</span> <span class="n">tte_layer</span>    
+    <span class="c1"># list of univariate measurements to model with Normal distribution</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">tokens_for_univariate_regression</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">measurements_for_univariate_regression</span><span class="p">)</span> 
+    
+    <span class="n">models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TTETransformerForCausalTimeSeriesModelling</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">))</span>
+    <span class="n">m_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"TTETransformerForCausalTimeSeriesModelling: </span><span class="si">{</span><span class="n">tte_layer</span><span class="si">}</span><span class="s2"> TTE"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -7717,6 +7896,25 @@ INFO:root:Using tabular tokenizer
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
 <pre>INFO:root:Using Temporal Positional Encoding. This module uses the patient's age at an event within their time series.
+INFO:root:Using ExponentialTTELayer. This module predicts the time until next event as an exponential distribution
+INFO:root:ModuleDict(
+  (Token 2): Linear(in_features=384, out_features=2, bias=True)
+  (Token 3): Linear(in_features=384, out_features=2, bias=True)
+  (Token 4): Linear(in_features=384, out_features=2, bias=True)
+  (Token 5): Linear(in_features=384, out_features=2, bias=True)
+  (Token 6): Linear(in_features=384, out_features=2, bias=True)
+  (Token 8): Linear(in_features=384, out_features=2, bias=True)
+  (Token 9): Linear(in_features=384, out_features=2, bias=True)
+  (Token 18): Linear(in_features=384, out_features=2, bias=True)
+  (Token 24): Linear(in_features=384, out_features=2, bias=True)
+  (Token 26): Linear(in_features=384, out_features=2, bias=True)
+  (Token 32): Linear(in_features=384, out_features=2, bias=True)
+  (Token 39): Linear(in_features=384, out_features=2, bias=True)
+  (Token 40): Linear(in_features=384, out_features=2, bias=True)
+  (Token 57): Linear(in_features=384, out_features=2, bias=True)
+  (Token 72): Linear(in_features=384, out_features=2, bias=True)
+  (Token 83): Linear(in_features=384, out_features=2, bias=True)
+)
 </pre>
 </div>
 </div>
@@ -7727,16 +7925,18 @@ INFO:root:Using tabular tokenizer
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">loss_curves_train</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
 <span class="n">loss_curves_train_clf</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
 <span class="n">loss_curves_train_tte</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
+<span class="n">loss_curves_train_values</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
 
 <span class="n">loss_curves_val</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
 <span class="n">loss_curves_val_clf</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
 <span class="n">loss_curves_val_tte</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
+<span class="n">loss_curves_val_values</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -7747,7 +7947,7 @@ INFO:root:Using tabular tokenizer
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">m_idx</span><span class="p">,</span> <span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">m_name</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">m_names</span><span class="p">)):</span>
@@ -7760,51 +7960,60 @@ INFO:root:Using tabular tokenizer
 
     <span class="n">best_val</span><span class="p">,</span> <span class="n">epochs_since_best</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">opt</span><span class="o">.</span><span class="n">epochs</span><span class="p">):</span>
-        <span class="n">epoch_loss</span><span class="p">,</span> <span class="n">epoch_clf_loss</span><span class="p">,</span> <span class="n">epoch_tte_loss</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+        <span class="n">epoch_loss</span><span class="p">,</span> <span class="n">epoch_clf_loss</span><span class="p">,</span> <span class="n">epoch_tte_loss</span><span class="p">,</span> <span class="n">epoch_values_loss</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
         <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">train_dataloader</span><span class="p">()):</span>
             <span class="c1"># evaluate the loss</span>
-            <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">loss_clf</span><span class="p">,</span> <span class="n">loss_tte</span><span class="p">),</span> <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="s1">'tokens'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> 
-                                                     <span class="n">ages</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s1">'ages'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> 
-                                                     <span class="c1"># values=batch['values'].to(device),</span>
-                                                     <span class="n">attention_mask</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s1">'attention_mask'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>   
-                                                     <span class="p">)</span>
+            <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">loss_clf</span><span class="p">,</span> <span class="n">loss_tte</span><span class="p">,</span> <span class="n">loss_values</span><span class="p">),</span> <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="s1">'tokens'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> 
+                                                               <span class="n">ages</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s1">'ages'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> 
+                                                               <span class="n">values</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s1">'values'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
+                                                               <span class="n">attention_mask</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s1">'attention_mask'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>   
+                                                               <span class="p">)</span>
             <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">(</span><span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
             <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
             <span class="n">epoch_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            
             <span class="c1"># record</span>
             <span class="n">epoch_clf_loss</span> <span class="o">+=</span> <span class="n">loss_clf</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
             <span class="n">epoch_tte_loss</span> <span class="o">+=</span> <span class="n">loss_tte</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="n">epoch_values_loss</span> <span class="o">+=</span> <span class="n">loss_values</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
         <span class="n">epoch_loss</span> <span class="o">/=</span> <span class="n">i</span>
         <span class="n">epoch_clf_loss</span> <span class="o">/=</span> <span class="n">i</span>
         <span class="n">epoch_tte_loss</span> <span class="o">/=</span> <span class="n">i</span>
+        <span class="n">epoch_values_loss</span> <span class="o">/=</span> <span class="n">i</span>
         <span class="n">loss_curves_train</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">epoch_loss</span><span class="p">)</span>
         <span class="n">loss_curves_train_clf</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">epoch_clf_loss</span><span class="p">)</span>
         <span class="n">loss_curves_train_tte</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">epoch_tte_loss</span><span class="p">)</span>
+        <span class="n">loss_curves_train_values</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">epoch_values_loss</span><span class="p">)</span>
 
         <span class="c1"># evaluate the loss on val set</span>
         <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span> 
             <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">epoch</span> <span class="o">%</span> <span class="n">opt</span><span class="o">.</span><span class="n">eval_interval</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">epoch</span> <span class="o">==</span> <span class="n">opt</span><span class="o">.</span><span class="n">epochs</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="n">val_loss</span><span class="p">,</span> <span class="n">val_clf_loss</span><span class="p">,</span> <span class="n">val_tte_loss</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+                <span class="n">val_loss</span><span class="p">,</span> <span class="n">val_clf_loss</span><span class="p">,</span> <span class="n">val_tte_loss</span><span class="p">,</span> <span class="n">val_values_loss</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
                 <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">val_dataloader</span><span class="p">()):</span>
-                    <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">loss_clf</span><span class="p">,</span> <span class="n">loss_tte</span><span class="p">),</span> <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="s1">'tokens'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> 
-                                                             <span class="n">ages</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s1">'ages'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
-                                                             <span class="c1"># values=batch['values'].to(device),</span>
-                                                             <span class="n">attention_mask</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s1">'attention_mask'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>   
-                                                             <span class="p">)</span>
+                    <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">loss_clf</span><span class="p">,</span> <span class="n">loss_tte</span><span class="p">,</span> <span class="n">loss_values</span><span class="p">),</span> <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="s1">'tokens'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> 
+                                                                       <span class="n">ages</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s1">'ages'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
+                                                                       <span class="n">values</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s1">'values'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
+                                                                       <span class="n">attention_mask</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="s1">'attention_mask'</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>   
+                                                                       <span class="p">)</span>
                     <span class="n">val_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+                    
                     <span class="c1"># record</span>
                     <span class="n">val_clf_loss</span> <span class="o">+=</span> <span class="n">loss_clf</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
                     <span class="n">val_tte_loss</span> <span class="o">+=</span> <span class="n">loss_tte</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+                    <span class="n">val_values_loss</span> <span class="o">+=</span> <span class="n">loss_values</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
                 <span class="n">val_loss</span> <span class="o">/=</span> <span class="n">j</span>
                 <span class="n">val_clf_loss</span> <span class="o">/=</span> <span class="n">j</span>
                 <span class="n">val_tte_loss</span> <span class="o">/=</span> <span class="n">j</span>
+                <span class="n">val_values_loss</span> <span class="o">/=</span> <span class="n">j</span>
                 <span class="n">loss_curves_val</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val_loss</span><span class="p">)</span>
                 <span class="n">loss_curves_val_clf</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val_clf_loss</span><span class="p">)</span>
                 <span class="n">loss_curves_val_tte</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val_tte_loss</span><span class="p">)</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s2">:</span><span class="se">\t</span><span class="s2">Train loss </span><span class="si">{</span><span class="n">epoch_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="n">epoch_clf_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">epoch_tte_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">). Val loss </span><span class="si">{</span><span class="n">val_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">val_clf_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">val_tte_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>          
+                <span class="n">loss_curves_val_values</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val_values_loss</span><span class="p">)</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s2">:</span><span class="se">\t</span><span class="s2">Train loss </span><span class="si">{</span><span class="n">epoch_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="n">epoch_clf_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">epoch_tte_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">epoch_values_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">). Val loss </span><span class="si">{</span><span class="n">val_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">val_clf_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">val_tte_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">val_values_loss</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>          
                 <span class="c1"># TODO: Note not fully accurate as last batch is likely not the same size, will be fixed with lightning</span>
         
             <span class="k">if</span> <span class="n">val_loss</span> <span class="o">&gt;=</span> <span class="n">best_val</span><span class="p">:</span>
@@ -7820,14 +8029,15 @@ INFO:root:Using tabular tokenizer
     <span class="c1"># set context: diagnosis of depression at 20 years old</span>
     <span class="n">tokens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">encode</span><span class="p">([</span><span class="s2">"DEPRESSION"</span><span class="p">]))</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
     <span class="n">ages</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([[</span><span class="mi">20</span><span class="o">*</span><span class="mi">365</span><span class="p">]],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-    <span class="c1"># values = torch.tensor([[torch.nan]], device=device)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([[</span><span class="n">torch</span><span class="o">.</span><span class="n">nan</span><span class="p">]],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    
     <span class="c1"># generate: sample the next 10 tokens</span>
-    <span class="n">new_tokens</span><span class="p">,</span> <span class="n">new_ages</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">ages</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+    <span class="n">new_tokens</span><span class="p">,</span> <span class="n">new_ages</span><span class="p">,</span> <span class="n">new_values</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">ages</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
     <span class="n">generated</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">new_tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
     <span class="c1"># report:</span>
     <span class="c1">#    note, Not considering value yet.</span>
-    <span class="k">for</span> <span class="n">_cat</span><span class="p">,</span> <span class="n">_age</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">generated</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">" "</span><span class="p">),</span> <span class="n">new_ages</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2"> </span><span class="si">{</span><span class="n">_cat</span><span class="si">}</span><span class="s2"> at age </span><span class="si">{</span><span class="n">_age</span><span class="o">/</span><span class="mi">365</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">_age</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> days)"</span><span class="p">)</span>    <span class="c1"># with value {_value}</span>
+    <span class="k">for</span> <span class="n">_cat</span><span class="p">,</span> <span class="n">_age</span><span class="p">,</span> <span class="n">_value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">generated</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">" "</span><span class="p">),</span> <span class="n">new_ages</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">new_values</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2"> </span><span class="si">{</span><span class="n">_cat</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">_value</span><span class="si">:</span><span class="s2">.02f</span><span class="si">}</span><span class="s2">, at age </span><span class="si">{</span><span class="n">_age</span><span class="o">/</span><span class="mi">365</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">_age</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> days)"</span><span class="p">)</span>    <span class="c1"># with value {_value}</span>
 </pre></div>
 </div>
 </div>
@@ -7840,57 +8050,37 @@ INFO:root:Using tabular tokenizer
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Training model `TPPTransformerForCausalSequenceModelling`, with 10.669633 M parameters
-Epoch 0:	Train loss 2.25  (3.07, 1.44). Val loss 2.20 (2.99, 1.42)
-Epoch 1:	Train loss 2.18  (2.95, 1.41). Val loss 2.18 (2.95, 1.41)
-Epoch 2:	Train loss 2.15  (2.90, 1.41). Val loss 2.16 (2.91, 1.42)
-Epoch 3:	Train loss 2.13  (2.86, 1.40). Val loss 2.14 (2.88, 1.41)
-Epoch 4:	Train loss 2.13  (2.86, 1.40). Val loss 2.15 (2.89, 1.41)
-Epoch 5:	Train loss 2.12  (2.85, 1.40). Val loss 2.14 (2.87, 1.41)
-Epoch 6:	Train loss 2.12  (2.84, 1.40). Val loss 2.13 (2.85, 1.41)
-Epoch 7:	Train loss 2.11  (2.82, 1.39). Val loss 2.13 (2.84, 1.41)
-Epoch 8:	Train loss 2.10  (2.82, 1.39). Val loss 2.12 (2.83, 1.40)
-Epoch 9:	Train loss 2.10  (2.80, 1.39). Val loss 2.11 (2.81, 1.40)
-Epoch 10:	Train loss 2.09  (2.79, 1.39). Val loss 2.11 (2.82, 1.40)
-Epoch 11:	Train loss 2.09  (2.78, 1.39). Val loss 2.10 (2.81, 1.40)
-Epoch 12:	Train loss 2.08  (2.78, 1.39). Val loss 2.10 (2.80, 1.40)
-Epoch 13:	Train loss 2.08  (2.77, 1.39). Val loss 2.11 (2.81, 1.41)
-Epoch 14:	Train loss 2.08  (2.77, 1.38). Val loss 2.10 (2.80, 1.41)
-Epoch 15:	Train loss 2.07  (2.76, 1.38). Val loss 2.10 (2.80, 1.40)
-Epoch 16:	Train loss 2.07  (2.75, 1.38). Val loss 2.10 (2.80, 1.40)
-Epoch 17:	Train loss 2.07  (2.76, 1.38). Val loss 2.10 (2.79, 1.40)
-Epoch 18:	Train loss 2.06  (2.74, 1.38). Val loss 2.10 (2.80, 1.41)
-Epoch 19:	Train loss 2.06  (2.74, 1.38). Val loss 2.10 (2.79, 1.40)
-Epoch 20:	Train loss 2.06  (2.74, 1.38). Val loss 2.09 (2.78, 1.40)
-Epoch 21:	Train loss 2.06  (2.74, 1.38). Val loss 2.09 (2.78, 1.41)
-Epoch 22:	Train loss 2.05  (2.73, 1.38). Val loss 2.10 (2.79, 1.41)
-Epoch 23:	Train loss 2.05  (2.73, 1.38). Val loss 2.10 (2.79, 1.42)
-Epoch 24:	Train loss 2.05  (2.72, 1.37). Val loss 2.10 (2.78, 1.41)
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>WARNING:root:Using XXX requires value embeddings, but this head ``CURRENTLY`` has no way of sampling value of next event. Setting generated values to nan until this is implemented
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Epoch 25:	Train loss 2.05  (2.72, 1.37). Val loss 2.10 (2.78, 1.41)
-	 DEPRESSION at age 20 (7300.0 days)
-	 ANXIETY at age 21 (7576.5 days)
-	 PREVALENT_IBS at age 24 (8661.3 days)
-	 ALCOHOLMISUSE at age 30 (10803.2 days)
-	 OTHER_CHRONIC_LIVER_DISEASE_OPTIMAL at age 36 (13134.3 days)
-	 EATINGDISORDERS at age 38 (13960.8 days)
-	 STROKEUNSPECIFIED at age 41 (14787.5 days)
-	 ENDOMETRIOSIS_ADENOMYOSIS_V2 at age 42 (15454.7 days)
-	 ALLCA_NOBCC_VFINAL at age 43 (15640.7 days)
-	 OSTEOARTHRITIS at age 45 (16589.6 days)
-	 HAEMOCHROMATOSIS at age 47 (17171.6 days)
+<pre>Training model `TTETransformerForCausalTimeSeriesModelling: Exponential TTE`, with 10.757217 M parameters
+Epoch 0:	Train loss 11.76  (2.00, -0.27, 33.55). Val loss 3.05 (1.97, -0.33, 7.50)
+Epoch 1:	Train loss 5.12  (1.94, -0.36, 13.78). Val loss 2.60 (1.92, -0.44, 6.32)
+Epoch 2:	Train loss 2.33  (1.85, -0.62, 5.74). Val loss 2.26 (1.84, -0.75, 5.70)
+Epoch 3:	Train loss 2.29  (1.82, -0.77, 5.82). Val loss 2.21 (1.83, -0.80, 5.59)
+Epoch 4:	Train loss 2.16  (1.81, -0.80, 5.46). Val loss 2.18 (1.81, -0.82, 5.56)
+Epoch 5:	Train loss 2.21  (1.81, -0.82, 5.66). Val loss 2.11 (1.81, -0.85, 5.37)
+Epoch 6:	Train loss 2.17  (1.80, -0.84, 5.54). Val loss 2.43 (1.80, -0.86, 6.36)
+Epoch 7:	Train loss 2.10  (1.79, -0.86, 5.36). Val loss 2.06 (1.79, -0.87, 5.25)
+Epoch 8:	Train loss 2.05  (1.78, -0.88, 5.25). Val loss 2.03 (1.78, -0.90, 5.21)
+Epoch 9:	Train loss 2.06  (1.77, -0.89, 5.29). Val loss 2.45 (1.78, -0.93, 6.49)
+Epoch 10:	Train loss 2.05  (1.77, -0.90, 5.26). Val loss 2.01 (1.78, -0.91, 5.15)
+Epoch 11:	Train loss 1.93  (1.77, -0.91, 4.94). Val loss 1.98 (1.77, -0.92, 5.08)
+Epoch 12:	Train loss 1.91  (1.76, -0.91, 4.88). Val loss 1.90 (1.77, -0.92, 4.84)
+Epoch 13:	Train loss 1.88  (1.75, -0.92, 4.80). Val loss 1.85 (1.76, -0.94, 4.72)
+Epoch 14:	Train loss 1.92  (1.75, -0.91, 4.92). Val loss 2.02 (1.75, -0.95, 5.25)
+Epoch 15:	Train loss 1.88  (1.75, -0.92, 4.82). Val loss 1.90 (1.76, -0.93, 4.86)
+Epoch 16:	Train loss 1.87  (1.74, -0.93, 4.80). Val loss 1.88 (1.75, -0.95, 4.83)
+Epoch 17:	Train loss 1.85  (1.73, -0.94, 4.76). Val loss 1.86 (1.75, -0.98, 4.81)
+Epoch 18:	Train loss 1.84  (1.72, -0.94, 4.74). Val loss 1.86 (1.73, -0.98, 4.82)
+	 DEPRESSION:nan, at age 20 (7300.0 days)
+	 ANXIETY:nan, at age 20 (7441.7 days)
+	 bmi:32.64, at age 22 (7922.4 days)
+	 diastolic_blood_pressure:73.88, at age 22 (7976.6 days)
+	 bmi:28.94, at age 23 (8290.2 days)
+	 diastolic_blood_pressure:68.48, at age 23 (8292.0 days)
+	 basophil_count:0.12, at age 23 (8369.0 days)
+	 eosinophil_count:0.16, at age 23 (8374.3 days)
+	 bmi:29.02, at age 25 (8950.5 days)
+	 diastolic_blood_pressure:69.57, at age 25 (9091.4 days)
+	 diastolic_blood_pressure:79.07, at age 25 (9253.7 days)
 </pre>
 </div>
 </div>
@@ -7912,17 +8102,17 @@ Epoch 24:	Train loss 2.05  (2.72, 1.37). Val loss 2.10 (2.78, 1.41)
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">dm</span><span class="o">.</span><span class="n">train_dataloader</span><span class="p">():</span>
     <span class="k">break</span>
 <span class="n">conditions</span> <span class="o">=</span> <span class="n">batch</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
 <span class="c1"># delta_ages = batch["ages"][:, 1:] - batch["ages"][:, :-1]</span>
-<span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">age</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">conditions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">batch</span><span class="p">[</span><span class="s2">"ages"</span><span class="p">][</span><span class="mi">0</span><span class="p">,:])):</span>
+<span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">conditions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">batch</span><span class="p">[</span><span class="s2">"ages"</span><span class="p">][</span><span class="mi">0</span><span class="p">,:],</span>  <span class="n">batch</span><span class="p">[</span><span class="s2">"values"</span><span class="p">][</span><span class="mi">0</span><span class="p">,:])):</span>
     <span class="k">if</span> <span class="n">token</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">idx</span> <span class="o">&gt;=</span> <span class="mi">10</span><span class="p">:</span>
         <span class="k">break</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dm</span><span class="o">.</span><span class="n">decode</span><span class="p">([</span><span class="n">token</span><span class="p">])</span><span class="si">}</span><span class="s2">, at age </span><span class="si">{</span><span class="n">age</span><span class="o">/</span><span class="mi">365</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">age</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> days)"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dm</span><span class="o">.</span><span class="n">decode</span><span class="p">([</span><span class="n">token</span><span class="p">])</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.02f</span><span class="si">}</span><span class="s2">, at age </span><span class="si">{</span><span class="n">age</span><span class="o">/</span><span class="mi">365</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">age</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> days)"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -7935,14 +8125,14 @@ Epoch 24:	Train loss 2.05  (2.72, 1.37). Val loss 2.10 (2.78, 1.41)
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>ALLERGICRHINITISCONJ, at age 21 (7577.0 days)
-DEPRESSION, at age 22 (8105.0 days)
-ATOPICECZEMA, at age 23 (8220.0 days)
-PSORIASIS, at age 24 (8813.0 days)
-ANXIETY, at age 24 (8911.0 days)
-HYPERTENSION, at age 27 (9709.0 days)
-FIBROMYALGIA, at age 40 (14713.0 days)
-HYPOTHYROIDISM_DRAFT_V1, at age 46 (16662.0 days)
+<pre>basophil_count:0.05, at age 43 (15737.0 days)
+eosinophil_count:0.13, at age 43 (15737.0 days)
+diastolic_blood_pressure:73.00, at age 46 (16709.0 days)
+diastolic_blood_pressure:71.00, at age 46 (16769.0 days)
+basophil_count:0.06, at age 46 (16770.0 days)
+eosinophil_count:0.11, at age 46 (16770.0 days)
+basophil_count:0.04, at age 46 (16825.0 days)
+eosinophil_count:0.13, at age 46 (16825.0 days)
 </pre>
 </div>
 </div>
@@ -7953,7 +8143,7 @@ HYPOTHYROIDISM_DRAFT_V1, at age 46 (16662.0 days)
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"k"</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">,</span> <span class="s2">"b"</span><span class="p">,</span> <span class="s2">"y"</span><span class="p">]</span>
@@ -7968,7 +8158,7 @@ HYPOTHYROIDISM_DRAFT_V1, at age 46 (16662.0 days)
     <span class="n">iterations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">loss_curves_val</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]),</span> <span class="nb">len</span><span class="p">(</span><span class="n">loss_curves_val</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]))</span> <span class="o">*</span> <span class="n">opt</span><span class="o">.</span><span class="n">eval_interval</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">iterations</span><span class="p">,</span> <span class="n">loss_curves_val</span><span class="p">[</span><span class="n">m_idx</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">m_names</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]</span><span class="si">}</span><span class="s2">-val"</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">cols</span><span class="p">[</span><span class="n">m_idx</span><span class="p">])</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">"figs/loss_curves_TPP.png"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">"figs/TTE_tab/loss.png"</span><span class="p">)</span>
 
 <span class="c1"># Plot classifier loss</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
@@ -7980,7 +8170,7 @@ HYPOTHYROIDISM_DRAFT_V1, at age 46 (16662.0 days)
     <span class="n">iterations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">loss_curves_val_clf</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]),</span> <span class="nb">len</span><span class="p">(</span><span class="n">loss_curves_val_clf</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]))</span> <span class="o">*</span> <span class="n">opt</span><span class="o">.</span><span class="n">eval_interval</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">iterations</span><span class="p">,</span> <span class="n">loss_curves_val_clf</span><span class="p">[</span><span class="n">m_idx</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">m_names</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]</span><span class="si">}</span><span class="s2">-val"</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">cols</span><span class="p">[</span><span class="n">m_idx</span><span class="p">])</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">"figs/loss_clf_curves_TPP.png"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">"figs/TTE_tab/loss_clf.png"</span><span class="p">)</span>
 
 <span class="c1"># Plot tte loss</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
@@ -7992,7 +8182,19 @@ HYPOTHYROIDISM_DRAFT_V1, at age 46 (16662.0 days)
     <span class="n">iterations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">loss_curves_val_tte</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]),</span> <span class="nb">len</span><span class="p">(</span><span class="n">loss_curves_val_tte</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]))</span> <span class="o">*</span> <span class="n">opt</span><span class="o">.</span><span class="n">eval_interval</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">iterations</span><span class="p">,</span> <span class="n">loss_curves_val_tte</span><span class="p">[</span><span class="n">m_idx</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">m_names</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]</span><span class="si">}</span><span class="s2">-val"</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">cols</span><span class="p">[</span><span class="n">m_idx</span><span class="p">])</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">"figs/loss_tte_curves_TPP.png"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">"figs/TTE_tab/loss_tte.png"</span><span class="p">)</span>
+
+<span class="c1"># Plot values loss</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">m_idx</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
+    <span class="c1"># Training</span>
+    <span class="n">iterations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">loss_curves_train_values</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]),</span> <span class="nb">len</span><span class="p">(</span><span class="n">loss_curves_train_values</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]))</span> <span class="o">*</span> <span class="n">opt</span><span class="o">.</span><span class="n">eval_interval</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">iterations</span><span class="p">,</span> <span class="n">loss_curves_train_values</span><span class="p">[</span><span class="n">m_idx</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">m_names</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]</span><span class="si">}</span><span class="s2">-train"</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">cols</span><span class="p">[</span><span class="n">m_idx</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">'dashed'</span><span class="p">)</span>
+    <span class="c1"># Validation</span>
+    <span class="n">iterations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">loss_curves_val_values</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]),</span> <span class="nb">len</span><span class="p">(</span><span class="n">loss_curves_val_values</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]))</span> <span class="o">*</span> <span class="n">opt</span><span class="o">.</span><span class="n">eval_interval</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">iterations</span><span class="p">,</span> <span class="n">loss_curves_val_values</span><span class="p">[</span><span class="n">m_idx</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">m_names</span><span class="p">[</span><span class="n">m_idx</span><span class="p">]</span><span class="si">}</span><span class="s2">-val"</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">cols</span><span class="p">[</span><span class="n">m_idx</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">"figs/TTE_tab/loss_val.png"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -8025,7 +8227,7 @@ HYPOTHYROIDISM_DRAFT_V1, at age 46 (16662.0 days)
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">t1_token</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">_stoi</span><span class="p">[</span><span class="s2">"TYPE1DM"</span><span class="p">]</span>
@@ -8034,33 +8236,40 @@ HYPOTHYROIDISM_DRAFT_V1, at age 46 (16662.0 days)
 
 <span class="n">base_prompt</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"DEPRESSION"</span><span class="p">]</span>
 <span class="n">ages_in_years</span> <span class="o">=</span> <span class="p">[</span><span class="mi">20</span><span class="p">]</span>
+<span class="n">base_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">nan</span><span class="p">])]</span>
 
 <span class="n">to_days</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">a_list</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mi">365</span> <span class="o">*</span> <span class="n">_a</span> <span class="k">for</span> <span class="n">_a</span> <span class="ow">in</span> <span class="n">a_list</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 
 <span class="c1"># Create a set of prompts</span>
 <span class="n">prompts</span><span class="p">,</span> <span class="n">ages</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+<span class="c1"># control prompt</span>
 <span class="n">desc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Control"</span><span class="p">)</span>
 <span class="n">prompts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_prompt</span><span class="p">)</span>
 <span class="n">ages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ages_in_years</span><span class="p">)</span>
+<span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_values</span><span class="p">)</span>
+<span class="c1"># prompt with type 1 diabetes</span>
 <span class="n">desc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Type 1"</span><span class="p">)</span>
 <span class="n">prompts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_prompt</span> <span class="o">+</span> <span class="p">[</span><span class="s2">"TYPE1DM"</span><span class="p">])</span>
 <span class="n">ages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ages_in_years</span> <span class="o">+</span> <span class="p">[</span><span class="mi">21</span><span class="p">])</span>
+<span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_values</span> <span class="o">+</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">nan</span><span class="p">])])</span>
+
 <span class="n">desc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Type 2"</span><span class="p">)</span>
 <span class="n">prompts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_prompt</span> <span class="o">+</span> <span class="p">[</span><span class="s2">"TYPE2DIABETES"</span><span class="p">])</span>
 <span class="n">ages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ages_in_years</span> <span class="o">+</span> <span class="p">[</span><span class="mi">21</span><span class="p">])</span>
+<span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_values</span> <span class="o">+</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">nan</span><span class="p">])])</span>
 
 <span class="k">for</span> <span class="n">model_idx</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="si">{</span><span class="n">m_names</span><span class="p">[</span><span class="n">model_idx</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">--------------------------------------"</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span> 
             <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
     
-            <span class="k">for</span> <span class="n">p_idx</span><span class="p">,</span> <span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">age</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">prompts</span><span class="p">,</span> <span class="n">ages</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">p_idx</span><span class="p">,</span> <span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">prompts</span><span class="p">,</span> <span class="n">ages</span><span class="p">,</span> <span class="n">values</span><span class="p">)):</span>
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="si">{</span><span class="n">desc</span><span class="p">[</span><span class="n">p_idx</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="se">\t</span><span class="s2"> (</span><span class="si">{</span><span class="s1">','</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="si">}</span><span class="s2">): "</span><span class="p">)</span>
                 <span class="n">encoded_prompt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">prompt</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-                <span class="p">(</span><span class="n">lgts</span><span class="p">,</span> <span class="n">tte_dist</span><span class="p">),</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">encoded_prompt</span><span class="p">,</span>
-                                                       <span class="c1"># values=torch.tensor(value).to(device),</span>
-                                                       <span class="n">ages</span><span class="o">=</span><span class="n">to_days</span><span class="p">(</span><span class="n">age</span><span class="p">),</span>
-                                                       <span class="n">is_generation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="p">(</span><span class="n">lgts</span><span class="p">,</span> <span class="n">tte_dist</span><span class="p">,</span> <span class="n">val_dist</span><span class="p">),</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">encoded_prompt</span><span class="p">,</span>
+                                                         <span class="n">values</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
+                                                         <span class="n">ages</span><span class="o">=</span><span class="n">to_days</span><span class="p">(</span><span class="n">age</span><span class="p">),</span>
+                                                         <span class="n">is_generation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="n">probs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">lgts</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">probability of type I diabetes: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">probs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">t1_token</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">%"</span><span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">probability of type II diabetes: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">probs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">t2_token</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">%"</span><span class="p">)</span>
@@ -8080,20 +8289,20 @@ HYPOTHYROIDISM_DRAFT_V1, at age 46 (16662.0 days)
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 
-TPPTransformerForCausalSequenceModelling
+TTETransformerForCausalTimeSeriesModelling: Exponential TTE
 --------------------------------------
 
 Control: 	 (DEPRESSION): 
-	probability of type I diabetes: 0.0331%
-	probability of type II diabetes: 0.2761%
+	probability of type I diabetes: 0.0207%
+	probability of type II diabetes: 0.0457%
 
 Type 1: 	 (DEPRESSION,TYPE1DM): 
-	probability of type I diabetes: 0.0398%
-	probability of type II diabetes: 0.4295%
+	probability of type I diabetes: 0.0529%
+	probability of type II diabetes: 0.1771%
 
 Type 2: 	 (DEPRESSION,TYPE2DIABETES): 
-	probability of type I diabetes: 1.4801%
-	probability of type II diabetes: 0.0786%
+	probability of type I diabetes: 0.0467%
+	probability of type II diabetes: 0.2782%
 </pre>
 </div>
 </div>
@@ -8106,7 +8315,7 @@ Type 2: 	 (DEPRESSION,TYPE2DIABETES):
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Age:-How-increasing-prompt-age-affects-likelihood-of-age-related-diagnoses">Age: How increasing prompt age affects likelihood of age related diagnoses<a class="anchor-link" href="#Age:-How-increasing-prompt-age-affects-likelihood-of-age-related-diagnoses">¶</a></h2>
+<h2 id="Values:-How-increasing-BMI-affects-likelihood-of-diagnoses">Values: How increasing BMI affects likelihood of diagnoses<a class="anchor-link" href="#Values:-How-increasing-BMI-affects-likelihood-of-diagnoses">¶</a></h2>
 </div>
 </div>
 </div>
@@ -8115,13 +8324,19 @@ Type 2: 	 (DEPRESSION,TYPE2DIABETES):
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">prompt</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"DEPRESSION"</span><span class="p">]</span>
-<span class="n">ages</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">4</span><span class="p">],[</span><span class="mi">8</span><span class="p">],[</span><span class="mi">20</span><span class="p">],[</span><span class="mi">30</span><span class="p">],[</span><span class="mi">60</span><span class="p">],[</span><span class="mi">80</span><span class="p">],[</span><span class="mi">90</span><span class="p">]]</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">events_of_interest</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"bmi"</span><span class="p">,</span> <span class="s2">"diastolic_blood_pressure"</span><span class="p">,</span> 
+                      <span class="s2">"TYPE1DM"</span><span class="p">,</span> <span class="s2">"TYPE2DIABETES"</span><span class="p">,</span>
+                      <span class="s2">"HYPERTENSION"</span><span class="p">,</span> <span class="s2">"OSTEOARTHRITIS"</span><span class="p">,</span>
+                      <span class="s2">"CKDSTAGE3TO5"</span><span class="p">,</span>
+                      <span class="s2">"HF"</span><span class="p">,</span> <span class="s2">"ISCHAEMICSTROKE"</span>
+                     <span class="p">]</span>
 
-<span class="c1"># target_conditions=["TYPE1DM"]#, "TYPE2DIABETES", "OSTEOARTHRITIS", "ANY_DEAFNESS_HEARING_LOSS"]</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"bmi"</span><span class="p">,</span> <span class="s2">"bmi"</span><span class="p">,</span> <span class="s2">"bmi"</span><span class="p">]</span>
+<span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">v</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">prompt</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">12.</span><span class="p">,</span><span class="mf">15.</span><span class="p">,</span><span class="mf">18.</span><span class="p">,</span><span class="mf">21.</span><span class="p">,</span><span class="mf">24.</span><span class="p">,</span><span class="mf">30.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]]</span>
+<span class="n">age</span> <span class="o">=</span> <span class="p">[</span><span class="mi">39</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">41</span><span class="p">]</span>
 
 <span class="k">for</span> <span class="n">model_idx</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="si">{</span><span class="n">m_names</span><span class="p">[</span><span class="n">model_idx</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">--------------------------------------"</span><span class="p">)</span>
@@ -8130,31 +8345,19 @@ Type 2: 	 (DEPRESSION,TYPE2DIABETES):
     <span class="c1">#     print(f"Probability of {condition}")</span>
     <span class="c1">#     target_token = dm.tokenizer._stoi[condition]</span>
 
-    <span class="k">for</span> <span class="n">p_idx</span><span class="p">,</span> <span class="n">age</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ages</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Age </span><span class="si">{</span><span class="n">age</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">======"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">p_idx</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Values </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="se">\n</span><span class="s2">======"</span><span class="p">)</span>
         <span class="n">encoded_prompt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">prompt</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-        <span class="p">(</span><span class="n">lgts</span><span class="p">,</span> <span class="n">tte_dist</span><span class="p">),</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">encoded_prompt</span><span class="p">,</span>
-                                       <span class="n">ages</span><span class="o">=</span><span class="n">to_days</span><span class="p">(</span><span class="n">age</span><span class="p">),</span>
-                                       <span class="n">is_generation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">lgts</span><span class="p">,</span> <span class="n">tte_dist</span><span class="p">,</span> <span class="n">val_dist</span><span class="p">),</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">encoded_prompt</span><span class="p">,</span>
+                                                  <span class="n">values</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+                                                 <span class="n">ages</span><span class="o">=</span><span class="n">to_days</span><span class="p">(</span><span class="n">age</span><span class="p">),</span>
+                                                 <span class="n">is_generation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">probs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">lgts</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
-
-        <span class="c1"># top K</span>
-        <span class="n">k</span> <span class="o">=</span> <span class="mi">10</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Top </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-        <span class="n">topk_prob</span><span class="p">,</span> <span class="n">topk_ind</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="n">probs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">k</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">topk_ind</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">" "</span><span class="p">),</span> <span class="n">topk_prob</span><span class="p">):</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\t</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">j</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%"</span><span class="p">)</span>
-
-        <span class="c1"># bottom K</span>
-        <span class="n">k</span> <span class="o">=</span> <span class="mi">30</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Bottom </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-        <span class="n">topk_prob</span><span class="p">,</span> <span class="n">topk_ind</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="o">-</span><span class="n">probs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">k</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">topk_ind</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">" "</span><span class="p">),</span> <span class="n">topk_prob</span><span class="p">):</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\t</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="o">-</span><span class="n">j</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%"</span><span class="p">)</span>
         
-            <span class="c1"># print(f"Age: {age[-1]} years old:  {100*float(probs[0, 0, target_token].cpu().detach().numpy()):.4f}%")</span>
-
-<span class="c1"># Note: adding a diagnosis (even if potentially orthogonal) at the beginning of the prompt increases probability of either type</span>
+        <span class="n">topk_prob</span><span class="p">,</span> <span class="n">topk_ind</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">probs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">descending</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">topk_ind</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">" "</span><span class="p">),</span> <span class="n">topk_prob</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">events_of_interest</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\t</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">j</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -8169,323 +8372,386 @@ Type 2: 	 (DEPRESSION,TYPE2DIABETES):
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 
-TPPTransformerForCausalSequenceModelling
+TTETransformerForCausalTimeSeriesModelling: Exponential TTE
+--------------------------------------
+Values tensor([12., 12., 12.], device='cuda:0')
+======
+	diastolic_blood_pressure: 34.98%
+	bmi: 21.18%
+	TYPE1DM: 0.83%
+	HYPERTENSION: 0.05%
+	OSTEOARTHRITIS: 0.05%
+	TYPE2DIABETES: 0.03%
+	CKDSTAGE3TO5: 0.01%
+	HF: 0.01%
+	ISCHAEMICSTROKE: 0.00%
+Values tensor([15., 15., 15.], device='cuda:0')
+======
+	diastolic_blood_pressure: 45.70%
+	bmi: 18.38%
+	TYPE1DM: 0.50%
+	HYPERTENSION: 0.05%
+	OSTEOARTHRITIS: 0.05%
+	TYPE2DIABETES: 0.04%
+	CKDSTAGE3TO5: 0.01%
+	HF: 0.01%
+	ISCHAEMICSTROKE: 0.00%
+Values tensor([18., 18., 18.], device='cuda:0')
+======
+	diastolic_blood_pressure: 57.82%
+	bmi: 14.90%
+	TYPE1DM: 0.25%
+	HYPERTENSION: 0.06%
+	OSTEOARTHRITIS: 0.05%
+	TYPE2DIABETES: 0.05%
+	CKDSTAGE3TO5: 0.01%
+	HF: 0.01%
+	ISCHAEMICSTROKE: 0.00%
+Values tensor([21., 21., 21.], device='cuda:0')
+======
+	diastolic_blood_pressure: 67.61%
+	bmi: 11.83%
+	TYPE1DM: 0.11%
+	TYPE2DIABETES: 0.07%
+	HYPERTENSION: 0.07%
+	OSTEOARTHRITIS: 0.05%
+	CKDSTAGE3TO5: 0.01%
+	HF: 0.01%
+	ISCHAEMICSTROKE: 0.00%
+Values tensor([24., 24., 24.], device='cuda:0')
+======
+	diastolic_blood_pressure: 72.40%
+	bmi: 10.69%
+	TYPE2DIABETES: 0.11%
+	HYPERTENSION: 0.09%
+	OSTEOARTHRITIS: 0.06%
+	TYPE1DM: 0.06%
+	CKDSTAGE3TO5: 0.02%
+	HF: 0.01%
+	ISCHAEMICSTROKE: 0.00%
+Values tensor([30., 30., 30.], device='cuda:0')
+======
+	diastolic_blood_pressure: 72.47%
+	bmi: 12.65%
+	TYPE2DIABETES: 0.23%
+	HYPERTENSION: 0.13%
+	OSTEOARTHRITIS: 0.09%
+	CKDSTAGE3TO5: 0.03%
+	HF: 0.02%
+	TYPE1DM: 0.02%
+	ISCHAEMICSTROKE: 0.00%
+Values tensor([40., 40., 40.], device='cuda:0')
+======
+	diastolic_blood_pressure: 62.18%
+	bmi: 21.45%
+	TYPE2DIABETES: 0.53%
+	OSTEOARTHRITIS: 0.13%
+	HYPERTENSION: 0.13%
+	CKDSTAGE3TO5: 0.06%
+	HF: 0.04%
+	ISCHAEMICSTROKE: 0.00%
+	TYPE1DM: 0.00%
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Values:-How-increasing-diastolic_blood_pressure-affects-likelihood-of-diagnoses">Values: How increasing diastolic_blood_pressure affects likelihood of diagnoses<a class="anchor-link" href="#Values:-How-increasing-diastolic_blood_pressure-affects-likelihood-of-diagnoses">¶</a></h2>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [13]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">events_of_interest</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"bmi"</span><span class="p">,</span> <span class="s2">"diastolic_blood_pressure"</span><span class="p">,</span> 
+                      <span class="s2">"TYPE1DM"</span><span class="p">,</span> <span class="s2">"TYPE2DIABETES"</span><span class="p">,</span>
+                      <span class="s2">"HYPERTENSION"</span><span class="p">,</span> <span class="s2">"OSTEOARTHRITIS"</span><span class="p">,</span>
+                      <span class="s2">"CKDSTAGE3TO5"</span><span class="p">,</span>
+                      <span class="s2">"HF"</span><span class="p">,</span> <span class="s2">"ISCHAEMICSTROKE"</span>
+                     <span class="p">]</span>
+
+<span class="n">prompt</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"diastolic_blood_pressure"</span><span class="p">,</span> <span class="s2">"diastolic_blood_pressure"</span><span class="p">,</span> <span class="s2">"diastolic_blood_pressure"</span><span class="p">]</span>
+<span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">v</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">prompt</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">60.</span><span class="p">,</span><span class="mf">70.</span><span class="p">,</span><span class="mf">80.</span><span class="p">,</span><span class="mf">90.</span><span class="p">,</span><span class="mf">100.</span><span class="p">,</span><span class="mf">120.</span><span class="p">]]</span>
+<span class="n">age</span> <span class="o">=</span> <span class="p">[</span><span class="mi">39</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">41</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">model_idx</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="si">{</span><span class="n">m_names</span><span class="p">[</span><span class="n">model_idx</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">--------------------------------------"</span><span class="p">)</span>
+
+    <span class="c1"># for condition in target_conditions:</span>
+    <span class="c1">#     print(f"Probability of {condition}")</span>
+    <span class="c1">#     target_token = dm.tokenizer._stoi[condition]</span>
+
+    <span class="k">for</span> <span class="n">p_idx</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Values </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="se">\n</span><span class="s2">======"</span><span class="p">)</span>
+        <span class="n">encoded_prompt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">prompt</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">lgts</span><span class="p">,</span> <span class="n">tte_dist</span><span class="p">,</span> <span class="n">val_dist</span><span class="p">),</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">encoded_prompt</span><span class="p">,</span>
+                                                  <span class="n">values</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+                                                 <span class="n">ages</span><span class="o">=</span><span class="n">to_days</span><span class="p">(</span><span class="n">age</span><span class="p">),</span>
+                                                 <span class="n">is_generation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">lgts</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
+        
+        <span class="n">topk_prob</span><span class="p">,</span> <span class="n">topk_ind</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">probs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">descending</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">topk_ind</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">" "</span><span class="p">),</span> <span class="n">topk_prob</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">events_of_interest</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\t</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">j</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>
+
+TTETransformerForCausalTimeSeriesModelling: Exponential TTE
+--------------------------------------
+Values tensor([60., 60., 60.], device='cuda:0')
+======
+	diastolic_blood_pressure: 43.26%
+	bmi: 20.45%
+	OSTEOARTHRITIS: 0.15%
+	TYPE2DIABETES: 0.11%
+	CKDSTAGE3TO5: 0.10%
+	TYPE1DM: 0.07%
+	HYPERTENSION: 0.06%
+	HF: 0.05%
+	ISCHAEMICSTROKE: 0.01%
+Values tensor([70., 70., 70.], device='cuda:0')
+======
+	diastolic_blood_pressure: 44.14%
+	bmi: 20.32%
+	OSTEOARTHRITIS: 0.22%
+	TYPE2DIABETES: 0.19%
+	HYPERTENSION: 0.15%
+	CKDSTAGE3TO5: 0.11%
+	HF: 0.06%
+	TYPE1DM: 0.06%
+	ISCHAEMICSTROKE: 0.01%
+Values tensor([80., 80., 80.], device='cuda:0')
+======
+	diastolic_blood_pressure: 45.20%
+	bmi: 19.83%
+	HYPERTENSION: 0.45%
+	TYPE2DIABETES: 0.35%
+	OSTEOARTHRITIS: 0.33%
+	CKDSTAGE3TO5: 0.11%
+	HF: 0.07%
+	TYPE1DM: 0.05%
+	ISCHAEMICSTROKE: 0.02%
+Values tensor([90., 90., 90.], device='cuda:0')
+======
+	diastolic_blood_pressure: 50.88%
+	bmi: 17.82%
+	HYPERTENSION: 1.36%
+	TYPE2DIABETES: 0.56%
+	OSTEOARTHRITIS: 0.39%
+	CKDSTAGE3TO5: 0.11%
+	HF: 0.07%
+	TYPE1DM: 0.04%
+	ISCHAEMICSTROKE: 0.02%
+Values tensor([100., 100., 100.], device='cuda:0')
+======
+	diastolic_blood_pressure: 61.19%
+	bmi: 13.27%
+	HYPERTENSION: 3.56%
+	TYPE2DIABETES: 0.67%
+	OSTEOARTHRITIS: 0.33%
+	CKDSTAGE3TO5: 0.09%
+	HF: 0.07%
+	TYPE1DM: 0.03%
+	ISCHAEMICSTROKE: 0.02%
+Values tensor([120., 120., 120.], device='cuda:0')
+======
+	diastolic_blood_pressure: 60.82%
+	HYPERTENSION: 16.31%
+	bmi: 7.72%
+	TYPE2DIABETES: 0.83%
+	OSTEOARTHRITIS: 0.23%
+	HF: 0.08%
+	CKDSTAGE3TO5: 0.08%
+	ISCHAEMICSTROKE: 0.03%
+	TYPE1DM: 0.02%
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Values:-How-increasing-diagnosis-affects-value-of-diastolic_blood_pressure">Values: How increasing diagnosis affects value of diastolic_blood_pressure<a class="anchor-link" href="#Values:-How-increasing-diagnosis-affects-value-of-diastolic_blood_pressure">¶</a></h2>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [16]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">t1_token</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">_stoi</span><span class="p">[</span><span class="s2">"diastolic_blood_pressure"</span><span class="p">]</span>
+
+<span class="n">diagnoses</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">"DEPRESSION"</span><span class="p">],[</span><span class="s2">"TYPE2DIABETES"</span><span class="p">],</span> <span class="p">[</span><span class="s2">"HF"</span><span class="p">],</span> <span class="p">[</span><span class="s2">"HYPERTENSION"</span><span class="p">]]</span>
+<span class="n">values</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">nan</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+<span class="n">age</span> <span class="o">=</span> <span class="p">[</span><span class="mi">39</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">model_idx</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="si">{</span><span class="n">m_names</span><span class="p">[</span><span class="n">model_idx</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">--------------------------------------"</span><span class="p">)</span>
+
+    <span class="c1"># for condition in target_conditions:</span>
+    <span class="c1">#     print(f"Probability of {condition}")</span>
+    <span class="c1">#     target_token = dm.tokenizer._stoi[condition]</span>
+
+    <span class="k">for</span> <span class="n">p_idx</span><span class="p">,</span> <span class="n">diagnosis</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">diagnoses</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Diagnosis </span><span class="si">{</span><span class="n">diagnosis</span><span class="si">}</span><span class="se">\n</span><span class="s2">======"</span><span class="p">)</span>
+        <span class="n">encoded_prompt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">diagnosis</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">lgts</span><span class="p">,</span> <span class="n">tte_dist</span><span class="p">,</span> <span class="n">val_dist</span><span class="p">),</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">encoded_prompt</span><span class="p">,</span>
+                                                  <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
+                                                 <span class="n">ages</span><span class="o">=</span><span class="n">to_days</span><span class="p">(</span><span class="n">age</span><span class="p">),</span>
+                                                 <span class="n">is_generation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">val_dist</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">value_layer</span><span class="o">.</span><span class="n">token_key</span><span class="p">(</span><span class="n">t1_token</span><span class="p">)]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"diastolic_blood_pressure ~ N(</span><span class="si">{</span><span class="n">dist</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">dist</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+        <span class="c1"># print(f"\tprobability of type II diabetes: {100*float(probs[0, 0, t2_token].cpu().detach().numpy()):.4f}%")</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>
+
+TTETransformerForCausalTimeSeriesModelling: Exponential TTE
 --------------------------------------
 
-Age 4
+Diagnosis ['DEPRESSION']
 ======
-Top 10
-	ANXIETY: 36.14%
-	ATOPICECZEMA: 10.03%
-	ALLERGICRHINITISCONJ: 8.07%
-	ASTHMA_PUSHASTHMA: 6.72%
-	ANY_DEAFNESS_HEARING_LOSS: 6.40%
-	HYPERTENSION: 3.43%
-	ALCOHOLMISUSE: 2.84%
-	HYPOTHYROIDISM_DRAFT_V1: 2.25%
-	OSTEOARTHRITIS: 2.19%
-	PREVALENT_IBS: 2.09%
-Bottom 30
-	UNK: 0.00%
-	PAD: 0.00%
-	SICKLE_CELL_DISEASE: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	CHRONIC_LIVER_DISEASE_ALCOHOL: 0.00%
-	PSORIATICARTHRITIS2021: 0.00%
-	HAEMOCHROMATOSIS: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	DOWNSSYNDROME: 0.01%
-	SJOGRENSSYNDROME: 0.02%
-	PLASMACELL_NEOPLASM: 0.02%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.02%
-	NAFLD: 0.02%
-	PERNICIOUSANAEMIA: 0.03%
-	MENIERESDISEASE: 0.03%
-	AORTICANEURYSM: 0.03%
-	DEPRESSION: 0.03%
-	ADDISON_DISEASE: 0.04%
-	ILD_SH: 0.04%
-	CROHNS_DISEASE: 0.04%
-	PMRANDGCA: 0.05%
-	PARKINSONS: 0.06%
-	HIVAIDS: 0.07%
-	STROKE_HAEMRGIC: 0.08%
-	OTHER_CHRONIC_LIVER_DISEASE_OPTIMAL: 0.09%
-	ENDOMETRIOSIS_ADENOMYOSIS_V2: 0.10%
-	MS: 0.10%
-	CKDSTAGE3TO5: 0.11%
-	LYMPHOMA_PREVALENCE: 0.11%
-	LEUKAEMIA_PREVALENCE: 0.12%
+diastolic_blood_pressure ~ N(80.7, 10.6)
 
-Age 8
+Diagnosis ['TYPE2DIABETES']
 ======
-Top 10
-	ANXIETY: 34.93%
-	ALLERGICRHINITISCONJ: 9.24%
-	ATOPICECZEMA: 9.21%
-	ASTHMA_PUSHASTHMA: 9.05%
-	HYPERTENSION: 3.71%
-	ANY_DEAFNESS_HEARING_LOSS: 3.49%
-	PREVALENT_IBS: 3.31%
-	ALCOHOLMISUSE: 3.18%
-	HYPOTHYROIDISM_DRAFT_V1: 1.99%
-	OSTEOARTHRITIS: 1.96%
-Bottom 30
-	UNK: 0.00%
-	PAD: 0.00%
-	SICKLE_CELL_DISEASE: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	CHRONIC_LIVER_DISEASE_ALCOHOL: 0.00%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	HAEMOCHROMATOSIS: 0.01%
-	PLASMACELL_NEOPLASM: 0.01%
-	DOWNSSYNDROME: 0.01%
-	SJOGRENSSYNDROME: 0.01%
-	ILD_SH: 0.01%
-	PSORIATICARTHRITIS2021: 0.02%
-	AORTICANEURYSM: 0.02%
-	PERNICIOUSANAEMIA: 0.03%
-	NAFLD: 0.03%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.03%
-	MENIERESDISEASE: 0.03%
-	PARKINSONS: 0.03%
-	PMRANDGCA: 0.04%
-	ADDISON_DISEASE: 0.04%
-	LEUKAEMIA_PREVALENCE: 0.05%
-	ALL_DEMENTIA: 0.06%
-	STROKE_HAEMRGIC: 0.06%
-	AF: 0.07%
-	OTHER_CHRONIC_LIVER_DISEASE_OPTIMAL: 0.08%
-	CKDSTAGE3TO5: 0.08%
-	CROHNS_DISEASE: 0.08%
-	LYMPHOMA_PREVALENCE: 0.09%
-	HIVAIDS: 0.09%
-	ISCHAEMICSTROKE: 0.10%
+diastolic_blood_pressure ~ N(84.4, 10.6)
 
-Age 20
+Diagnosis ['HF']
 ======
-Top 10
-	ANXIETY: 62.00%
-	ALCOHOLMISUSE: 5.60%
-	ASTHMA_PUSHASTHMA: 3.70%
-	PREVALENT_IBS: 3.48%
-	ALLERGICRHINITISCONJ: 3.47%
-	SUBSTANCEMISUSE: 2.97%
-	ATOPICECZEMA: 2.82%
-	ANY_DEAFNESS_HEARING_LOSS: 1.22%
-	HYPERTENSION: 1.22%
-	OSTEOARTHRITIS: 1.21%
-Bottom 30
-	PAD: 0.00%
-	UNK: 0.00%
-	SICKLE_CELL_DISEASE: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	SYSTEMIC_SCLEROSIS: 0.00%
-	PLASMACELL_NEOPLASM: 0.00%
-	CHRONIC_LIVER_DISEASE_ALCOHOL: 0.01%
-	ADDISON_DISEASE: 0.01%
-	DOWNSSYNDROME: 0.01%
-	ILD_SH: 0.01%
-	DEPRESSION: 0.01%
-	SJOGRENSSYNDROME: 0.02%
-	LEUKAEMIA_PREVALENCE: 0.02%
-	AORTICANEURYSM: 0.02%
-	HAEMOCHROMATOSIS: 0.02%
-	PSORIATICARTHRITIS2021: 0.02%
-	BRONCHIECTASIS: 0.02%
-	LYMPHOMA_PREVALENCE: 0.03%
-	ALL_DEMENTIA: 0.03%
-	PARKINSONS: 0.03%
-	PERNICIOUSANAEMIA: 0.03%
-	TYPE1DM: 0.03%
-	VISUAL_IMPAIRMENT: 0.03%
-	MINFARCTION: 0.04%
-	PMRANDGCA: 0.04%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.04%
-	ISCHAEMICSTROKE: 0.04%
-	PAD_STRICT: 0.04%
-	AF: 0.04%
-	MENIERESDISEASE: 0.04%
+diastolic_blood_pressure ~ N(85.1, 10.9)
 
-Age 30
+Diagnosis ['HYPERTENSION']
 ======
-Top 10
-	ANXIETY: 52.55%
-	ALCOHOLMISUSE: 4.70%
-	PREVALENT_IBS: 4.64%
-	OSTEOARTHRITIS: 4.32%
-	ATOPICECZEMA: 3.89%
-	HYPERTENSION: 3.74%
-	ALLERGICRHINITISCONJ: 3.37%
-	ASTHMA_PUSHASTHMA: 2.81%
-	ANY_DEAFNESS_HEARING_LOSS: 2.33%
-	SUBSTANCEMISUSE: 1.77%
-Bottom 30
-	PAD: 0.00%
-	UNK: 0.00%
-	SICKLE_CELL_DISEASE: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	DOWNSSYNDROME: 0.00%
-	PLASMACELL_NEOPLASM: 0.00%
-	CHRONIC_LIVER_DISEASE_ALCOHOL: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	ADDISON_DISEASE: 0.01%
-	DEPRESSION: 0.01%
-	ILD_SH: 0.02%
-	LEUKAEMIA_PREVALENCE: 0.02%
-	AORTICANEURYSM: 0.02%
-	HAEMOCHROMATOSIS: 0.03%
-	PARKINSONS: 0.03%
-	SJOGRENSSYNDROME: 0.03%
-	LYMPHOMA_PREVALENCE: 0.04%
-	PSORIATICARTHRITIS2021: 0.04%
-	TYPE1DM: 0.04%
-	AUTISM: 0.05%
-	BRONCHIECTASIS: 0.05%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.05%
-	ALL_DEMENTIA: 0.06%
-	CROHNS_DISEASE: 0.07%
-	PERNICIOUSANAEMIA: 0.07%
-	VISUAL_IMPAIRMENT: 0.07%
-	ISCHAEMICSTROKE: 0.07%
-	STROKE_HAEMRGIC: 0.07%
-	HF: 0.08%
-	LEARNINGDISABILITY: 0.08%
+diastolic_blood_pressure ~ N(86.7, 11.0)
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Values:-How-increasing-bmi-affects-value-of-diastolic_blood_pressure">Values: How increasing bmi affects value of diastolic_blood_pressure<a class="anchor-link" href="#Values:-How-increasing-bmi-affects-value-of-diastolic_blood_pressure">¶</a></h2>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [27]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">t1_token</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">_stoi</span><span class="p">[</span><span class="s2">"diastolic_blood_pressure"</span><span class="p">]</span>
 
-Age 60
-======
-Top 10
-	ANXIETY: 40.93%
-	HYPERTENSION: 12.38%
-	OSTEOARTHRITIS: 10.15%
-	ANY_DEAFNESS_HEARING_LOSS: 3.98%
-	ATOPICECZEMA: 3.62%
-	ALLCA_NOBCC_VFINAL: 3.14%
-	ALCOHOLMISUSE: 2.42%
-	TYPE2DIABETES: 2.02%
-	ASTHMA_PUSHASTHMA: 1.91%
-	HYPOTHYROIDISM_DRAFT_V1: 1.67%
-Bottom 30
-	PAD: 0.00%
-	UNK: 0.00%
-	SICKLE_CELL_DISEASE: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	DOWNSSYNDROME: 0.00%
-	ADDISON_DISEASE: 0.00%
-	DEPRESSION: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	POLYCYSTIC_OVARIAN_SYNDROME_PCOS: 0.01%
-	CHRONIC_LIVER_DISEASE_ALCOHOL: 0.01%
-	PLASMACELL_NEOPLASM: 0.01%
-	PSORIATICARTHRITIS2021: 0.01%
-	TYPE1DM: 0.01%
-	AUTISM: 0.01%
-	HIVAIDS: 0.02%
-	ENDOMETRIOSIS_ADENOMYOSIS_V2: 0.02%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.03%
-	HAEMOCHROMATOSIS: 0.03%
-	MS: 0.03%
-	CROHNS_DISEASE: 0.03%
-	SJOGRENSSYNDROME: 0.03%
-	ILD_SH: 0.04%
-	LEARNINGDISABILITY: 0.06%
-	LEUKAEMIA_PREVALENCE: 0.06%
-	LYMPHOMA_PREVALENCE: 0.06%
-	CHRONICFATIGUESYNDROMEMM: 0.06%
-	EATINGDISORDERS: 0.07%
-	ULCERATIVE_COLITIS: 0.08%
-	PERNICIOUSANAEMIA: 0.09%
-	FIBROMYALGIA: 0.10%
+<span class="n">prompt</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"bmi"</span><span class="p">,</span> <span class="s2">"bmi"</span><span class="p">,</span> <span class="s2">"bmi"</span><span class="p">]</span>
+<span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">v</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">prompt</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">12.</span><span class="p">,</span><span class="mf">15.</span><span class="p">,</span><span class="mf">18.</span><span class="p">,</span><span class="mf">21.</span><span class="p">,</span><span class="mf">24.</span><span class="p">,</span><span class="mf">30.</span><span class="p">,</span><span class="mf">40.</span><span class="p">]]</span>
+<span class="n">age</span> <span class="o">=</span> <span class="p">[</span><span class="mi">39</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">41</span><span class="p">]</span>
 
-Age 80
-======
-Top 10
-	ANXIETY: 18.06%
-	HYPERTENSION: 12.06%
-	ALL_DEMENTIA: 11.33%
-	OSTEOARTHRITIS: 10.47%
-	ANY_DEAFNESS_HEARING_LOSS: 5.39%
-	ALLCA_NOBCC_VFINAL: 4.58%
-	OSTEOPOROSIS: 3.80%
-	HF: 3.25%
-	ATOPICECZEMA: 2.70%
-	CKDSTAGE3TO5: 2.68%
-Bottom 30
-	PAD: 0.00%
-	UNK: 0.00%
-	SICKLE_CELL_DISEASE: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	CHRONIC_LIVER_DISEASE_ALCOHOL: 0.00%
-	PSORIATICARTHRITIS2021: 0.00%
-	SYSTEMIC_SCLEROSIS: 0.00%
-	AUTISM: 0.00%
-	HIVAIDS: 0.00%
-	DOWNSSYNDROME: 0.00%
-	POLYCYSTIC_OVARIAN_SYNDROME_PCOS: 0.00%
-	ENDOMETRIOSIS_ADENOMYOSIS_V2: 0.00%
-	CHRONICFATIGUESYNDROMEMM: 0.01%
-	ADDISON_DISEASE: 0.01%
-	HAEMOCHROMATOSIS: 0.01%
-	MS: 0.01%
-	FIBROMYALGIA: 0.01%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
-	PTSDDIAGNOSIS: 0.01%
-	TYPE1DM: 0.01%
-	NAFLD: 0.02%
-	DEPRESSION: 0.02%
-	EATINGDISORDERS: 0.02%
-	CROHNS_DISEASE: 0.02%
-	SJOGRENSSYNDROME: 0.02%
-	OSA: 0.03%
-	PLASMACELL_NEOPLASM: 0.03%
-	LEARNINGDISABILITY: 0.04%
-	OTHER_CHRONIC_LIVER_DISEASE_OPTIMAL: 0.05%
-	ULCERATIVE_COLITIS: 0.06%
+<span class="k">for</span> <span class="n">model_idx</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="si">{</span><span class="n">m_names</span><span class="p">[</span><span class="n">model_idx</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">--------------------------------------"</span><span class="p">)</span>
 
-Age 90
+    <span class="c1"># for condition in target_conditions:</span>
+    <span class="c1">#     print(f"Probability of {condition}")</span>
+    <span class="c1">#     target_token = dm.tokenizer._stoi[condition]</span>
+
+    <span class="k">for</span> <span class="n">p_idx</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Values </span><span class="si">{</span><span class="n">value</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="s2">======"</span><span class="p">)</span>
+        <span class="n">encoded_prompt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">prompt</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">lgts</span><span class="p">,</span> <span class="n">tte_dist</span><span class="p">,</span> <span class="n">val_dist</span><span class="p">),</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">encoded_prompt</span><span class="p">,</span>
+                                                  <span class="n">values</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+                                                 <span class="n">ages</span><span class="o">=</span><span class="n">to_days</span><span class="p">(</span><span class="n">age</span><span class="p">),</span>
+                                                 <span class="n">is_generation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">val_dist</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">value_layer</span><span class="o">.</span><span class="n">token_key</span><span class="p">(</span><span class="n">t1_token</span><span class="p">)]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"diastolic_blood_pressure ~ N(</span><span class="si">{</span><span class="n">dist</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">dist</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+        <span class="c1"># print(f"\tprobability of type II diabetes: {100*float(probs[0, 0, t2_token].cpu().detach().numpy()):.4f}%")</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>
+
+TTETransformerForCausalTimeSeriesModelling: Exponential TTE
+--------------------------------------
+Values [12.0, 12.0, 12.0]
 ======
-Top 10
-	ALL_DEMENTIA: 20.84%
-	ALLCA_NOBCC_VFINAL: 9.35%
-	OSTEOARTHRITIS: 7.70%
-	ANXIETY: 7.52%
-	HYPERTENSION: 7.43%
-	ANY_DEAFNESS_HEARING_LOSS: 7.33%
-	CKDSTAGE3TO5: 7.22%
-	HF: 4.90%
-	OSTEOPOROSIS: 3.20%
-	ATOPICECZEMA: 3.09%
-Bottom 30
-	PAD: 0.00%
-	UNK: 0.00%
-	SICKLE_CELL_DISEASE: 0.00%
-	PSORIATICARTHRITIS2021: 0.00%
-	SYSTEMIC_SCLEROSIS: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	DOWNSSYNDROME: 0.00%
-	AUTISM: 0.00%
-	POLYCYSTIC_OVARIAN_SYNDROME_PCOS: 0.00%
-	ADDISON_DISEASE: 0.00%
-	ENDOMETRIOSIS_ADENOMYOSIS_V2: 0.00%
-	HIVAIDS: 0.00%
-	CHRONICFATIGUESYNDROMEMM: 0.00%
-	MS: 0.00%
-	LEARNINGDISABILITY: 0.00%
-	FIBROMYALGIA: 0.01%
-	CROHNS_DISEASE: 0.01%
-	DEPRESSION: 0.01%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
-	SJOGRENSSYNDROME: 0.01%
-	CHRONIC_LIVER_DISEASE_ALCOHOL: 0.01%
-	PTSDDIAGNOSIS: 0.01%
-	EATINGDISORDERS: 0.01%
-	TYPE1DM: 0.01%
-	HAEMOCHROMATOSIS: 0.01%
-	PLASMACELL_NEOPLASM: 0.02%
-	NAFLD: 0.02%
-	OSA: 0.03%
-	SCHIZOPHRENIAMM: 0.04%
-	ULCERATIVE_COLITIS: 0.05%
+diastolic_blood_pressure ~ N(65.4, 9.9)
+Values [15.0, 15.0, 15.0]
+======
+diastolic_blood_pressure ~ N(66.8, 9.8)
+Values [18.0, 18.0, 18.0]
+======
+diastolic_blood_pressure ~ N(68.9, 9.7)
+Values [21.0, 21.0, 21.0]
+======
+diastolic_blood_pressure ~ N(71.5, 9.7)
+Values [24.0, 24.0, 24.0]
+======
+diastolic_blood_pressure ~ N(74.6, 9.7)
+Values [30.0, 30.0, 30.0]
+======
+diastolic_blood_pressure ~ N(79.2, 9.7)
+Values [40.0, 40.0, 40.0]
+======
+diastolic_blood_pressure ~ N(82.6, 10.0)
 </pre>
 </div>
 </div>
@@ -8502,6 +8768,185 @@ Bottom 30
 </div>
 </div>
 </div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">model_idx</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="si">{</span><span class="n">m_names</span><span class="p">[</span><span class="n">model_idx</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"="</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">m_names</span><span class="p">[</span><span class="n">model_idx</span><span class="p">]))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>
+
+TTETransformerForCausalTimeSeriesModelling: Exponential TTE
+===========================================================
+
+
+TTETransformerForCausalTimeSeriesModelling(
+  (transformer): TTETransformer(
+    (wpe): TemporalPositionalEncoding()
+    (wte): DataEmbeddingLayer(
+      (token_embed_layer): Embedding(90, 384, padding_idx=0)
+      (value_embed_layer): EmbeddingBag(90, 384, mode=sum, padding_idx=0)
+    )
+    (drop): Dropout(p=0.0, inplace=False)
+    (blocks): ModuleList(
+      (0): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (1): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (2): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (3): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (4): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (5): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+    )
+    (ln_f): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+  )
+  (lm_head): Linear(in_features=384, out_features=90, bias=False)
+  (tte_layer): ExponentialTTELayer(
+    (proj): Linear(in_features=384, out_features=1, bias=True)
+  )
+  (value_layer): GaussianRegressionLayer(
+    (regression_layers): ModuleDict(
+      (Token 2): Linear(in_features=384, out_features=2, bias=True)
+      (Token 3): Linear(in_features=384, out_features=2, bias=True)
+      (Token 4): Linear(in_features=384, out_features=2, bias=True)
+      (Token 5): Linear(in_features=384, out_features=2, bias=True)
+      (Token 6): Linear(in_features=384, out_features=2, bias=True)
+      (Token 8): Linear(in_features=384, out_features=2, bias=True)
+      (Token 9): Linear(in_features=384, out_features=2, bias=True)
+      (Token 18): Linear(in_features=384, out_features=2, bias=True)
+      (Token 24): Linear(in_features=384, out_features=2, bias=True)
+      (Token 26): Linear(in_features=384, out_features=2, bias=True)
+      (Token 32): Linear(in_features=384, out_features=2, bias=True)
+      (Token 39): Linear(in_features=384, out_features=2, bias=True)
+      (Token 40): Linear(in_features=384, out_features=2, bias=True)
+      (Token 57): Linear(in_features=384, out_features=2, bias=True)
+      (Token 72): Linear(in_features=384, out_features=2, bias=True)
+      (Token 83): Linear(in_features=384, out_features=2, bias=True)
+    )
+  )
+)
+</pre>
+</div>
+</div>
+</div>
+</div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
@@ -8510,9 +8955,7 @@ Bottom 30
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">model_idx</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="si">{</span><span class="n">m_names</span><span class="p">[</span><span class="n">model_idx</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"="</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">m_names</span><span class="p">[</span><span class="n">model_idx</span><span class="p">]))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n\n</span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span> 
 </pre></div>
 </div>
 </div>
