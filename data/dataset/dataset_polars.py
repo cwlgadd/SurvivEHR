@@ -82,7 +82,8 @@ class EventStreamDataset(DatasetBase):
         return static
 
     
-    def _load_dynamic(self, practice_patient_ids,
+    def _load_dynamic(self, 
+                      practice_patient_ids,
                       include_measurements: bool = True,
                       include_diagnoses: bool = True
                      ) -> pl.LazyFrame:
@@ -100,7 +101,7 @@ class EventStreamDataset(DatasetBase):
                 Flag of whether to include diagnoses in polars dataframe
         
         RETURNS:
-            Polars lazy frame, of the (anonymized) form:
+            Polars lazy frame, of the form:
             ┌──────────────────────┬───────────────────────┬───────────────────────────────────┬─────────────────────────┬───────────────────────────────────┐
             │ PRACTICE_PATIENT_ID  ┆ VALUE                 ┆ EVENT                             ┆ AGE_AT_EVENT            ┆ EVENT_TYPE                        │
             │ ---                  ┆ ---                   ┆ ---                               ┆ ---                     ┆ ---                               │
@@ -111,12 +112,15 @@ class EventStreamDataset(DatasetBase):
             │ …                    ┆ …                     ┆ …                                 ┆ …                       ┆ …                                 │
             │ <anonymous N2>       ┆ [70.0, 0.1, … 80.0]   ┆ ["record name", ...]              ┆ [age 1, age 2, … ]      ┆ ["univariate_regression", "univa… │
             └──────────────────────┴───────────────────────┴───────────────────────────────────┴─────────────────────────┴───────────────────────────────────┘
+            (synthetic entries)
         """
         # TODO: can these reads be replaced with a lazy read, or be streamable (i.e. don't load entire tables before converting to lazyframe)
         # TODO: filtering patients in SQL, before polars, would be better.
         if include_measurements:
             query = "SELECT * FROM measurement_table"
             measurement_lazy_frame = pl.read_database(query=query, connection_uri=self.connection_token).lazy()
+
+            # TODO: reduce to given patient list here and perform normalisation across measurements
 
         if include_diagnoses:
             query = "SELECT * FROM diagnosis_table"
@@ -135,7 +139,7 @@ class EventStreamDataset(DatasetBase):
         event_stream = (
             combined_frame
             .sort("AGE_AT_EVENT")
-            .filter(pl.col("AGE_AT_EVENT") > -300)                                  # Remove entries before conception - include pregnancy period due to genetic conditions
+            .filter(pl.col("AGE_AT_EVENT") > -300)                                  # Remove entries before conception (negative to include pregnancy period due to genetic conditions)
             .filter(pl.col("PRACTICE_PATIENT_ID").is_in(practice_patient_ids))
             .groupby("PRACTICE_PATIENT_ID")     
             .agg(["VALUE", "EVENT", "AGE_AT_EVENT", "EVENT_TYPE"])                  # Turn into lists
@@ -182,7 +186,7 @@ class EventStreamDataset(DatasetBase):
             with index cols: (age at index, age at start, age at end)
 
         """
-        logging.info("Building DL-friendly representation")            
+        logging.info("Building polars dataset")            
 
         if exclude_pre_index_age:
             raise NotImplementedError
