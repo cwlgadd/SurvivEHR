@@ -36,10 +36,6 @@ class DataEmbeddingLayer(torch.nn.Module):
     ):
         """
         """
-        # logging.debug(f"tokens {tokens.shape}: {tokens}")
-        # logging.debug(f"values {values.shape}: {values}")
-                
-
         tok_emb = self.token_embed_layer(tokens)              # shape: (batch_size, sequence_length, embed_dim)
         
         if values is None:
@@ -52,10 +48,6 @@ class DataEmbeddingLayer(torch.nn.Module):
 
         val_emb = self.value_embed_layer(valued_tokens.reshape((-1,1)), per_sample_weights=values.reshape((-1,1)))
         val_emb = val_emb.reshape(tok_emb.shape)
-        
-        # logging.info(f"values mask {values.shape}: {values}")
-        # logging.info(f"token embedding {values.shape}: {values[0, :]}")
-        # logging.info(f"value embedding {val_emb.shape}: {val_emb[0, :, 0]}")
 
         return tok_emb + val_emb  
 

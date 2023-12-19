@@ -3,21 +3,24 @@ from torch import nn
 from torch.nn import functional as F
 import numpy as np
 from CPRD.src.models.TTE.base import TTETransformer
-from CPRD.src.modules.head_layers.tte_layers import GeometricTTELayer, ExponentialTTELayer
-
+from CPRD.src.models.TTE.tte_layers import GeometricTTELayer, ExponentialTTELayer
+from CPRD.src.models.TTE.value_layers import GaussianRegressionLayer
 
 from typing import Optional
 import logging
 
-class TTETransformerForCausalSequenceModelling(nn.Module):
+class TTETransformerForCausalTimeSeriesModelling(nn.Module):
     r"""    
     """
     
-    def __init__(self, config, vocab_size):
+    def __init__(self, 
+                 config,
+                 vocab_size):
         super().__init__()
         self.config = config
-        self.token_weight = 1/2
-        self.age_weight = 1/2
+        self.token_weight = 1/3
+        self.age_weight = 1/3
+        self.value_weight = 1/3
         
         self.transformer = TTETransformer(config, vocab_size)
 
@@ -33,9 +36,12 @@ class TTETransformerForCausalSequenceModelling(nn.Module):
             case "exponential":
                 self.tte_layer = ExponentialTTELayer(config.n_embd)
             case _:
-                logging.warning(f"TTELayer must be either Geometric or Exponential, got {_}")
-                raise NotImplementedError
+                raise ValueError(f"TTELayer must be either Geometric or Exponential")
 
+        # Regression layers, create a separate regression layer for each measurement
+        self.value_layer = GaussianRegressionLayer(config.n_embd,
+                                                   measurement_tokens=config.tokens_for_univariate_regression
+                                                   )
 
         # apply special scaled init to the residual projections, per GPT-2 paper
         # for pn, p in self.named_parameters():
@@ -45,7 +51,7 @@ class TTETransformerForCausalSequenceModelling(nn.Module):
     
     def _predict_token(self, 
                        hidden_states: torch.tensor,
-                       target_tokens: torch.tensor,
+                       target_tokens: Optional[torch.tensor] = None,
                        attention_mask: Optional[torch.tensor] = None,
                        is_generation: bool = False
                        ):
@@ -54,6 +60,8 @@ class TTETransformerForCausalSequenceModelling(nn.Module):
         """
         
         if not is_generation:
+            assert target_tokens is not None
+            
             # if we are not generating samples, we calculate the loss
             logits = self.lm_head(hidden_states)                                 # shape: (bsz, seq_len, n_embd)
             logits = logits[:, :-1, :].contiguous()                              # shape: (bsz, seq_len - 1, n_embd)
@@ -74,6 +82,7 @@ class TTETransformerForCausalSequenceModelling(nn.Module):
     def forward(self, 
                 tokens: torch.tensor,
                 ages: torch.tensor,
+                values: torch.tensor,
                 attention_mask: Optional[torch.tensor] = None,
                 is_generation: bool = False
                 ):
@@ -94,13 +103,15 @@ class TTETransformerForCausalSequenceModelling(nn.Module):
 
         Note:
         We have no way of computing the losses for the final token element of the sequence as we have no subsequent target.
-          Therefore, we must remove the final sequence element's hidden state (as this has no target). 
-        Instead we predict the final seq_len - 1 tokens. In this case, the first element is not included as a target in the loss. 
+          Therefore, we must remove the final sequence element's hidden state (as this has no target). This shift is done inside 
+          each of the called modules where we predict the final seq_len - 1 elements from the fist seq_len - 1 hidden states. In 
+          this case, the first element is not included as a target in the loss. 
           e.g. see https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt_neo/modeling_gpt_neo.py#L981
         """
         
         hidden_states = self.transformer(tokens=tokens, 
                                          ages=ages, 
+                                         values=values,
                                          attention_mask=attention_mask)  # shape: (bsz, seq_len, n_embd)
 
         # classifier head (next token)
@@ -109,53 +120,82 @@ class TTETransformerForCausalSequenceModelling(nn.Module):
                                                attention_mask=attention_mask,
                                                is_generation=is_generation)
 
-        # # time to event head (time until predicted event)
+        # time to event head (time until next token)
         tte_dist, loss_tte = self.tte_layer.predict(hidden_states,
                                                     target_ages=ages, 
                                                     attention_mask=attention_mask,
                                                     is_generation=is_generation)
-        
+            
+        # regression head (values of next token if applicable)
+        values_dist, loss_values = self.value_layer.predict(hidden_states,
+                                                            target_tokens=tokens,
+                                                            target_values=values,
+                                                            attention_mask=attention_mask,
+                                                            is_generation=is_generation,
+                                                            )
+
         if not is_generation:
-            loss = (self.token_weight * loss_clf) + (self.age_weight * loss_tte)
+            loss = (self.token_weight * loss_clf) + (self.age_weight * loss_tte) + (self.value_weight * loss_values)
         else:
             loss = None
 
-        return (logits, tte_dist), (loss_clf, loss_tte), loss
+        return (logits, tte_dist, values_dist), (loss_clf, loss_tte, loss_values), loss
     
     def generate(self, 
                  tokens: torch.tensor,
                  ages: torch.tensor,
+                 values: torch.tensor,
                  # eos_token: Optional[int] = None,               # add this later
                  max_new_tokens: int = 50):
         """ Generate future samples.
         
-            if using age at event in the positional encoder, we are sampling at an interval of one year.
+        # TODO: havent tested for batched generation
         """
-        
-        logging.warning(f"Using XXX requires value embeddings, " +
-                        f"but this head ``CURRENTLY`` has no way of sampling value of next event. " +
-                        f"Setting generated values to nan until this is implemented")
-        
         
         for _ in range(max_new_tokens):
             # crop tokens to the last block_size tokens
             tokens_window = tokens[:, -self.config.block_size:]
             ages_window = ages[:, -self.config.block_size:] 
+            values_window = values[:, -self.config.block_size:] 
 
             # get the predictions
-            (logits, delta_age), _, _ = self(tokens=tokens_window, ages=ages_window, is_generation=True)
-            probs = F.softmax(logits.squeeze(1), dim=-1)                               # apply softmax to get probabilities,   (bsz, C)
-            token_next = torch.multinomial(probs, num_samples=1) # (B, 1)
+            (logits, delta_age, value_dists), _, _ = self(tokens=tokens_window, 
+                                                          ages=ages_window, 
+                                                          values=values_window, 
+                                                          is_generation=True)
             
-            # sample from the distribution
-            ages_next = ages[:, [-1]] + delta_age
+            # apply softmax to get probabilities,   (bsz, C)
+            probs = F.softmax(logits.squeeze(1), dim=-1)                               
+            token_next = torch.multinomial(probs, num_samples=1) # (B, 1)
+            # print(token_next.shape)
+            
+            # sample from the distributions
+            # age
+            ages_next = ages[:, [-1]] + delta_age     # (B, 1)
+            # print(f"ages next {ages_next}")
+            # values
+            values_next = []
+            for i in range(token_next.shape[0]):
+                if token_next[i, 0].item() in self.value_layer.measurement_tokens:
+                    values_next.append(value_dists[self.value_layer.token_key(token_next[i, 0])].sample()[0])
+                else:
+                    values_next.append(torch.tensor([torch.nan], device=tokens.device))
+
+            # print(values_next)
+            values_next = torch.stack(values_next)    # (B, 1)
+            # print(values_next.shape)
             
             # append generated samples to the running sequence
             tokens = torch.cat((tokens, token_next), dim=1) # (B, T+1)
             ages = torch.cat((ages, ages_next), dim=1) 
+            values = torch.cat((values, values_next), dim=1) 
+
+            # print(f"tokens {tokens}")
+            # print(f"ages {ages}")
+            # print(f"values {values}")
 
             # if token_next == eos_token:
             #     raise NotImplementedError
             #     break
             
-        return tokens, ages
+        return tokens, ages, values

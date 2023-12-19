@@ -54,7 +54,8 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
                  load_event_stream:Optional[str] = None,
                  save_event_stream:Optional[str] = None,
                  include_diagnoses: bool = True,
-                 include_measurements: bool = True
+                 include_measurements: bool = True,        
+                 preprocess_measurements: bool = True
                 ):
        
         
@@ -75,9 +76,11 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
                              empty_dynamic_strategy=empty_dynamic_strategy,
                              indexing_strategy=indexing_strategy,
                              include_diagnoses=include_diagnoses,
-                             include_measurements=include_measurements)
+                             include_measurements=include_measurements,
+                             preprocess_measurements=preprocess_measurements)
             if save_event_stream is not None:
                 event_stream.save(save_event_stream)
+        self.standardisation_dict = event_stream.standardisation_dict
                 
         # Train/test/validation splits on cohort
         (train_split, test_split, val_split), weight_dict = self._train_test_val_split(event_stream)        

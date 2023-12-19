@@ -108,7 +108,6 @@ class TemporalPositionalEncoding(torch.nn.Module):
         temporal_encodings[:, :, 0::2] = torch.sin(ages * self.div_term.unsqueeze(0).unsqueeze(0))    # [bsz, seq_len, 1] * [1, 1, encoding_dim / 2]
         temporal_encodings[:, :, 1::2] = torch.cos(ages * self.div_term.unsqueeze(0).unsqueeze(0))
         
-        logging.debug(f"TPE: {ages.shape} maps to -> {temporal_encodings.shape} ")
         return temporal_encodings
     
 

@@ -3,8 +3,8 @@ from torch import nn
 from torch.nn import functional as F
 import numpy as np
 from CPRD.src.models.TTE.base import TTETransformer
-from CPRD.src.models.TTE.tte_layers import GeometricTTELayer, ExponentialTTELayer
-from CPRD.src.models.TTE.value_layers import GaussianRegressionLayer
+from CPRD.src.modules.head_layers.tte_layers import GeometricTTELayer, ExponentialTTELayer
+from CPRD.src.modules.head_layers.value_layers import GaussianRegressionLayer
 
 from typing import Optional
 import logging

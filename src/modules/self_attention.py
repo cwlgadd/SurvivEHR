@@ -98,7 +98,6 @@ class MultiHeadedSelfAttention(nn.Module):
 
         if attention_mask is not None:
             # Apply the attention mask
-            logging.debug(f"attn_weights {attn_weights.shape} AND attention_mask {attention_mask.shape}")
             attn_weights = attn_weights + attention_mask
 
         attn_weights = nn.functional.softmax(attn_weights, dim=-1)
