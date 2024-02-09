@@ -100,6 +100,8 @@ class GaussianRegressionLayer(torch.nn.Module):
                 
                 # average across batch
                 loss += -token_ll_per_patient.mean() 
+                
+            loss /= len(self.measurement_tokens)
 
         else:  
 
