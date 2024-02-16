@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import logging
-from CPRD.src.modules.head_layers.desurv import ODESurvSingle
+from CPRD.src.modules.head_layers.desurv import ODESurvSingle, ODESurvMultiple
 # from DeSurv.src.classes import ODESurvSingle
 from typing import Optional
 
@@ -10,14 +10,14 @@ class ODESurvSingleLayer(nn.Module):
     """ Wrapper around single-risk version of DeSurv
     """
     
-    def __init__(self, in_dim, hidden_dim, num_events, device="cpu", n=15):
+    def __init__(self, in_dim, hidden_dim, num_risks, device="cpu", n=15):
 
         super().__init__()
         self.sr_ode = [ODESurvSingle(cov_dim=in_dim,
                                      hidden_dim=hidden_dim,
                                      device=device,
                                      n=n) 
-                       for _ in range(num_events-1)]           # exclude pad at index 0
+                       for _ in range(num_risks)]             # do not include pad token as an event 
                                                                                                                    
         self._time_scale = 365*5                               # this is the maximum period considered in generation, and also used as normalising constant in DeSurv
         self.t_eval = np.linspace(0, self._time_scale, 300)    # the time grid which we generate over
@@ -141,7 +141,151 @@ class ODESurvSingleLayer(nn.Module):
         # Randomly sample between 0 and the maximum CDF across all events
         rsample = np.random.uniform(0, np.max([_s[0, -1] for _s in surv]))
         # rsample = np.max([_s[0, -1] for _s in surv])
-        print(f"rsample: {rsample}")
+        logging.debug(f"single-risk generation inverse tranform random sample: {rsample}")
+        
+        # Get all of the events which have their max cdf (within considered time region) < rsample
+        probs = torch.FloatTensor([0 if rsample > _s[0, -1] else 1 for _s in surv])
+        probs /= torch.sum(probs)
+        # print(probs)
+        # print(np.where(probs>0))
+
+        # Sample which token occurs next, out of possible tokens. Add one as we excluded the PAD token
+        token_next = torch.multinomial(probs, num_samples=1).reshape(-1, 1).to(self.device) + 1  # (B, 1)
+
+        # age
+        time_index = np.sum(surv[token_next][0, :] <= rsample) - 1
+        delta_age = self.t_eval[time_index]
+
+        # print(f"sampled token {token_next} ({token_next.shape}) to occur in {delta_age} days")
+        
+        return token_next, delta_age
+
+
+class ODESurvCompetingRiskLayer(nn.Module):
+    """ Wrapper around competing risk version of DeSurv """
+
+    def __init__(self, in_dim, hidden_dim, num_risks, device="cpu", n=15):
+        super().__init__()
+        self.sr_ode = ODESurvMultiple(cov_dim=in_dim,
+                                      hidden_dim_fc=hidden_dim,
+                                      hidden_dim_ode=hidden_dim,
+                                      num_risks=num_risks,        # do not include pad token as an event 
+                                      device=device,
+                                      n=n) 
+                                                                                                                   
+        self._time_scale = 365*5                               # this is the maximum period considered in generation, and also used as normalising constant in DeSurv
+        self.t_eval = np.linspace(0, self._time_scale, 300)    # the time grid which we generate over
+        self.device = device
+
+        logging.info(f"Using Single-Risk DeSurvival head. This module predicts a separate survival curve for each possible future event")
+        logging.info(f"Internally scaling time in survival head by {self._time_scale} days")
+        logging.info(f"In generation forwarding DeSurv on the grid between [{self.t_eval.min()}, {self.t_eval.max()}], with delta=1/{len(self.t_eval)}")
+
+    def predict(self,
+                hidden_states: torch.tensor,                    # shape: torch.Size([bsz, seq_len, n_embd])
+                target_tokens: Optional[torch.tensor] = None,   # shape: torch.Size([bsz, seq_len])
+                target_ages: Optional[torch.tensor] = None,     # shape: torch.Size([bsz, seq_len])        
+                attention_mask: Optional[torch.tensor] = None,  # shape: torch.Size([bsz, seq_len])
+                is_generation: bool = False
+                ):
+        r"""
+        """
+
+        if not is_generation:
+            assert target_tokens is not None
+            assert target_ages is not None
+            
+            if attention_mask is None:
+                raise NotImplementedError
+
+            # Get the competing risk event types. A list of len vocab_size-1 where each element of the list is an event
+            #       The 1st element of list corresponds to 2nd vocab element (vocab index == 0 is the PAD token which is excluded)
+            #       k \in {0,1} with 1 if the seq target is the same as the single risk ode's index (position in list), and 0
+            #       otherwise
+            k = target_tokens[:, 1:]
+            # shape: torch.Size([bsz, seq_len - 1])
+            
+            # We are considering the delta of time, but each element in the seq_len just has the time of event. 
+            # This means the output mask requires both the time at the event, and the time of the next event to be available.
+            tte_obs_mask = attention_mask[:, :-1] & attention_mask[:, 1:]   
+            # shape: torch.Size([bsz, seq_len - 1])
+            
+            # Get time to event, excluding first in sequence as we do not know what time the one pre-dating it occurred
+            tte_deltas = target_ages[:, 1:] - target_ages[:, :-1]                         
+            tte_deltas = tte_deltas / self._time_scale  
+            tte_deltas = torch.where(tte_obs_mask == 1, tte_deltas, torch.ones_like(tte_deltas)) 
+            assert torch.all(tte_deltas >= 0), f"events must be given in time order, {tte_deltas[tte_deltas<0]}"
+            # shape: torch.Size([bsz, seq_len - 1])
+
+            # Vectorise
+            in_hidden_state = hidden_states[:, :-1, :].reshape((-1, hidden_states.shape[-1]))        # torch.Size([bsz * (seq_len-1), hidden_size])
+            tte_deltas = tte_deltas.reshape(-1)                                                      # torch.Size([bsz * (seq_len-1)])
+            tte_obs_mask = tte_obs_mask.reshape(-1)                                                  # torch.Size([bsz * (seq_len-1)])
+
+            # and apply the observation mask
+            in_hidden_state = in_hidden_state[tte_obs_mask == 1]
+            tte_deltas = tte_deltas[tte_obs_mask == 1]
+            k = k.flatten()[tte_obs_mask == 1]
+
+            # print(f"{k.shape}, {k}")
+            # print(f"{in_hidden_state.shape}, {in_hidden_state}")
+            # print(f"{tte_deltas.shape}, {tte_deltas}")
+
+            # At this point we have a competing-risk for each type of event, where tte_deltas are the times to each next
+            #  event. Censored events (such as GP visit with no diagnosis/measurement/test. I.e. k=0 (but not padding),
+            #  though informative, is not in the currently considered dataset. TODO
+
+            # Calculate losses, excluding masked values. Each sr_ode returns the sum over observed events
+            #    to be consistent with other heads, we scale by number of observed values to obtain per SR-model mean
+            #    and we sum across the mixture of survival ODEs
+            surv_loss = self.sr_ode.loss(in_hidden_state, tte_deltas, k) / k.shape[0]          
+
+            # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
+            surv_CDF = None
+
+        else:
+            # The normalised grid over which to predict
+            # t_eval = np.linspace(start=0, stop=self._normalising_scaling_constant, num=300)
+            t_test = torch.tensor(np.concatenate([self.t_eval] * hidden_states.shape[0], 0), dtype=torch.float32, device=self.device)
+            t_test /= self._time_scale
+                
+            # inference-time mini-optimization: only forward the head on the very last position
+            in_hidden_state = hidden_states[:, -1, :]
+            H_test = in_hidden_state.repeat_interleave(self.t_eval.size, 0).to(self.device, torch.float32)
+
+            # Batched predict: Cannot make all predictions at once due to memory constraints
+            pred_bsz = 16382                                                        # Predict in batches
+            pred = []
+            for H_test_batched, t_test_batched in zip(torch.split(H_test, pred_bsz), torch.split(t_test, pred_bsz)):
+                pred.append(self.sr_ode(H_test_batched, t_test_batched)[0])
+            pred = torch.concat(pred)
+            # print(pred.shape)
+            # print(f"hidden_states {hidden_states.shape}")
+            # print(f"t_eval {self.t_eval.size}")
+            pred = pred.reshape((hidden_states.shape[0], self.t_eval.size, -1)).cpu().detach().numpy()
+            preds = [pred[:, :, _i] for _i in range(pred.shape[-1])]
+
+            surv_loss = None
+            surv_CDF = preds
+
+        return surv_CDF, surv_loss
+
+    def generate_sample(self, surv):
+
+        assert surv[0].shape[0] == 1, "TODO: not implemented for batches"
+        
+        # debug
+        # print(surv[0].shape)
+        # import matplotlib.pyplot as plt
+        # plt.close()
+        # for _s in surv:
+        #     plt.plot(self.t_eval / 365, _s[0, :])
+        # plt.savefig("test.png")
+        
+        # Randomly sample between 0 and the maximum CDF across all events
+        rsample = np.random.uniform(0, np.max([_s[0, -1] for _s in surv]))
+        # rsample = np.max([_s[0, -1] for _s in surv])
+        logging.debug(f"single-risk generation inverse tranform random sample: {rsample}")
         
         # Get all of the events which have their max cdf (within considered time region) < rsample
         probs = torch.FloatTensor([0 if rsample > _s[0, -1] else 1 for _s in surv])

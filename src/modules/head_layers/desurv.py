@@ -115,7 +115,7 @@ class ODESurvSingle(nn.Module):
 
 
 class ODESurvMultiple(nn.Module):
-    def __init__(self, cov_dim, hidden_dim_fc, hidden_dim_ode, num_risks, device=“cpu”, n=15):
+    def __init__(self, cov_dim, hidden_dim_fc, hidden_dim_ode, num_risks, device="cpu", n=15):
         super().__init__()
 
         input_dim = cov_dim + 1
@@ -132,7 +132,7 @@ class ODESurvMultiple(nn.Module):
 
         return self.pinet(x)
 
-    def predict(self, x, t):
+    def forward(self, x, t):
 
         t = t.unsqueeze(1)
         pi = self.get_pi(x)
@@ -148,7 +148,7 @@ class ODESurvMultiple(nn.Module):
         censterm = torch.tensor(0)
         cens_ids = torch.where(k == 0)[0]
         if torch.numel(cens_ids) != 0:
-            cif_cens = self.predict(x[cens_ids, :], t[cens_ids, 0])[0]
+            cif_cens = self.forward(x[cens_ids, :], t[cens_ids, 0])[0]
             cdf_cens = cif_cens.sum(dim=1)
             censterm = torch.log(1 - cdf_cens + eps).sum()
 
