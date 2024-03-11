@@ -1,0 +1,16 @@
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Wed Mar  6 19:27:46 2024 for gaddcz(836045)
+| Identity jobid 7249083 jobname sbatch
+| Running against project subramaa-mum-predict and in partition icelake-gpua100-shared
+| Requested cpu=4,mem=16G,node=1,billing=4,gres/gpu=1 - 00:30:00 walltime
+| Assigned to nodes bear-pg0208u15a
+| Command (null)
+| WorkDir /rds/homes/g/gaddcz/ondemand/data/sys/myjobs/projects/default/12
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Wed Mar  6 19:40:22 2024 for gaddcz(836045) on the BlueBEAR Cluster
+| Required (12:01.045 cputime, 2676976K memory used) - 00:12:35 walltime
+| JobState COMPLETING - Reason NonZeroExitCode
+| Exitcode 139:0
++--------------------------------------------------------------------------+

@@ -5,21 +5,25 @@ from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from torch.nn.utils.rnn import pad_sequence
 import pytorch_lightning as pl
 import polars as plr
+import pyarrow.parquet as pq
 from abc import ABC
 from textwrap import wrap
 from typing import Optional
 from collections import defaultdict
 import os
-from CPRD.data.dataset.dataset_polars import EventStreamDataset
+from CPRD.data.dataset.dataset_polars import PolarsDataset
 from CPRD.data.tokenizers.base import TokenizerBase
 from CPRD.data.tokenizers.tokenizers import NonTabular, Tabular
 import random
 import logging
+from pathlib import Path
+from tqdm import tqdm
 
 # Testing modules
 from CPRD.data.database import queries
 import sqlite3
 
+import time
 
 class FoundationalDataModule(pl.LightningDataModule, ABC):
     """
@@ -45,17 +49,14 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
     """
     
     def __init__(self, 
-                 identifiers:list,
-                 tokenizer:str = "tabular",
-                 max_seq_length:int = 256,
-                 batch_size:int = 512,
+                 path_to_db: str,
+                 load: bool,
+                 tokenizer: str = "tabular",
+                 max_seq_length: int = 256,
+                 batch_size: int = 512,
                  unk_freq_threshold=1e-2,
-                 min_workers:int = 2,
-                 load_event_stream:Optional[str] = None,
-                 save_event_stream:Optional[str] = None,
-                 include_diagnoses: bool = True,
-                 include_measurements: bool = True,        
-                 preprocess_measurements: bool = True
+                 min_workers:int = 1,
+                 **kwargs   
                 ):
        
         
@@ -63,71 +64,24 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         
         self.batch_size = batch_size
         self.min_workers = min_workers 
-        use_weighted_sampler = False     # Not implemented
-        empty_dynamic_strategy = "drop"
-        indexing_strategy = None
         
         # Get the DL friendly representation, either by loading or building from scratch.
-        event_stream = EventStreamDataset()
-        if load_event_stream is not None:
-            event_stream.load(load_event_stream)
-        else:
-            event_stream.fit(identifiers, 
-                             empty_dynamic_strategy=empty_dynamic_strategy,
-                             indexing_strategy=indexing_strategy,
-                             include_diagnoses=include_diagnoses,
-                             include_measurements=include_measurements,
-                             preprocess_measurements=preprocess_measurements)
-            if save_event_stream is not None:
-                event_stream.save(save_event_stream)
-        self.standardisation_dict = event_stream.standardisation_dict
-                
-        # Train/test/validation splits on cohort
-        (train_split, test_split, val_split), weight_dict = self._train_test_val_split(event_stream)        
-
-        # Create tokenizer
-        match tokenizer:
-            case "tabular":
-                logging.info("Using tabular tokenizer")
-                self.tokenizer = Tabular()
-            case "non-tabular":
-                logging.info("Using non-tabular tokenizer")
-                self.tokenizer = NonTabular()
-            case _:
-                logging.warning(f"Tokenizer {tokenizer} doesn't exist")
-        # and build based on vocabulary from training set. 
-        #   Vocabularly begins with the PAD (padding) token, then the UNK (unknown) token, and is then ordered by token frequency
-        self.tokenizer.fit(train_split, freq_threshold=unk_freq_threshold)
-        logging.debug(self.tokenizer._stoi)
-        logging.debug(self.tokenizer._itos)
+        polars_dataset = PolarsDataset(path_to_db=path_to_db)
+        meta_information = polars_dataset.fit(path=path_to_db + "polars/", load=load, **kwargs)
+        logging.info(meta_information)
+    
+        # Create tokenizer, and build based on vocabulary from training set. 
+        #   Vocabularly begins with the PAD (padding) token, then the UNK (unknown) token, and is then ordered by token frequency        
+        logging.info(f"Using tokenizer {tokenizer}")
+        self.tokenizer = Tabular() if tokenizer == "tabular" else NonTabular()
+        self.tokenizer.fit(meta_information, freq_threshold=unk_freq_threshold, **kwargs)
         
         # Train/test/validation GenerativeDatasets
-        [self.train_set, self.test_set, self.val_set] = [FoundationalDataset(split, 
-                                                                             max_seq_length=max_seq_length,
-                                                                             tokenizer=self.tokenizer)
-                                                         for split in [train_split, test_split, val_split]]
-                
-        # TODO Weighted random sampler for training set. Naive approach to account for different event sequence lengths.
-        # TODO: better way without pre-slicing all the dataset rows?
-        #    Up-sample larger sequences?
-        #############
-        if (weight_dict is not None) and use_weighted_sampler:        
-            raise NotImplementedError
-        else:        
-            self.train_sampler = None
-            self.train_shuffle = True
-        
-        # print(f"Tokenizer description: \n {self.train_set.tokenizer.fit_description}")
-
-    def _train_test_val_split(self, event_stream):
-        # Split identifiers into training, validation, and test
-        train_ids, test_ids = sk_split(event_stream.identifiers, test_size=0.1)
-        test_ids, val_ids = sk_split(test_ids, test_size=0.5)
-        # Split frame into training, validation, and test
-        splits = [event_stream.DL_frame.filter(plr.col("PRACTICE_PATIENT_ID").is_in(labels)) 
-                  for labels in [train_ids, test_ids, val_ids]]
-        weight_dict = None
-        return (splits[0], splits[1], splits[2]), weight_dict
+        parquet_path = path_to_db + "polars/"
+        dataset_kwargs = {"max_seq_length": max_seq_length, "tokenizer": self.tokenizer, "meta_information": meta_information}
+        self.train_set = FoundationalDataset(parquet_path + "split=train/", **dataset_kwargs)
+        self.test_set = FoundationalDataset(parquet_path + "split=test/", **dataset_kwargs)
+        self.val_set = FoundationalDataset(parquet_path + "split=val/", **dataset_kwargs)
     
     def decode(self, sequence:list[int]):
         return self.train_set.tokenizer.decode(sequence)
@@ -161,30 +115,30 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
             "attention_mask": pad_sequence(batch_dict["attention_mask"]).T
             }
         return worker_batch
-    
+
     def train_dataloader(self):
         return DataLoader(            
             dataset=self.train_set,
-            sampler=self.train_sampler,
             batch_size=self.batch_size,
-            num_workers=np.min((self.min_workers,os.cpu_count())),
+            num_workers=np.min((self.min_workers, os.cpu_count())),
             collate_fn=self.collate_fn,
-            shuffle=self.train_shuffle
+            shuffle=True
         )
 
     def val_dataloader(self):
         return DataLoader(
             dataset=self.val_set,
             batch_size=self.batch_size,
-            num_workers=np.min((self.min_workers,os.cpu_count())),
+            num_workers=np.min((self.min_workers, os.cpu_count())),
             collate_fn=self.collate_fn,
+            shuffle=False
         )
 
     def test_dataloader(self):
         return DataLoader(
             dataset=self.test_set,
             batch_size=self.batch_size,
-            num_workers=np.min((self.min_workers,os.cpu_count())),
+            num_workers=np.min((self.min_workers, os.cpu_count())),
             collate_fn=self.collate_fn,
             shuffle=False
         )
@@ -194,37 +148,136 @@ class FoundationalDataset(Dataset):
     r"""
     """
     def __init__(self,
-                 event_stream,
+                 parquet_path: str, 
                  tokenizer:TokenizerBase,
                  max_seq_length:int = 256,
-                 **kwargs
+                 standardise_values:bool = True,
+                 meta_information:Optional[dict] = None
                 ):
         super().__init__()
+
+        logging.info("Creating dataset")
         
-        self.event_stream = event_stream    
-        self.max_seq_length = max_seq_length
+        self.parquet_path = parquet_path
         self.tokenizer = tokenizer
-        # self.tokenize_stream()         # TODO: Pre-process tokenization
+        self.max_seq_length = max_seq_length
+        self.standardise_values = standardise_values
+        self.meta_information = meta_information
+
+        # create a hash map that lets us look up the correct parquet in O(1)
+        # logging.info("Creating hash map")
+        # self.file_row_map = self._create_file_row_map()
+
+        # Get all files at specified path,
+        #    calculate how many samples are in each file for faster reading
+        pathlist = Path(parquet_path).rglob('*.parquet')
+        self.parquet_files = []
+        self.row_group_counts = []
+        for file in tqdm(pathlist, desc="Calculating chunk index splits "):
+            df = pq.read_table(file).to_pandas()
+            self.parquet_files.append(file)            
+            self.row_group_counts.append(df.shape[0])
+        
+    def _create_file_row_map(self):
+        """
+        Create a hash map of file paths and row group offsets.
+
+        Returns:
+            dict: A hash map where keys are file paths and values are lists of row group offsets.
+        """
+        pathlist = Path(self.parquet_path).rglob('*.parquet')
+        file_row_map = {}                                                         # Create an empty hash map to store file paths and row group offsets
+        total_rows = 0                                                            # Initialize total_rows to track cumulative row counts across all files
+        
+         # Iterate over each file in the root directory
+        for file_path in pathlist:
+            
+            parquet_file = pq.ParquetFile(file_path)                              # Open the Parquet file
+            num_row_groups = parquet_file.metadata.num_row_groups                 # Get the number of row groups in the Parquet file
+            row_group_offsets = [total_rows] * num_row_groups                     # Create a list of row group offsets for the current file    
+            file_row_map[file_path] = row_group_offsets                           # Store the file path and row group offsets in the hash map
+            total_rows += parquet_file.metadata.num_rows                          # Update total_rows by adding the number of rows in the current file
+        
+        return file_row_map                                                       # return populated hash map
         
     def __len__(self):
-        # Number of samples in dataset
-        return self.event_stream.select(plr.count())["count"][0]
+        """ 
+            Get the total number of rows across all Parquet files.
+        """
+        return sum(self.row_group_counts)
+
+    def _get_file_and_row_group(self, idx):
+        """
+        Get the file path and row group index corresponding to the given index.
+
+        Args:
+            idx (int): Index of the sample.
+
+        Returns:
+            tuple: A tuple containing the file path and row group index.
+        """    
+        # Iterate over the hash map entries (file paths and row group offsets)
+        for file_path, row_group_offsets in self.file_row_map.items():
+             # If the index is less than the cumulative row count for the current file
+            if idx < row_group_offsets[-1]:
+                # Find the row group index corresponding to the index within the current file
+                row_group_idx = next(i for i, offset in enumerate(row_group_offsets) if idx < offset)
+
+                # Open the Parquet file
+                parquet_file = pq.ParquetFile(file_path)
+                
+                # Read the specified row group from the Parquet file
+                table = parquet_file.read_row_group(row_group_idx)
+                
+                # Convert the row group to a Pandas DataFrame and get the first row
+                row_df = table.to_pandas().loc[0]
+
+                return row_df
+
+        # If the index exceeds the total number of samples, raise an IndexError
+        raise IndexError(f"Index {idx} out of range")
     
     def __getitem__(self, idx):
         r"""
-        Return tokenized and padded event stream and static variables
-        
-        # TODO: tokenization could also be pre-processed rather than done on the fly.        
+            Get a single item from the dataset, 
+            
+            tokenized and padded event stream and static variables
         """
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        
-        # Get row from the DL representation frame
-        row_dict = self.event_stream.row(idx, named=True)
 
-        sequence_tokens = row_dict["EVENT"]                                                        # e.g. ["bmi", "DEPRESSION", "bmi"] 
-        sequence_ages = [int(_a) for _a in row_dict["AGE_AT_EVENT"]]                               #      [6661, 7569, 7866]
-        sequence_values = [float(_v) if _v is not None else np.nan for _v in row_dict["VALUE"]]    #      [23.3, np.nan, 27.7]
+        # Determine which file and row to read based on the index
+        file_idx = 0
+        while idx >= self.row_group_counts[file_idx]:
+            idx -= self.row_group_counts[file_idx]
+            file_idx += 1
+        # Read the corresponding row from the Parquet file        
+        row_df = pq.read_table(self.parquet_files[file_idx], filters=[('row_nr','=', idx)]).to_pandas().loc[0]
+        
+        # Unpack rows, and optionally standardise values
+        sequence_tokens, sequence_values, sequence_ages = [], [], []
+        standardisation_keys = self.meta_information["measurement_table"].event.tolist() if self.meta_information is not None else None
+        for next_event, next_value, next_age in zip(row_df["EVENT"], row_df["VALUE"], row_df["DAYS_SINCE_BIRTH"]):
+
+            # e.g. ["bmi", "DEPRESSION", "bmi", ...] 
+            sequence_tokens.append(next_event)
+
+            # e.g.  [23.3, np.nan, 27.7, ...] if not standardising, else [0.12, np.nan, 0.23, ...]
+            if next_value is not None:
+                if self.standardise_values:
+                    assert self.meta_information is not None
+                    if next_event in standardisation_keys:
+                        event_meta = self.meta_information["measurement_table"][self.meta_information["measurement_table"]["event"] == next_event]
+                        next_value = (next_value - event_meta["mean"]) / event_meta["std"]
+                next_value = float(next_value)
+            else:
+                next_value = np.nan
+            sequence_values.append(next_value)
+
+            # e.g. [6661, 7569, 7866, ...]
+            sequence_ages.append(int(next_age))
+
+            # print(f"{next_event}, {next_value}, {next_age}")
         
         if not self.tokenizer.is_tabular:
             # Merge together events and their values. When value is None, do not include it. 
@@ -253,55 +306,11 @@ class FoundationalDataset(Dataset):
         sequence_ages = torch.tensor(sequence_ages)
         sequence_values = torch.tensor(sequence_values)
 
-        return {"identifier": row_dict["PRACTICE_PATIENT_ID"],
-                #"sex": row_dict["SEX"],
-                #"ethnicity": row_dict["ETHNICITY"],
-                #"year_of_birth": row_dict["YEAR_OF_BIRTH"],
+        return {"identifier": row_df["PRACTICE_PATIENT_ID"],
+                #"sex": row_df["SEX"],
+                #"ethnicity": row_df["ETHNICITY"],
+                #"year_of_birth": row_df["YEAR_OF_BIRTH"],
                 "tokens": encoded_tokens,
                 "ages": sequence_ages,
                 "values": sequence_values,
                }
-    
-    
-if __name__ == "__main__":
-
-    # Report what is in the db
-    ###########################
-    PATH_TO_DB = "/rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModel/preprocessing/processed/cprd.db"
-    conn = sqlite3.connect(PATH_TO_DB)
-    cursor = conn.cursor()
-    # Check what tables were built into DB
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = cursor.fetchall()
-    print(f"Loaded tables {[table[0] for table in tables]}")
-    # Report how many entries in each table
-    cursor.execute("SELECT COUNT(*) FROM static_table")
-    print('\t static_table has', cursor.fetchone()[0], 'records.')
-    cursor.execute("SELECT COUNT(*) FROM diagnosis_table")
-    print('\t diagnosis_table has', cursor.fetchone()[0], 'records.')
-    cursor.execute("SELECT COUNT(*) FROM measurement_table")
-    print('\t measurement_table has', cursor.fetchone()[0], 'records.')
-    
-    # Example of cohort filtering
-    if False:
-        # Get the list of patients which fit our criterion
-        identifiers1 = queries.query_measurement(["bmi", "hydroxyvitamin2", "hydroxyvitamin3"], cursor)
-        identifiers2 = queries.query_diagnosis(["HF", "FIBROMYALGIA"], cursor)
-        identifiers = list(set(identifiers1).intersection(identifiers2))    # Turn smaller list into the set
-    else: 
-        cursor.execute("SELECT practice_patient_id FROM static_table")
-        identifiers = [ppid[0] for ppid in cursor.fetchall()]
-        
-    foundational_dm = FoundationalDataModule(identifiers=identifiers, batch_size=256)
-    
-    for idx, batch in enumerate(foundational_dm.train_dataloader()):
-        break
-    print(batch["input_positions"])
-    print(batch["attention_mask"])
-    model_inputs = batch["input_ids"].numpy()
-    print(model_inputs)
-    print(type(model_inputs))
-
-    decoded_sequences = [foundational_dm.decode([model_inputs[j, i] for j in range(model_inputs.shape[0])]) 
-                         for i in range(model_inputs.shape[1])]
-    print(decoded_sequences[0])

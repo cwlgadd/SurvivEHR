@@ -14593,8 +14593,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>cuda
-/rds/homes/g/gaddcz/Projects/CPRD/examples/modelling/NLP
+<pre>Path &#39;/rds/homes/g/gaddcz/Projects/CPRD/my-virtual-env-icelake/lib/python3.10/site-packages&#39; not found. Check that it exists and/or that it exists for node-type &#39;icelake&#39;.
 </pre>
 </div>
 </div>
@@ -14614,7 +14613,8 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Path &#39;/rds/homes/g/gaddcz/Projects/CPRD/my-virtual-env-icelake/lib/python3.10/site-packages&#39; not found. Check that it exists and/or that it exists for node-type &#39;icelake&#39;.
+<pre>cuda
+/rds/homes/g/gaddcz/Projects/CPRD/examples/modelling/NLP
 </pre>
 </div>
 </div>
@@ -14645,53 +14645,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
-
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>INFO:root:Building polars dataset
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Using N=10000 random samples, from the available 117102
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>INFO:root:Using measurements
-INFO:root:Using diagnoses
-INFO:root:Dropping samples with no dynamic events
-INFO:root:Using non-tabular tokenizer
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>8637 training, 480 validation, and 480 test samples
-101 vocab elements
-</pre>
-</div>
-</div>
-
-</div>
-
-</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
 
@@ -14703,103 +14657,581 @@ INFO:root:Using non-tabular tokenizer
 
 <div class="jp-OutputArea-child">
 
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>INFO:root:Loading Polars dataset from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/archive/Version2/polars/
+INFO:root:Using tokenizer non-tabular
+INFO:root:Tokenzier created based on 72.02M tokens
+INFO:root:Creating dataset
+Calculating chunk index splits : 27it [00:26,  1.04it/s]
+INFO:root:Creating dataset
+Calculating chunk index splits : 2it [00:01,  1.17it/s]
+INFO:root:Creating dataset
+Calculating chunk index splits : 2it [00:00,  2.22it/s]</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>shape: (89, 3)
-┌───────────────────────────────────┬────────┬──────────┐
-│ EVENT                             ┆ counts ┆ freq     │
-│ ---                               ┆ ---    ┆ ---      │
-│ str                               ┆ u32    ┆ f64      │
-╞═══════════════════════════════════╪════════╪══════════╡
-│ UNK                               ┆ 0      ┆ 0.0      │
-│ diastolic_blood_pressure          ┆ 181291 ┆ 0.423281 │
-│ bmi                               ┆ 70051  ┆ 0.163556 │
-│ eosinophil_count                  ┆ 65777  ┆ 0.153577 │
-│ basophil_count                    ┆ 43672  ┆ 0.101966 │
-│ corrected_serum_calcium_level     ┆ 12271  ┆ 0.028651 │
-│ DEPRESSION                        ┆ 6949   ┆ 0.016225 │
-│ serum_level                       ┆ 6073   ┆ 0.014179 │
-│ calculated_LDL_cholesterol_level  ┆ 5767   ┆ 0.013465 │
-│ ANXIETY                           ┆ 3867   ┆ 0.009029 │
-│ HYPERTENSION                      ┆ 2686   ┆ 0.006271 │
-│ TYPE2DIABETES                     ┆ 2194   ┆ 0.005123 │
-│ OSTEOARTHRITIS                    ┆ 2079   ┆ 0.004854 │
-│ ASTHMA_PUSHASTHMA                 ┆ 2071   ┆ 0.004835 │
-│ ATOPICECZEMA                      ┆ 1872   ┆ 0.004371 │
-│ ALLERGICRHINITISCONJ              ┆ 1527   ┆ 0.003565 │
-│ ANY_DEAFNESS_HEARING_LOSS         ┆ 1395   ┆ 0.003257 │
-│ aspartate_transam                 ┆ 1237   ┆ 0.002888 │
-│ PREVALENT_IBS                     ┆ 965    ┆ 0.002253 │
-│ ALLCA_NOBCC_VFINAL                ┆ 917    ┆ 0.002141 │
-│ ALCOHOLMISUSE                     ┆ 915    ┆ 0.002136 │
-│ IHD_NOMI                          ┆ 882    ┆ 0.002059 │
-│ blood_urea                        ┆ 866    ┆ 0.002022 │
-│ CKDSTAGE3TO5                      ┆ 813    ┆ 0.001898 │
-│ calcium_adjusted_level            ┆ 735    ┆ 0.001716 │
-│ PERIPHERAL_NEUROPATHY             ┆ 728    ┆ 0.0017   │
-│ HYPOTHYROIDISM_DRAFT_V1           ┆ 645    ┆ 0.001506 │
-│ COPD                              ┆ 625    ┆ 0.001459 │
-│ AF                                ┆ 500    ┆ 0.001167 │
-│ SUBSTANCEMISUSE                   ┆ 470    ┆ 0.001097 │
-│ PSORIASIS                         ┆ 470    ┆ 0.001097 │
-│ HF                                ┆ 457    ┆ 0.001067 │
-│ OSTEOPOROSIS                      ┆ 444    ┆ 0.001037 │
-│ GOUT                              ┆ 438    ┆ 0.001023 │
-│ MINFARCTION                       ┆ 412    ┆ 0.000962 │
-│ combined_total_vitamin_D2_and_D3… ┆ 402    ┆ 0.000939 │
-│ STROKEUNSPECIFIED                 ┆ 391    ┆ 0.000913 │
-│ ALL_DEMENTIA                      ┆ 346    ┆ 0.000808 │
-│ hydroxyvitamin3                   ┆ 318    ┆ 0.000742 │
-│ hydroxyvitamin2                   ┆ 302    ┆ 0.000705 │
-│ VALVULARDISEASES                  ┆ 274    ┆ 0.00064  │
-│ PAD_STRICT                        ┆ 249    ┆ 0.000581 │
-│ TYPE1DM                           ┆ 246    ┆ 0.000574 │
-│ OTHER_CHRONIC_LIVER_DISEASE_OPTI… ┆ 213    ┆ 0.000497 │
-│ EPILEPSY                          ┆ 207    ┆ 0.000483 │
-│ FIBROMYALGIA                      ┆ 199    ┆ 0.000465 │
-│ OSA                               ┆ 182    ┆ 0.000425 │
-│ POLYCYSTIC_OVARIAN_SYNDROME_PCOS  ┆ 178    ┆ 0.000416 │
-│ NAFLD                             ┆ 168    ┆ 0.000392 │
-│ HYPERTHYROIDISM                   ┆ 167    ┆ 0.00039  │
-│ EATINGDISORDERS                   ┆ 163    ┆ 0.000381 │
-│ ENDOMETRIOSIS_ADENOMYOSIS_V2      ┆ 157    ┆ 0.000367 │
-│ RHEUMATOIDARTHRITIS               ┆ 153    ┆ 0.000357 │
-│ PMRANDGCA                         ┆ 142    ┆ 0.000332 │
-│ PTSDDIAGNOSIS                     ┆ 135    ┆ 0.000315 │
-│ BIPOLAR                           ┆ 125    ┆ 0.000292 │
-│ ISCHAEMICSTROKE                   ┆ 123    ┆ 0.000287 │
-│ creatinine_ratio                  ┆ 106    ┆ 0.000247 │
-│ SCHIZOPHRENIAMM                   ┆ 100    ┆ 0.000233 │
-│ VISUAL_IMPAIRMENT                 ┆ 98     ┆ 0.000229 │
-│ BRONCHIECTASIS                    ┆ 95     ┆ 0.000222 │
-│ AORTICANEURYSM                    ┆ 82     ┆ 0.000191 │
-│ CHRONIC_LIVER_DISEASE_ALCOHOL     ┆ 76     ┆ 0.000177 │
-│ ULCERATIVE_COLITIS                ┆ 72     ┆ 0.000168 │
-│ CHRONICFATIGUESYNDROMEMM          ┆ 64     ┆ 0.000149 │
-│ PARKINSONS                        ┆ 63     ┆ 0.000147 │
-│ STROKE_HAEMRGIC                   ┆ 62     ┆ 0.000145 │
-│ PERNICIOUSANAEMIA                 ┆ 58     ┆ 0.000135 │
-│ brain_natriuretic_peptide_level   ┆ 57     ┆ 0.000133 │
-│ LEARNINGDISABILITY                ┆ 56     ┆ 0.000131 │
-│ LYMPHOMA_PREVALENCE               ┆ 49     ┆ 0.000114 │
-│ MENIERESDISEASE                   ┆ 46     ┆ 0.000107 │
-│ CROHNS_DISEASE                    ┆ 45     ┆ 0.000105 │
-│ AUTISM                            ┆ 40     ┆ 0.000093 │
-│ PSORIATICARTHRITIS2021            ┆ 35     ┆ 0.000082 │
-│ ILD_SH                            ┆ 34     ┆ 0.000079 │
-│ LEUKAEMIA_PREVALENCE              ┆ 29     ┆ 0.000068 │
-│ MS                                ┆ 24     ┆ 0.000056 │
-│ HAEMOCHROMATOSIS                  ┆ 19     ┆ 0.000044 │
-│ HIVAIDS                           ┆ 17     ┆ 0.00004  │
-│ SJOGRENSSYNDROME                  ┆ 14     ┆ 0.000033 │
-│ SYSTEMIC_LUPUS_ERYTHEMATOSUS      ┆ 14     ┆ 0.000033 │
-│ SYSTEMIC_SCLEROSIS                ┆ 9      ┆ 0.000021 │
-│ PLASMACELL_NEOPLASM               ┆ 8      ┆ 0.000019 │
-│ blood_calcium                     ┆ 7      ┆ 0.000016 │
-│ CYSTICFIBROSIS                    ┆ 7      ┆ 0.000016 │
-│ ADDISON_DISEASE                   ┆ 6      ┆ 0.000014 │
-│ DOWNSSYNDROME                     ┆ 5      ┆ 0.000012 │
-│ SICKLE_CELL_DISEASE               ┆ 1      ┆ 0.000002 │
-└───────────────────────────────────┴────────┴──────────┘
+<pre>466683 training patients
+17022 validation patients
+29120 test patients
+195 vocab elements
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output " data-mime-type="text/plain">
+<pre>{0: &#39;PAD&#39;,
+ 1: &#39;UNK&#39;,
+ 2: &#39;0&#39;,
+ 3: &#39;1&#39;,
+ 4: &#39;2&#39;,
+ 5: &#39;3&#39;,
+ 6: &#39;4&#39;,
+ 7: &#39;5&#39;,
+ 8: &#39;6&#39;,
+ 9: &#39;7&#39;,
+ 10: &#39;8&#39;,
+ 11: &#39;9&#39;,
+ 12: &#39;.&#39;,
+ 13: &#39;Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70&#39;,
+ 14: &#39;CYSTICFIBROSIS&#39;,
+ 15: &#39;SICKLE_CELL_DISEASE_V2&#39;,
+ 16: &#39;SYSTEMIC_SCLEROSIS&#39;,
+ 17: &#39;ADDISON_DISEASE&#39;,
+ 18: &#39;DOWNSSYNDROME&#39;,
+ 19: &#39;PLASMACELL_NEOPLASM&#39;,
+ 20: &#39;Plasma_cholesterol_HDL_ratio_96&#39;,
+ 21: &#39;HAEMOCHROMATOSIS_V2&#39;,
+ 22: &#39;SJOGRENSSYNDROME&#39;,
+ 23: &#39;SYSTEMIC_LUPUS_ERYTHEMATOSUS&#39;,
+ 24: &#39;N_terminal_pro-brain_natriuretic_peptide_level_67&#39;,
+ 25: &#39;Blood_calcium_level_38&#39;,
+ 26: &#39;HIVAIDS&#39;,
+ 27: &#39;MS&#39;,
+ 28: &#39;LEUKAEMIA_PREVALENCE&#39;,
+ 29: &#39;PSORIATICARTHRITIS2021&#39;,
+ 30: &#39;Plasma_B_natriuretic_peptide_level_69&#39;,
+ 31: &#39;Plasma_pro-brain_natriuretic_peptide_level_64&#39;,
+ 32: &#39;ILD_SH&#39;,
+ 33: &#39;Brain_natriuretic_peptide_level_66&#39;,
+ 34: &#39;CHRONIC_LIVER_DISEASE_ALCOHOL&#39;,
+ 35: &#39;PERNICIOUSANAEMIA&#39;,
+ 36: &#39;MENIERESDISEASE&#39;,
+ 37: &#39;CHRONICFATIGUESYNDROMEMM&#39;,
+ 38: &#39;CROHNS_DISEASE&#39;,
+ 39: &#39;LYMPHOMA_PREVALENCE&#39;,
+ 40: &#39;STROKE_HAEMRGIC&#39;,
+ 41: &#39;PARKINSONS&#39;,
+ 42: &#39;BIPOLAR&#39;,
+ 43: &#39;AORTICANEURYSM&#39;,
+ 44: &#39;ULCERATIVE_COLITIS&#39;,
+ 45: &#39;SCHIZOPHRENIAMM&#39;,
+ 46: &#39;BRONCHIECTASIS&#39;,
+ 47: &#39;PTSDDIAGNOSIS&#39;,
+ 48: &#39;Calcium_adjusted_level_41&#39;,
+ 49: &#39;TYPE1DM&#39;,
+ 50: &#39;LEARNINGDISABILITY_V2&#39;,
+ 51: &#39;AUTISM&#39;,
+ 52: &#39;VISUAL_IMPAIRMENT&#39;,
+ 53: &#39;FIBROMYALGIA&#39;,
+ 54: &#39;ISCHAEMICSTROKE&#39;,
+ 55: &#39;NAFLD&#39;,
+ 56: &#39;EATINGDISORDERS&#39;,
+ 57: &#39;ENDOMETRIOSIS_ADENOMYOSIS&#39;,
+ 58: &#39;ENDOMETRIOSIS_ADENOMYOSIS_V2&#39;,
+ 59: &#39;Urine_microalbumin_creatinine_ratio_36&#39;,
+ 60: &#39;HYPERTHYROIDISM_V2&#39;,
+ 61: &#39;RHEUMATOIDARTHRITIS&#39;,
+ 62: &#39;PMRANDGCA&#39;,
+ 63: &#39;Serum_pro-brain_natriuretic_peptide_level_65&#39;,
+ 64: &#39;OSA&#39;,
+ 65: &#39;Plasma_ferritin_level_62&#39;,
+ 66: &#39;OTHER_CHRONIC_LIVER_DISEASE_OPTIMAL&#39;,
+ 67: &#39;Total_25-hydroxyvitamin_D_level_91&#39;,
+ 68: &#39;POLYCYSTIC_OVARIAN_SYNDROME_PCOS_V2&#39;,
+ 69: &#39;PAD_STRICT&#39;,
+ 70: &#39;Serum_vitamin_D2_level_89&#39;,
+ 71: &#39;Albumin___creatinine_ratio_37&#39;,
+ 72: &#39;INR_-_international_normalised_ratio_81&#39;,
+ 73: &#39;EPILEPSY&#39;,
+ 74: &#39;Serum_N-terminal_pro_B-type_natriuretic_peptide_conc_68&#39;,
+ 75: &#39;VALVULARDISEASES&#39;,
+ 76: &#39;STROKEUNSPECIFIED&#39;,
+ 77: &#39;SUBSTANCEMISUSE&#39;,
+ 78: &#39;25-Hydroxyvitamin_D3_level_90&#39;,
+ 79: &#39;25-Hydroxyvitamin_D2_level_92&#39;,
+ 80: &#39;Plasma_free_T4_level_77&#39;,
+ 81: &#39;MINFARCTION&#39;,
+ 82: &#39;ALL_DEMENTIA&#39;,
+ 83: &#39;HF&#39;,
+ 84: &#39;Combined_total_vitamin_D2_and_D3_level_93&#39;,
+ 85: &#39;GOUT&#39;,
+ 86: &#39;OSTEOPOROSIS&#39;,
+ 87: &#39;TSH_level_74&#39;,
+ 88: &#39;PSORIASIS&#39;,
+ 89: &#39;COPD&#39;,
+ 90: &#39;AF&#39;,
+ 91: &#39;PERIPHERAL_NEUROPATHY&#39;,
+ 92: &#39;HYPOTHYROIDISM_DRAFT_V1&#39;,
+ 93: &#39;Blood_urea_28&#39;,
+ 94: &#39;Serum_total_25-hydroxy_vitamin_D_level_87&#39;,
+ 95: &#39;CKDSTAGE3TO5&#39;,
+ 96: &#39;Serum_T4_level_78&#39;,
+ 97: &#39;IHD_NOMI&#39;,
+ 98: &#39;Plasma_calcium_level_40&#39;,
+ 99: &#39;PREVALENT_IBS_V2&#39;,
+ 100: &#39;TYPE2DIABETES&#39;,
+ 101: &#39;ALCOHOLMISUSE&#39;,
+ 102: &#39;ALLCA_NOBCC_VFINAL&#39;,
+ 103: &#39;Serum_25-Hydroxy_vitamin_D3_level_88&#39;,
+ 104: &#39;Free_T4_level_76&#39;,
+ 105: &#39;DEATH&#39;,
+ 106: &#39;AST_-_aspartate_transam._SGOT__46&#39;,
+ 107: &#39;Plasma_corrected_calcium_level_43&#39;,
+ 108: &#39;Plasma_urea_level_30&#39;,
+ 109: &#39;Serum_vitamin_D_86&#39;,
+ 110: &#39;Total_bilirubin_55&#39;,
+ 111: &#39;Plasma_LDL_cholesterol_level_104&#39;,
+ 112: &#39;Plasma_triglyceride_level_106&#39;,
+ 113: &#39;ANY_DEAFNESS_HEARING_LOSS_V2&#39;,
+ 114: &#39;OSTEOARTHRITIS&#39;,
+ 115: &#39;Non_HDL_cholesterol_level_108&#39;,
+ 116: &#39;Plasma_TSH_level_73&#39;,
+ 117: &#39;Plasma_gamma-glutamyl_transferase_level_58&#39;,
+ 118: &#39;ALLERGICRHINITISCONJ&#39;,
+ 119: &#39;ANXIETY&#39;,
+ 120: &#39;Plasma_HDL_cholesterol_level_101&#39;,
+ 121: &#39;HYPERTENSION&#39;,
+ 122: &#39;ASTHMA_PUSHASTHMA&#39;,
+ 123: &#39;Plasma_total_cholesterol_level_99&#39;,
+ 124: &#39;DEPRESSION&#39;,
+ 125: &#39;Haemoglobin_A1c_level_8&#39;,
+ 126: &#39;ATOPICECZEMA&#39;,
+ 127: &#39;TSH_-_thyroid_stim._hormone_72&#39;,
+ 128: &#39;Total_alkaline_phosphatase_48&#39;,
+ 129: &#39;Haematocrit_-_PCV_16&#39;,
+ 130: &#39;Plasma_total_bilirubin_level_54&#39;,
+ 131: &#39;Plasma_alkaline_phosphatase_level_49&#39;,
+ 132: &#39;Plasma_alanine_aminotransferase_level_45&#39;,
+ 133: &#39;Calculated_LDL_cholesterol_level_103&#39;,
+ 134: &#39;Plasma_albumin_level_52&#39;,
+ 135: &#39;Plasma_potassium_level_27&#39;,
+ 136: &#39;Plasma_sodium_level_25&#39;,
+ 137: &#39;Plasma_creatinine_level_32&#39;,
+ 138: &#39;AST_serum_level_47&#39;,
+ 139: &#39;Current_smoker_83&#39;,
+ 140: &#39;Serum_total_cholesterol_level_98&#39;,
+ 141: &#39;Serum_non_high_density_lipoprotein_cholesterol_level_107&#39;,
+ 142: &#39;Plasma_C_reactive_protein_60&#39;,
+ 143: &#39;HbA1c_level__DCCT_aligned__7&#39;,
+ 144: &#39;eGFR_using_creatinine__CKD-EPI__per_1.73_square_metres_33&#39;,
+ 145: &#39;Urine_albumin_creatinine_ratio_35&#39;,
+ 146: &#39;Serum_folate_80&#39;,
+ 147: &#39;Total_cholesterol_HDL_ratio_95&#39;,
+ 148: &#39;Serum_C_reactive_protein_level_59&#39;,
+ 149: &#39;Serum_vitamin_B12_79&#39;,
+ 150: &#39;Corrected_serum_calcium_level_42&#39;,
+ 151: &#39;Serum_ferritin_63&#39;,
+ 152: &#39;Serum_free_T4_level_75&#39;,
+ 153: &#39;Serum_bilirubin_level_53&#39;,
+ 154: &#39;Serum_cholesterol_HDL_ratio_94&#39;,
+ 155: &#39;Serum_gamma-glutamyl_transferase_level_57&#39;,
+ 156: &#39;International_normalised_ratio_82&#39;,
+ 157: &#39;Serum_LDL_cholesterol_level_102&#39;,
+ 158: &#39;Ex_smoker_84&#39;,
+ 159: &#39;Erythrocyte_sedimentation_rate_61&#39;,
+ 160: &#39;Serum_calcium_39&#39;,
+ 161: &#39;Haemoglobin_A1c_level_-_IFCC_standardised_6&#39;,
+ 162: &#39;Serum_triglycerides_105&#39;,
+ 163: &#39;Serum_HDL_cholesterol_level_100&#39;,
+ 164: &#39;Red_blood_cell_distribution_width_17&#39;,
+ 165: &#39;Serum_alanine_aminotransferase_level_44&#39;,
+ 166: &#39;Serum_TSH_level_71&#39;,
+ 167: &#39;Serum_cholesterol_97&#39;,
+ 168: &#39;Mean_corpusc._Hb._conc.__MCHC__14&#39;,
+ 169: &#39;Never_smoked_tobacco_85&#39;,
+ 170: &#39;Serum_total_bilirubin_level_56&#39;,
+ 171: &#39;O_E_-_height_1&#39;,
+ 172: &#39;Haematocrit_15&#39;,
+ 173: &#39;GFR_calculated_abbreviated_MDRD_34&#39;,
+ 174: &#39;Serum_alkaline_phosphatase_50&#39;,
+ 175: &#39;Serum_albumin_51&#39;,
+ 176: &#39;Serum_urea_level_29&#39;,
+ 177: &#39;Basophil_count_22&#39;,
+ 178: &#39;Mean_corpusc._haemoglobin_MCH__13&#39;,
+ 179: &#39;Monocyte_count_23&#39;,
+ 180: &#39;Eosinophil_count_21&#39;,
+ 181: &#39;Red_blood_cell__RBC__count_10&#39;,
+ 182: &#39;Lymphocyte_count_20&#39;,
+ 183: &#39;Neutrophil_count_19&#39;,
+ 184: &#39;Mean_corpuscular_volume__MCV__11&#39;,
+ 185: &#39;Platelet_count_12&#39;,
+ 186: &#39;Total_white_cell_count_18&#39;,
+ 187: &#39;Body_mass_index_3&#39;,
+ 188: &#39;Serum_potassium_26&#39;,
+ 189: &#39;Haemoglobin_estimation_9&#39;,
+ 190: &#39;Serum_sodium_24&#39;,
+ 191: &#39;Serum_creatinine_31&#39;,
+ 192: &#39;O_E_-_weight_2&#39;,
+ 193: &#39;Diastolic_blood_pressure_5&#39;,
+ 194: &#39;Systolic_blood_pressure_4&#39;}</pre>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output " data-mime-type="text/plain">
+<pre>{&#39;PAD&#39;: 0,
+ &#39;UNK&#39;: 1,
+ &#39;0&#39;: 2,
+ &#39;1&#39;: 3,
+ &#39;2&#39;: 4,
+ &#39;3&#39;: 5,
+ &#39;4&#39;: 6,
+ &#39;5&#39;: 7,
+ &#39;6&#39;: 8,
+ &#39;7&#39;: 9,
+ &#39;8&#39;: 10,
+ &#39;9&#39;: 11,
+ &#39;.&#39;: 12,
+ &#39;Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70&#39;: 13,
+ &#39;CYSTICFIBROSIS&#39;: 14,
+ &#39;SICKLE_CELL_DISEASE_V2&#39;: 15,
+ &#39;SYSTEMIC_SCLEROSIS&#39;: 16,
+ &#39;ADDISON_DISEASE&#39;: 17,
+ &#39;DOWNSSYNDROME&#39;: 18,
+ &#39;PLASMACELL_NEOPLASM&#39;: 19,
+ &#39;Plasma_cholesterol_HDL_ratio_96&#39;: 20,
+ &#39;HAEMOCHROMATOSIS_V2&#39;: 21,
+ &#39;SJOGRENSSYNDROME&#39;: 22,
+ &#39;SYSTEMIC_LUPUS_ERYTHEMATOSUS&#39;: 23,
+ &#39;N_terminal_pro-brain_natriuretic_peptide_level_67&#39;: 24,
+ &#39;Blood_calcium_level_38&#39;: 25,
+ &#39;HIVAIDS&#39;: 26,
+ &#39;MS&#39;: 27,
+ &#39;LEUKAEMIA_PREVALENCE&#39;: 28,
+ &#39;PSORIATICARTHRITIS2021&#39;: 29,
+ &#39;Plasma_B_natriuretic_peptide_level_69&#39;: 30,
+ &#39;Plasma_pro-brain_natriuretic_peptide_level_64&#39;: 31,
+ &#39;ILD_SH&#39;: 32,
+ &#39;Brain_natriuretic_peptide_level_66&#39;: 33,
+ &#39;CHRONIC_LIVER_DISEASE_ALCOHOL&#39;: 34,
+ &#39;PERNICIOUSANAEMIA&#39;: 35,
+ &#39;MENIERESDISEASE&#39;: 36,
+ &#39;CHRONICFATIGUESYNDROMEMM&#39;: 37,
+ &#39;CROHNS_DISEASE&#39;: 38,
+ &#39;LYMPHOMA_PREVALENCE&#39;: 39,
+ &#39;STROKE_HAEMRGIC&#39;: 40,
+ &#39;PARKINSONS&#39;: 41,
+ &#39;BIPOLAR&#39;: 42,
+ &#39;AORTICANEURYSM&#39;: 43,
+ &#39;ULCERATIVE_COLITIS&#39;: 44,
+ &#39;SCHIZOPHRENIAMM&#39;: 45,
+ &#39;BRONCHIECTASIS&#39;: 46,
+ &#39;PTSDDIAGNOSIS&#39;: 47,
+ &#39;Calcium_adjusted_level_41&#39;: 48,
+ &#39;TYPE1DM&#39;: 49,
+ &#39;LEARNINGDISABILITY_V2&#39;: 50,
+ &#39;AUTISM&#39;: 51,
+ &#39;VISUAL_IMPAIRMENT&#39;: 52,
+ &#39;FIBROMYALGIA&#39;: 53,
+ &#39;ISCHAEMICSTROKE&#39;: 54,
+ &#39;NAFLD&#39;: 55,
+ &#39;EATINGDISORDERS&#39;: 56,
+ &#39;ENDOMETRIOSIS_ADENOMYOSIS&#39;: 57,
+ &#39;ENDOMETRIOSIS_ADENOMYOSIS_V2&#39;: 58,
+ &#39;Urine_microalbumin_creatinine_ratio_36&#39;: 59,
+ &#39;HYPERTHYROIDISM_V2&#39;: 60,
+ &#39;RHEUMATOIDARTHRITIS&#39;: 61,
+ &#39;PMRANDGCA&#39;: 62,
+ &#39;Serum_pro-brain_natriuretic_peptide_level_65&#39;: 63,
+ &#39;OSA&#39;: 64,
+ &#39;Plasma_ferritin_level_62&#39;: 65,
+ &#39;OTHER_CHRONIC_LIVER_DISEASE_OPTIMAL&#39;: 66,
+ &#39;Total_25-hydroxyvitamin_D_level_91&#39;: 67,
+ &#39;POLYCYSTIC_OVARIAN_SYNDROME_PCOS_V2&#39;: 68,
+ &#39;PAD_STRICT&#39;: 69,
+ &#39;Serum_vitamin_D2_level_89&#39;: 70,
+ &#39;Albumin___creatinine_ratio_37&#39;: 71,
+ &#39;INR_-_international_normalised_ratio_81&#39;: 72,
+ &#39;EPILEPSY&#39;: 73,
+ &#39;Serum_N-terminal_pro_B-type_natriuretic_peptide_conc_68&#39;: 74,
+ &#39;VALVULARDISEASES&#39;: 75,
+ &#39;STROKEUNSPECIFIED&#39;: 76,
+ &#39;SUBSTANCEMISUSE&#39;: 77,
+ &#39;25-Hydroxyvitamin_D3_level_90&#39;: 78,
+ &#39;25-Hydroxyvitamin_D2_level_92&#39;: 79,
+ &#39;Plasma_free_T4_level_77&#39;: 80,
+ &#39;MINFARCTION&#39;: 81,
+ &#39;ALL_DEMENTIA&#39;: 82,
+ &#39;HF&#39;: 83,
+ &#39;Combined_total_vitamin_D2_and_D3_level_93&#39;: 84,
+ &#39;GOUT&#39;: 85,
+ &#39;OSTEOPOROSIS&#39;: 86,
+ &#39;TSH_level_74&#39;: 87,
+ &#39;PSORIASIS&#39;: 88,
+ &#39;COPD&#39;: 89,
+ &#39;AF&#39;: 90,
+ &#39;PERIPHERAL_NEUROPATHY&#39;: 91,
+ &#39;HYPOTHYROIDISM_DRAFT_V1&#39;: 92,
+ &#39;Blood_urea_28&#39;: 93,
+ &#39;Serum_total_25-hydroxy_vitamin_D_level_87&#39;: 94,
+ &#39;CKDSTAGE3TO5&#39;: 95,
+ &#39;Serum_T4_level_78&#39;: 96,
+ &#39;IHD_NOMI&#39;: 97,
+ &#39;Plasma_calcium_level_40&#39;: 98,
+ &#39;PREVALENT_IBS_V2&#39;: 99,
+ &#39;TYPE2DIABETES&#39;: 100,
+ &#39;ALCOHOLMISUSE&#39;: 101,
+ &#39;ALLCA_NOBCC_VFINAL&#39;: 102,
+ &#39;Serum_25-Hydroxy_vitamin_D3_level_88&#39;: 103,
+ &#39;Free_T4_level_76&#39;: 104,
+ &#39;DEATH&#39;: 105,
+ &#39;AST_-_aspartate_transam._SGOT__46&#39;: 106,
+ &#39;Plasma_corrected_calcium_level_43&#39;: 107,
+ &#39;Plasma_urea_level_30&#39;: 108,
+ &#39;Serum_vitamin_D_86&#39;: 109,
+ &#39;Total_bilirubin_55&#39;: 110,
+ &#39;Plasma_LDL_cholesterol_level_104&#39;: 111,
+ &#39;Plasma_triglyceride_level_106&#39;: 112,
+ &#39;ANY_DEAFNESS_HEARING_LOSS_V2&#39;: 113,
+ &#39;OSTEOARTHRITIS&#39;: 114,
+ &#39;Non_HDL_cholesterol_level_108&#39;: 115,
+ &#39;Plasma_TSH_level_73&#39;: 116,
+ &#39;Plasma_gamma-glutamyl_transferase_level_58&#39;: 117,
+ &#39;ALLERGICRHINITISCONJ&#39;: 118,
+ &#39;ANXIETY&#39;: 119,
+ &#39;Plasma_HDL_cholesterol_level_101&#39;: 120,
+ &#39;HYPERTENSION&#39;: 121,
+ &#39;ASTHMA_PUSHASTHMA&#39;: 122,
+ &#39;Plasma_total_cholesterol_level_99&#39;: 123,
+ &#39;DEPRESSION&#39;: 124,
+ &#39;Haemoglobin_A1c_level_8&#39;: 125,
+ &#39;ATOPICECZEMA&#39;: 126,
+ &#39;TSH_-_thyroid_stim._hormone_72&#39;: 127,
+ &#39;Total_alkaline_phosphatase_48&#39;: 128,
+ &#39;Haematocrit_-_PCV_16&#39;: 129,
+ &#39;Plasma_total_bilirubin_level_54&#39;: 130,
+ &#39;Plasma_alkaline_phosphatase_level_49&#39;: 131,
+ &#39;Plasma_alanine_aminotransferase_level_45&#39;: 132,
+ &#39;Calculated_LDL_cholesterol_level_103&#39;: 133,
+ &#39;Plasma_albumin_level_52&#39;: 134,
+ &#39;Plasma_potassium_level_27&#39;: 135,
+ &#39;Plasma_sodium_level_25&#39;: 136,
+ &#39;Plasma_creatinine_level_32&#39;: 137,
+ &#39;AST_serum_level_47&#39;: 138,
+ &#39;Current_smoker_83&#39;: 139,
+ &#39;Serum_total_cholesterol_level_98&#39;: 140,
+ &#39;Serum_non_high_density_lipoprotein_cholesterol_level_107&#39;: 141,
+ &#39;Plasma_C_reactive_protein_60&#39;: 142,
+ &#39;HbA1c_level__DCCT_aligned__7&#39;: 143,
+ &#39;eGFR_using_creatinine__CKD-EPI__per_1.73_square_metres_33&#39;: 144,
+ &#39;Urine_albumin_creatinine_ratio_35&#39;: 145,
+ &#39;Serum_folate_80&#39;: 146,
+ &#39;Total_cholesterol_HDL_ratio_95&#39;: 147,
+ &#39;Serum_C_reactive_protein_level_59&#39;: 148,
+ &#39;Serum_vitamin_B12_79&#39;: 149,
+ &#39;Corrected_serum_calcium_level_42&#39;: 150,
+ &#39;Serum_ferritin_63&#39;: 151,
+ &#39;Serum_free_T4_level_75&#39;: 152,
+ &#39;Serum_bilirubin_level_53&#39;: 153,
+ &#39;Serum_cholesterol_HDL_ratio_94&#39;: 154,
+ &#39;Serum_gamma-glutamyl_transferase_level_57&#39;: 155,
+ &#39;International_normalised_ratio_82&#39;: 156,
+ &#39;Serum_LDL_cholesterol_level_102&#39;: 157,
+ &#39;Ex_smoker_84&#39;: 158,
+ &#39;Erythrocyte_sedimentation_rate_61&#39;: 159,
+ &#39;Serum_calcium_39&#39;: 160,
+ &#39;Haemoglobin_A1c_level_-_IFCC_standardised_6&#39;: 161,
+ &#39;Serum_triglycerides_105&#39;: 162,
+ &#39;Serum_HDL_cholesterol_level_100&#39;: 163,
+ &#39;Red_blood_cell_distribution_width_17&#39;: 164,
+ &#39;Serum_alanine_aminotransferase_level_44&#39;: 165,
+ &#39;Serum_TSH_level_71&#39;: 166,
+ &#39;Serum_cholesterol_97&#39;: 167,
+ &#39;Mean_corpusc._Hb._conc.__MCHC__14&#39;: 168,
+ &#39;Never_smoked_tobacco_85&#39;: 169,
+ &#39;Serum_total_bilirubin_level_56&#39;: 170,
+ &#39;O_E_-_height_1&#39;: 171,
+ &#39;Haematocrit_15&#39;: 172,
+ &#39;GFR_calculated_abbreviated_MDRD_34&#39;: 173,
+ &#39;Serum_alkaline_phosphatase_50&#39;: 174,
+ &#39;Serum_albumin_51&#39;: 175,
+ &#39;Serum_urea_level_29&#39;: 176,
+ &#39;Basophil_count_22&#39;: 177,
+ &#39;Mean_corpusc._haemoglobin_MCH__13&#39;: 178,
+ &#39;Monocyte_count_23&#39;: 179,
+ &#39;Eosinophil_count_21&#39;: 180,
+ &#39;Red_blood_cell__RBC__count_10&#39;: 181,
+ &#39;Lymphocyte_count_20&#39;: 182,
+ &#39;Neutrophil_count_19&#39;: 183,
+ &#39;Mean_corpuscular_volume__MCV__11&#39;: 184,
+ &#39;Platelet_count_12&#39;: 185,
+ &#39;Total_white_cell_count_18&#39;: 186,
+ &#39;Body_mass_index_3&#39;: 187,
+ &#39;Serum_potassium_26&#39;: 188,
+ &#39;Haemoglobin_estimation_9&#39;: 189,
+ &#39;Serum_sodium_24&#39;: 190,
+ &#39;Serum_creatinine_31&#39;: 191,
+ &#39;O_E_-_weight_2&#39;: 192,
+ &#39;Diastolic_blood_pressure_5&#39;: 193,
+ &#39;Systolic_blood_pressure_4&#39;: 194}</pre>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<div><style>
+.dataframe > thead > tr > th,
+.dataframe > tbody > tr > td {
+  text-align: right;
+}
+</style>
+<small>shape: (183, 3)</small><table border="1" class="dataframe"><thead><tr><th>EVENT</th><th>COUNT</th><th>FREQUENCY</th></tr><tr><td>str</td><td>u32</td><td>f64</td></tr></thead><tbody><tr><td>&quot;UNK&quot;</td><td>0</td><td>0.0</td></tr><tr><td>&quot;Plasma_N-termi…</td><td>21</td><td>2.9157e-7</td></tr><tr><td>&quot;CYSTICFIBROSIS…</td><td>119</td><td>0.000002</td></tr><tr><td>&quot;SICKLE_CELL_DI…</td><td>132</td><td>0.000002</td></tr><tr><td>&quot;SYSTEMIC_SCLER…</td><td>184</td><td>0.000003</td></tr><tr><td>&quot;ADDISON_DISEAS…</td><td>225</td><td>0.000003</td></tr><tr><td>&quot;DOWNSSYNDROME&quot;</td><td>363</td><td>0.000005</td></tr><tr><td>&quot;PLASMACELL_NEO…</td><td>388</td><td>0.000005</td></tr><tr><td>&quot;Plasma_cholest…</td><td>452</td><td>0.000006</td></tr><tr><td>&quot;HAEMOCHROMATOS…</td><td>480</td><td>0.000007</td></tr><tr><td>&quot;SJOGRENSSYNDRO…</td><td>500</td><td>0.000007</td></tr><tr><td>&quot;SYSTEMIC_LUPUS…</td><td>564</td><td>0.000008</td></tr><tr><td>&quot;N_terminal_pro…</td><td>668</td><td>0.000009</td></tr><tr><td>&quot;Blood_calcium_…</td><td>872</td><td>0.000012</td></tr><tr><td>&quot;HIVAIDS&quot;</td><td>925</td><td>0.000013</td></tr><tr><td>&quot;MS&quot;</td><td>1056</td><td>0.000015</td></tr><tr><td>&quot;LEUKAEMIA_PREV…</td><td>1156</td><td>0.000016</td></tr><tr><td>&quot;PSORIATICARTHR…</td><td>1168</td><td>0.000016</td></tr><tr><td>&quot;Plasma_B_natri…</td><td>1179</td><td>0.000016</td></tr><tr><td>&quot;Plasma_pro-bra…</td><td>1269</td><td>0.000018</td></tr><tr><td>&quot;ILD_SH&quot;</td><td>1287</td><td>0.000018</td></tr><tr><td>&quot;Brain_natriure…</td><td>1390</td><td>0.000019</td></tr><tr><td>&quot;CHRONIC_LIVER_…</td><td>1500</td><td>0.000021</td></tr><tr><td>&quot;PERNICIOUSANAE…</td><td>1527</td><td>0.000021</td></tr><tr><td>&quot;MENIERESDISEAS…</td><td>1590</td><td>0.000022</td></tr><tr><td>&quot;CHRONICFATIGUE…</td><td>1617</td><td>0.000022</td></tr><tr><td>&quot;CROHNS_DISEASE…</td><td>1637</td><td>0.000023</td></tr><tr><td>&quot;LYMPHOMA_PREVA…</td><td>1702</td><td>0.000024</td></tr><tr><td>&quot;STROKE_HAEMRGI…</td><td>1716</td><td>0.000024</td></tr><tr><td>&quot;PARKINSONS&quot;</td><td>1861</td><td>0.000026</td></tr><tr><td>&quot;BIPOLAR&quot;</td><td>2027</td><td>0.000028</td></tr><tr><td>&quot;AORTICANEURYSM…</td><td>2411</td><td>0.000033</td></tr><tr><td>&quot;ULCERATIVE_COL…</td><td>2430</td><td>0.000034</td></tr><tr><td>&quot;SCHIZOPHRENIAM…</td><td>2533</td><td>0.000035</td></tr><tr><td>&quot;BRONCHIECTASIS…</td><td>2535</td><td>0.000035</td></tr><tr><td>&quot;PTSDDIAGNOSIS&quot;</td><td>2562</td><td>0.000036</td></tr><tr><td>&quot;Calcium_adjust…</td><td>2645</td><td>0.000037</td></tr><tr><td>&quot;TYPE1DM&quot;</td><td>2848</td><td>0.00004</td></tr><tr><td>&quot;LEARNINGDISABI…</td><td>2890</td><td>0.00004</td></tr><tr><td>&quot;AUTISM&quot;</td><td>2962</td><td>0.000041</td></tr><tr><td>&quot;VISUAL_IMPAIRM…</td><td>3113</td><td>0.000043</td></tr><tr><td>&quot;FIBROMYALGIA&quot;</td><td>3441</td><td>0.000048</td></tr><tr><td>&quot;ISCHAEMICSTROK…</td><td>3445</td><td>0.000048</td></tr><tr><td>&quot;NAFLD&quot;</td><td>3779</td><td>0.000052</td></tr><tr><td>&quot;EATINGDISORDER…</td><td>3968</td><td>0.000055</td></tr><tr><td>&quot;ENDOMETRIOSIS_…</td><td>4115</td><td>0.000057</td></tr><tr><td>&quot;ENDOMETRIOSIS_…</td><td>4115</td><td>0.000057</td></tr><tr><td>&quot;Urine_microalb…</td><td>4147</td><td>0.000058</td></tr><tr><td>&quot;HYPERTHYROIDIS…</td><td>4447</td><td>0.000062</td></tr><tr><td>&quot;RHEUMATOIDARTH…</td><td>4550</td><td>0.000063</td></tr><tr><td>&quot;PMRANDGCA&quot;</td><td>4597</td><td>0.000064</td></tr><tr><td>&quot;Serum_pro-brai…</td><td>4763</td><td>0.000066</td></tr><tr><td>&quot;OSA&quot;</td><td>4768</td><td>0.000066</td></tr><tr><td>&quot;Plasma_ferriti…</td><td>4988</td><td>0.000069</td></tr><tr><td>&quot;OTHER_CHRONIC_…</td><td>5805</td><td>0.000081</td></tr><tr><td>&quot;Total_25-hydro…</td><td>5806</td><td>0.000081</td></tr><tr><td>&quot;POLYCYSTIC_OVA…</td><td>5936</td><td>0.000082</td></tr><tr><td>&quot;PAD_STRICT&quot;</td><td>6100</td><td>0.000085</td></tr><tr><td>&quot;Serum_vitamin_…</td><td>6294</td><td>0.000087</td></tr><tr><td>&quot;Albumin___crea…</td><td>6543</td><td>0.000091</td></tr><tr><td>&quot;INR_-_internat…</td><td>7106</td><td>0.000099</td></tr><tr><td>&quot;EPILEPSY&quot;</td><td>7472</td><td>0.000104</td></tr><tr><td>&quot;Serum_N-termin…</td><td>8340</td><td>0.000116</td></tr><tr><td>&quot;VALVULARDISEAS…</td><td>8390</td><td>0.000116</td></tr><tr><td>&quot;STROKEUNSPECIF…</td><td>8708</td><td>0.000121</td></tr><tr><td>&quot;SUBSTANCEMISUS…</td><td>9329</td><td>0.00013</td></tr><tr><td>&quot;25-Hydroxyvita…</td><td>9914</td><td>0.000138</td></tr><tr><td>&quot;25-Hydroxyvita…</td><td>10006</td><td>0.000139</td></tr><tr><td>&quot;Plasma_free_T4…</td><td>10543</td><td>0.000146</td></tr><tr><td>&quot;MINFARCTION&quot;</td><td>10584</td><td>0.000147</td></tr><tr><td>&quot;ALL_DEMENTIA&quot;</td><td>11045</td><td>0.000153</td></tr><tr><td>&quot;HF&quot;</td><td>12414</td><td>0.000172</td></tr><tr><td>&quot;Combined_total…</td><td>13219</td><td>0.000184</td></tr><tr><td>&quot;GOUT&quot;</td><td>13486</td><td>0.000187</td></tr><tr><td>&quot;OSTEOPOROSIS&quot;</td><td>13934</td><td>0.000193</td></tr><tr><td>&quot;TSH_level_74&quot;</td><td>14449</td><td>0.000201</td></tr><tr><td>&quot;PSORIASIS&quot;</td><td>15376</td><td>0.000213</td></tr><tr><td>&quot;COPD&quot;</td><td>15706</td><td>0.000218</td></tr><tr><td>&quot;AF&quot;</td><td>15736</td><td>0.000218</td></tr><tr><td>&quot;PERIPHERAL_NEU…</td><td>17226</td><td>0.000239</td></tr><tr><td>&quot;HYPOTHYROIDISM…</td><td>19124</td><td>0.000266</td></tr><tr><td>&quot;Blood_urea_28&quot;</td><td>20404</td><td>0.000283</td></tr><tr><td>&quot;Serum_total_25…</td><td>21175</td><td>0.000294</td></tr><tr><td>&quot;CKDSTAGE3TO5&quot;</td><td>22769</td><td>0.000316</td></tr><tr><td>&quot;Serum_T4_level…</td><td>22976</td><td>0.000319</td></tr><tr><td>&quot;IHD_NOMI&quot;</td><td>24182</td><td>0.000336</td></tr><tr><td>&quot;Plasma_calcium…</td><td>24921</td><td>0.000346</td></tr><tr><td>&quot;PREVALENT_IBS_…</td><td>26056</td><td>0.000362</td></tr><tr><td>&quot;TYPE2DIABETES&quot;</td><td>27227</td><td>0.000378</td></tr><tr><td>&quot;ALCOHOLMISUSE&quot;</td><td>29298</td><td>0.000407</td></tr><tr><td>&quot;ALLCA_NOBCC_VF…</td><td>31883</td><td>0.000443</td></tr><tr><td>&quot;Serum_25-Hydro…</td><td>33208</td><td>0.000461</td></tr><tr><td>&quot;Free_T4_level_…</td><td>34015</td><td>0.000472</td></tr><tr><td>&quot;DEATH&quot;</td><td>34558</td><td>0.00048</td></tr><tr><td>&quot;AST_-_aspartat…</td><td>38598</td><td>0.000536</td></tr><tr><td>&quot;Plasma_correct…</td><td>40689</td><td>0.000565</td></tr><tr><td>&quot;Plasma_urea_le…</td><td>41531</td><td>0.000577</td></tr><tr><td>&quot;Serum_vitamin_…</td><td>43157</td><td>0.000599</td></tr><tr><td>&quot;Total_bilirubi…</td><td>44092</td><td>0.000612</td></tr><tr><td>&quot;Plasma_LDL_cho…</td><td>47234</td><td>0.000656</td></tr><tr><td>&quot;Plasma_triglyc…</td><td>50066</td><td>0.000695</td></tr><tr><td>&quot;ANY_DEAFNESS_H…</td><td>50345</td><td>0.000699</td></tr><tr><td>&quot;OSTEOARTHRITIS…</td><td>58106</td><td>0.000807</td></tr><tr><td>&quot;Non_HDL_choles…</td><td>59769</td><td>0.00083</td></tr><tr><td>&quot;Plasma_TSH_lev…</td><td>63630</td><td>0.000883</td></tr><tr><td>&quot;Plasma_gamma-g…</td><td>64719</td><td>0.000899</td></tr><tr><td>&quot;ALLERGICRHINIT…</td><td>64910</td><td>0.000901</td></tr><tr><td>&quot;ANXIETY&quot;</td><td>73765</td><td>0.001024</td></tr><tr><td>&quot;Plasma_HDL_cho…</td><td>73994</td><td>0.001027</td></tr><tr><td>&quot;HYPERTENSION&quot;</td><td>76536</td><td>0.001063</td></tr><tr><td>&quot;ASTHMA_PUSHAST…</td><td>79439</td><td>0.001103</td></tr><tr><td>&quot;Plasma_total_c…</td><td>79588</td><td>0.001105</td></tr><tr><td>&quot;DEPRESSION&quot;</td><td>85941</td><td>0.001193</td></tr><tr><td>&quot;Haemoglobin_A1…</td><td>89448</td><td>0.001242</td></tr><tr><td>&quot;ATOPICECZEMA&quot;</td><td>92164</td><td>0.00128</td></tr><tr><td>&quot;TSH_-_thyroid_…</td><td>95239</td><td>0.001322</td></tr><tr><td>&quot;Total_alkaline…</td><td>100147</td><td>0.00139</td></tr><tr><td>&quot;Haematocrit_-_…</td><td>113430</td><td>0.001575</td></tr><tr><td>&quot;Plasma_total_b…</td><td>116309</td><td>0.001615</td></tr><tr><td>&quot;Plasma_alkalin…</td><td>119574</td><td>0.00166</td></tr><tr><td>&quot;Plasma_alanine…</td><td>120168</td><td>0.001668</td></tr><tr><td>&quot;Calculated_LDL…</td><td>125255</td><td>0.001739</td></tr><tr><td>&quot;Plasma_albumin…</td><td>126565</td><td>0.001757</td></tr><tr><td>&quot;Plasma_potassi…</td><td>144588</td><td>0.002008</td></tr><tr><td>&quot;Plasma_sodium_…</td><td>144702</td><td>0.002009</td></tr><tr><td>&quot;Plasma_creatin…</td><td>148644</td><td>0.002064</td></tr><tr><td>&quot;AST_serum_leve…</td><td>160863</td><td>0.002233</td></tr><tr><td>&quot;Current_smoker…</td><td>170096</td><td>0.002362</td></tr><tr><td>&quot;Serum_total_ch…</td><td>173116</td><td>0.002404</td></tr><tr><td>&quot;Serum_non_high…</td><td>184358</td><td>0.00256</td></tr><tr><td>&quot;Plasma_C_react…</td><td>191875</td><td>0.002664</td></tr><tr><td>&quot;HbA1c_level__D…</td><td>255392</td><td>0.003546</td></tr><tr><td>&quot;eGFR_using_cre…</td><td>258032</td><td>0.003583</td></tr><tr><td>&quot;Urine_albumin_…</td><td>280722</td><td>0.003898</td></tr><tr><td>&quot;Serum_folate_8…</td><td>287336</td><td>0.003989</td></tr><tr><td>&quot;Total_choleste…</td><td>330517</td><td>0.004589</td></tr><tr><td>&quot;Serum_C_reacti…</td><td>333929</td><td>0.004636</td></tr><tr><td>&quot;Serum_vitamin_…</td><td>339815</td><td>0.004718</td></tr><tr><td>&quot;Corrected_seru…</td><td>341071</td><td>0.004736</td></tr><tr><td>&quot;Serum_ferritin…</td><td>404189</td><td>0.005612</td></tr><tr><td>&quot;Serum_free_T4_…</td><td>405894</td><td>0.005636</td></tr><tr><td>&quot;Serum_bilirubi…</td><td>437688</td><td>0.006077</td></tr><tr><td>&quot;Serum_choleste…</td><td>467651</td><td>0.006493</td></tr><tr><td>&quot;Serum_gamma-gl…</td><td>485765</td><td>0.006745</td></tr><tr><td>&quot;International_…</td><td>529460</td><td>0.007351</td></tr><tr><td>&quot;Serum_LDL_chol…</td><td>571744</td><td>0.007938</td></tr><tr><td>&quot;Ex_smoker_84&quot;</td><td>580799</td><td>0.008064</td></tr><tr><td>&quot;Erythrocyte_se…</td><td>593460</td><td>0.00824</td></tr><tr><td>&quot;Serum_calcium_…</td><td>612846</td><td>0.008509</td></tr><tr><td>&quot;Haemoglobin_A1…</td><td>658933</td><td>0.009149</td></tr><tr><td>&quot;Serum_triglyce…</td><td>849745</td><td>0.011798</td></tr><tr><td>&quot;Serum_HDL_chol…</td><td>957754</td><td>0.013298</td></tr><tr><td>&quot;Red_blood_cell…</td><td>958975</td><td>0.013315</td></tr><tr><td>&quot;Serum_alanine_…</td><td>998453</td><td>0.013863</td></tr><tr><td>&quot;Serum_TSH_leve…</td><td>1021942</td><td>0.014189</td></tr><tr><td>&quot;Serum_choleste…</td><td>1034167</td><td>0.014359</td></tr><tr><td>&quot;Mean_corpusc._…</td><td>1109719</td><td>0.015408</td></tr><tr><td>&quot;Never_smoked_t…</td><td>1153480</td><td>0.016015</td></tr><tr><td>&quot;Serum_total_bi…</td><td>1163389</td><td>0.016153</td></tr><tr><td>&quot;O_E_-_height_1…</td><td>1234637</td><td>0.017142</td></tr><tr><td>&quot;Haematocrit_15…</td><td>1359953</td><td>0.018882</td></tr><tr><td>&quot;GFR_calculated…</td><td>1556063</td><td>0.021605</td></tr><tr><td>&quot;Serum_alkaline…</td><td>1623702</td><td>0.022544</td></tr><tr><td>&quot;Serum_albumin_…</td><td>1650999</td><td>0.022923</td></tr><tr><td>&quot;Serum_urea_lev…</td><td>1700216</td><td>0.023606</td></tr><tr><td>&quot;Basophil_count…</td><td>1742926</td><td>0.024199</td></tr><tr><td>&quot;Mean_corpusc._…</td><td>1776245</td><td>0.024662</td></tr><tr><td>&quot;Monocyte_count…</td><td>1859334</td><td>0.025816</td></tr><tr><td>&quot;Eosinophil_cou…</td><td>1867184</td><td>0.025925</td></tr><tr><td>&quot;Red_blood_cell…</td><td>1872097</td><td>0.025993</td></tr><tr><td>&quot;Lymphocyte_cou…</td><td>1884479</td><td>0.026165</td></tr><tr><td>&quot;Neutrophil_cou…</td><td>1895139</td><td>0.026313</td></tr><tr><td>&quot;Mean_corpuscul…</td><td>1927082</td><td>0.026756</td></tr><tr><td>&quot;Platelet_count…</td><td>1956536</td><td>0.027165</td></tr><tr><td>&quot;Total_white_ce…</td><td>1956888</td><td>0.02717</td></tr><tr><td>&quot;Body_mass_inde…</td><td>1962373</td><td>0.027246</td></tr><tr><td>&quot;Serum_potassiu…</td><td>1989176</td><td>0.027618</td></tr><tr><td>&quot;Haemoglobin_es…</td><td>2001865</td><td>0.027795</td></tr><tr><td>&quot;Serum_sodium_2…</td><td>2026168</td><td>0.028132</td></tr><tr><td>&quot;Serum_creatini…</td><td>2084410</td><td>0.028941</td></tr><tr><td>&quot;O_E_-_weight_2…</td><td>2233648</td><td>0.031013</td></tr><tr><td>&quot;Diastolic_bloo…</td><td>5064060</td><td>0.070311</td></tr><tr><td>&quot;Systolic_blood…</td><td>5069808</td><td>0.070391</td></tr></tbody></table></div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>122                 ASTHMA_PUSHASTHMA
+1                   UNK
+1                   UNK
+1                   UNK
+171                 O_E_-_height_1
+3                   1
+9                   7
+7                   5
+12                  .
+5                   3
+192                 O_E_-_weight_2
+8                   6
+5                   3
+12                  .
+7                   5
+2                   0
+5                   3
+169                 Never_smoked_tobacco_85
+1                   UNK
+1                   UNK
+1                   UNK
+187                 Body_mass_index_3
+4                   2
+2                   0
+12                  .
+8                   6
+73                  EPILEPSY
+1                   UNK
+1                   UNK
+1                   UNK
+169                 Never_smoked_tobacco_85
+1                   UNK
+1                   UNK
+1                   UNK
+169                 Never_smoked_tobacco_85
+1                   UNK
+1                   UNK
+1                   UNK
+193                 Diastolic_blood_pressure_5
+10                  8
+10                  8
+12                  .
+2                   0
+194                 Systolic_blood_pressure_4
+3                   1
+6                   4
+6                   4
+12                  .
+2                   0
+169                 Never_smoked_tobacco_85
+1                   UNK
+1                   UNK
+1                   UNK
+193                 Diastolic_blood_pressure_5
+10                  8
+7                   5
+12                  .
+2                   0
+194                 Systolic_blood_pressure_4
+3                   1
+4                   2
+2                   0
+12                  .
+2                   0
+169                 Never_smoked_tobacco_85
+1                   UNK
+1                   UNK
+1                   UNK
+0                   PAD
 </pre>
 </div>
 </div>
@@ -14851,43 +15283,689 @@ INFO:root:Using Positional Encoding. This module uses the index position of an e
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
 <pre>
-Training model `pos_embedding`, with 10.777728 M parameters
+Training model `pos_embedding`, with 10.813824 M parameters
 
-Epoch 0:	Train loss 1.88. Val loss 1.57
-Epoch 1:	Train loss 1.23. Val loss 1.30
-Epoch 2:	Train loss 1.10. Val loss 1.20
-Epoch 3:	Train loss 1.04. Val loss 1.17
-Epoch 4:	Train loss 1.03. Val loss 1.16
-Epoch 5:	Train loss 1.02. Val loss 1.16
-Epoch 6:	Train loss 1.01. Val loss 1.15
-Epoch 7:	Train loss 1.01. Val loss 1.15
-Epoch 8:	Train loss 1.00. Val loss 1.15
-Epoch 9:	Train loss 1.00. Val loss 1.15
-Epoch 10:	Train loss 0.99. Val loss 1.14
-Epoch 11:	Train loss 0.99. Val loss 1.14
-Epoch 12:	Train loss 0.99. Val loss 1.14
-Epoch 13:	Train loss 0.99. Val loss 1.14
-	 DEPRESSION BIPOLAR diastolic_blood_pressure 1 0 1 . 0 bmi 2 5 . 1 diastolic_blood_pressure 7 6 . 0 diastolic_blood_pressure 7 8 . 0 diastolic_blood_pressure 7 9 . 0 eosinophil_count 0 .
-
-Training model `pos_encoding`, with 10.679424 M parameters
-
-Epoch 0:	Train loss 2.60. Val loss 2.72
-Epoch 1:	Train loss 2.13. Val loss 2.49
-Epoch 2:	Train loss 2.01. Val loss 2.60
-Epoch 3:	Train loss 1.96. Val loss 2.06
-Epoch 4:	Train loss 1.77. Val loss 1.86
-Epoch 5:	Train loss 1.48. Val loss 1.54
-Epoch 6:	Train loss 1.28. Val loss 1.39
-Epoch 7:	Train loss 1.21. Val loss 1.36
-Epoch 8:	Train loss 1.19. Val loss 1.34
-Epoch 9:	Train loss 1.17. Val loss 1.33
-Epoch 10:	Train loss 1.16. Val loss 1.31
-Epoch 11:	Train loss 1.14. Val loss 1.29
-Epoch 12:	Train loss 1.13. Val loss 1.28
-Epoch 13:	Train loss 1.11. Val loss 1.23
-Epoch 14:	Train loss 1.07. Val loss 1.21
 </pre>
 </div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 0:   1%|          | 51/7292 [01:06&lt;2:36:37,  1.30s/it]
+Validation epoch 0:   0%|          | 21/7292 [00:18&lt;1:49:17,  1.11it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 0:	Train loss 1.12. Val loss 1.03
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 1:   1%|          | 51/7292 [01:05&lt;2:36:03,  1.29s/it]
+Validation epoch 1:   0%|          | 21/7292 [00:19&lt;1:50:10,  1.10it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 1:	Train loss 1.03. Val loss 1.02
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 2:   1%|          | 51/7292 [01:06&lt;2:36:43,  1.30s/it]
+Validation epoch 2:   0%|          | 21/7292 [00:19&lt;1:49:47,  1.10it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 2:	Train loss 1.03. Val loss 0.99
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 3:   1%|          | 51/7292 [01:07&lt;2:39:24,  1.32s/it]
+Validation epoch 3:   0%|          | 21/7292 [00:18&lt;1:49:27,  1.11it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 3:	Train loss 1.01. Val loss 0.99
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 4:   1%|          | 51/7292 [01:09&lt;2:44:13,  1.36s/it]
+Validation epoch 4:   0%|          | 21/7292 [00:19&lt;1:53:46,  1.07it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 4:	Train loss 1.00. Val loss 0.98
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 5:   1%|          | 51/7292 [01:08&lt;2:41:29,  1.34s/it]
+Validation epoch 5:   0%|          | 21/7292 [00:20&lt;1:55:42,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 5:	Train loss 0.99. Val loss 0.96
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 6:   1%|          | 51/7292 [01:08&lt;2:41:38,  1.34s/it]
+Validation epoch 6:   0%|          | 21/7292 [00:20&lt;1:56:07,  1.04it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 6:	Train loss 0.98. Val loss 0.96
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 7:   1%|          | 51/7292 [01:09&lt;2:43:48,  1.36s/it]
+Validation epoch 7:   0%|          | 21/7292 [00:20&lt;1:56:05,  1.04it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 7:	Train loss 0.97. Val loss 0.96
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 8:   1%|          | 51/7292 [01:08&lt;2:42:23,  1.35s/it]
+Validation epoch 8:   0%|          | 21/7292 [00:19&lt;1:54:46,  1.06it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 8:	Train loss 0.96. Val loss 0.94
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 9:   1%|          | 51/7292 [01:08&lt;2:41:51,  1.34s/it]
+Validation epoch 9:   0%|          | 21/7292 [00:20&lt;1:56:08,  1.04it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 9:	Train loss 0.95. Val loss 0.96
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 10:   1%|          | 51/7292 [01:09&lt;2:44:04,  1.36s/it]
+Validation epoch 10:   0%|          | 21/7292 [00:20&lt;1:55:52,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 10:	Train loss 0.95. Val loss 0.94
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 11:   1%|          | 51/7292 [01:09&lt;2:44:09,  1.36s/it]
+Validation epoch 11:   0%|          | 21/7292 [00:19&lt;1:55:22,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 11:	Train loss 0.95. Val loss 0.94
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 12:   1%|          | 51/7292 [01:10&lt;2:45:46,  1.37s/it]
+Validation epoch 12:   0%|          | 21/7292 [00:19&lt;1:55:12,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 12:	Train loss 0.94. Val loss 0.93
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 13:   1%|          | 51/7292 [01:09&lt;2:44:29,  1.36s/it]
+Validation epoch 13:   0%|          | 21/7292 [00:19&lt;1:53:59,  1.06it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 13:	Train loss 0.93. Val loss 0.93
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 14:   1%|          | 51/7292 [01:10&lt;2:45:39,  1.37s/it]
+Validation epoch 14:   0%|          | 21/7292 [00:19&lt;1:54:33,  1.06it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 14:	Train loss 0.93. Val loss 0.92
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 15:   1%|          | 51/7292 [01:09&lt;2:44:07,  1.36s/it]
+Validation epoch 15:   0%|          | 21/7292 [00:19&lt;1:54:02,  1.06it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 15:	Train loss 0.93. Val loss 0.91
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 16:   1%|          | 51/7292 [01:09&lt;2:43:44,  1.36s/it]
+Validation epoch 16:   0%|          | 21/7292 [00:19&lt;1:54:55,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 16:	Train loss 0.92. Val loss 0.92
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 17:   1%|          | 51/7292 [01:10&lt;2:45:49,  1.37s/it]
+Validation epoch 17:   0%|          | 21/7292 [00:20&lt;1:55:31,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 17:	Train loss 0.92. Val loss 0.92
+	 DEPRESSION UNK UNK UNK O_E_-_height_1 1 6 2 . 5 O_E_-_weight_2 5 3 . 0 Never_smoked_tobacco_85 UNK UNK UNK Body_mass_index_3 2 0 . 5 Never_smoked_tobacco_85 UNK UNK UNK Diastolic_blood_pressure_5 7 0
+
+Training model `pos_encoding`, with 10.71552 M parameters
+
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 0:   1%|          | 51/7292 [01:09&lt;2:44:53,  1.37s/it]
+Validation epoch 0:   0%|          | 21/7292 [00:19&lt;1:55:04,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 0:	Train loss 3.20. Val loss 3.06
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 1:   1%|          | 51/7292 [01:09&lt;2:43:46,  1.36s/it]
+Validation epoch 1:   0%|          | 21/7292 [00:19&lt;1:54:17,  1.06it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 1:	Train loss 3.03. Val loss 2.97
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 2:   1%|          | 51/7292 [01:10&lt;2:46:05,  1.38s/it]
+Validation epoch 2:   0%|          | 21/7292 [00:19&lt;1:54:25,  1.06it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 2:	Train loss 2.92. Val loss 2.99
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 3:   1%|          | 51/7292 [01:09&lt;2:44:24,  1.36s/it]
+Validation epoch 3:   0%|          | 21/7292 [00:19&lt;1:54:54,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 3:	Train loss 2.84. Val loss 2.89
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 4:   1%|          | 51/7292 [01:08&lt;2:43:14,  1.35s/it]
+Validation epoch 4:   0%|          | 21/7292 [00:19&lt;1:54:51,  1.06it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 4:	Train loss 2.62. Val loss 2.51
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 5:   1%|          | 51/7292 [01:09&lt;2:45:29,  1.37s/it]
+Validation epoch 5:   0%|          | 21/7292 [00:19&lt;1:54:10,  1.06it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 5:	Train loss 2.48. Val loss 2.44
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 6:   1%|          | 51/7292 [01:09&lt;2:43:45,  1.36s/it]
+Validation epoch 6:   0%|          | 21/7292 [00:20&lt;1:55:27,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 6:	Train loss 2.36. Val loss 2.36
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 7:   1%|          | 51/7292 [01:09&lt;2:43:19,  1.35s/it]
+Validation epoch 7:   0%|          | 21/7292 [00:19&lt;1:54:23,  1.06it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 7:	Train loss 2.26. Val loss 2.16
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 8:   1%|          | 51/7292 [01:09&lt;2:44:13,  1.36s/it]
+Validation epoch 8:   0%|          | 21/7292 [00:20&lt;1:56:33,  1.04it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 8:	Train loss 2.08. Val loss 1.97
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 9:   1%|          | 51/7292 [01:08&lt;2:42:16,  1.34s/it]
+Validation epoch 9:   0%|          | 21/7292 [00:20&lt;1:55:35,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 9:	Train loss 1.84. Val loss 1.68
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 10:   1%|          | 51/7292 [01:09&lt;2:43:35,  1.36s/it]
+Validation epoch 10:   0%|          | 21/7292 [00:19&lt;1:55:09,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 10:	Train loss 1.62. Val loss 1.48
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 11:   1%|          | 51/7292 [01:08&lt;2:41:04,  1.33s/it]
+Validation epoch 11:   0%|          | 21/7292 [00:20&lt;1:56:56,  1.04it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 11:	Train loss 1.45. Val loss 1.35
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 12:   1%|          | 51/7292 [01:10&lt;2:46:21,  1.38s/it]
+Validation epoch 12:   0%|          | 21/7292 [00:19&lt;1:55:05,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 12:	Train loss 1.36. Val loss 1.29
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 13:   1%|          | 51/7292 [01:08&lt;2:42:40,  1.35s/it]
+Validation epoch 13:   0%|          | 21/7292 [00:19&lt;1:54:59,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 13:	Train loss 1.31. Val loss 1.27
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 14:   1%|          | 51/7292 [01:09&lt;2:44:25,  1.36s/it]
+Validation epoch 14:   0%|          | 21/7292 [00:20&lt;1:55:25,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 14:	Train loss 1.28. Val loss 1.22
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 15:   1%|          | 51/7292 [01:08&lt;2:42:49,  1.35s/it]
+Validation epoch 15:   0%|          | 21/7292 [00:19&lt;1:53:38,  1.07it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 15:	Train loss 1.25. Val loss 1.20
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 16:   1%|          | 51/7292 [01:09&lt;2:44:49,  1.37s/it]
+Validation epoch 16:   0%|          | 21/7292 [00:20&lt;1:56:00,  1.04it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 16:	Train loss 1.21. Val loss 1.18
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 17:   1%|          | 51/7292 [01:08&lt;2:42:05,  1.34s/it]
+Validation epoch 17:   0%|          | 21/7292 [00:20&lt;1:55:59,  1.04it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 17:	Train loss 1.18. Val loss 1.15
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 18:   1%|          | 51/7292 [01:09&lt;2:43:37,  1.36s/it]
+Validation epoch 18:   0%|          | 21/7292 [00:20&lt;1:55:52,  1.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 18:	Train loss 1.17. Val loss 1.13
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 19:   1%|          | 51/7292 [01:10&lt;2:45:56,  1.38s/it]
+Validation epoch 19:   0%|          | 21/7292 [00:19&lt;1:54:48,  1.06it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 19:	Train loss 1.15. Val loss 1.12
+	 DEPRESSION UNK UNK UNK O_E_-_height_1 1 6 2 . 0 O_E_-_weight_2 6 4 . 0 Never_smoked_tobacco_85 UNK UNK UNK Serum_bilirubin_level_53 2 . 0 PREVALENT_IBS_V2 UNK UNK UNK ALLERGICRHINITISCONJ UNK UNK UNK
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>tensor([[169,   1,   1,  ...,   0,   0,   0],
+        [  9,  12,  10,  ...,  11, 188,   6],
+        [  2,  12,   2,  ..., 181,   6,  12],
+        ...,
+        [ 12,   7, 167,  ..., 179,   2,  12],
+        [  9,   9, 192,  ...,  12,   2, 187],
+        [  1, 194,   3,  ...,   6,   2,  12]])</pre>
+</div>
+
 </div>
 
 </div>
@@ -14921,7 +15999,26 @@ Epoch 14:	Train loss 1.07. Val loss 1.21
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>49
+100
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -14934,9 +16031,103 @@ Epoch 14:	Train loss 1.07. Val loss 1.21
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
 
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>[187, 4, 4, 12, 7, 193, 9, 11, 12, 2]
+[187, 5, 9, 12, 7, 193, 11, 11, 12, 2]
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>
+
+pos_embedding
+=============
+
+Control: Low risk: 	 (Body_mass_index_3,2,2,.,5,Diastolic_blood_pressure_5,7,9,.,0): 
+torch.Size([9, 195])
+probability of type I diabetes 0.0002%
+probability of type II diabetes 0.0003%
+
+Control: High risk: 	 (Body_mass_index_3,3,7,.,5,Diastolic_blood_pressure_5,9,9,.,0): 
+torch.Size([9, 195])
+probability of type I diabetes 0.0002%
+probability of type II diabetes 0.0003%
+
+Control: Low risk + depression: 	 (DEPRESSION,Body_mass_index_3,2,2,.,5,Diastolic_blood_pressure_5,7,9,.,0): 
+torch.Size([10, 195])
+probability of type I diabetes 0.0007%
+probability of type II diabetes 0.0014%
+
+Low risk context: Type 1 diagnosis in prompt: 	 (TYPE1DM,Body_mass_index_3,2,2,.,5,Diastolic_blood_pressure_5,7,9,.,0): 
+torch.Size([10, 195])
+probability of type I diabetes 0.0004%
+probability of type II diabetes 0.0004%
+
+Low risk context: Type 1I diagnosis in prompt: 	 (TYPE2DIABETES,Body_mass_index_3,2,2,.,5,Diastolic_blood_pressure_5,7,9,.,0): 
+torch.Size([10, 195])
+probability of type I diabetes 0.0003%
+probability of type II diabetes 0.0006%
+
+
+pos_encoding
+============
+
+Control: Low risk: 	 (Body_mass_index_3,2,2,.,5,Diastolic_blood_pressure_5,7,9,.,0): 
+torch.Size([9, 195])
+probability of type I diabetes 0.0014%
+probability of type II diabetes 0.0007%
+
+Control: High risk: 	 (Body_mass_index_3,3,7,.,5,Diastolic_blood_pressure_5,9,9,.,0): 
+torch.Size([9, 195])
+probability of type I diabetes 0.0014%
+probability of type II diabetes 0.0007%
+
+Control: Low risk + depression: 	 (DEPRESSION,Body_mass_index_3,2,2,.,5,Diastolic_blood_pressure_5,7,9,.,0): 
+torch.Size([10, 195])
+probability of type I diabetes 0.0013%
+probability of type II diabetes 0.0014%
+
+Low risk context: Type 1 diagnosis in prompt: 	 (TYPE1DM,Body_mass_index_3,2,2,.,5,Diastolic_blood_pressure_5,7,9,.,0): 
+torch.Size([10, 195])
+probability of type I diabetes 0.0007%
+probability of type II diabetes 0.0005%
+
+Low risk context: Type 1I diagnosis in prompt: 	 (TYPE2DIABETES,Body_mass_index_3,2,2,.,5,Diastolic_blood_pressure_5,7,9,.,0): 
+torch.Size([10, 195])
+probability of type I diabetes 0.0009%
+probability of type II diabetes 0.0010%
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -14948,7 +16139,276 @@ Epoch 14:	Train loss 1.07. Val loss 1.21
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>
+
+pos_embedding
+=============
+
+
+TransformerForCausalLM(
+  (transformer): Transformer(
+    (wpe): PositionalEmbedding(
+      (wpe): Embedding(256, 384)
+    )
+    (wte): Embedding(195, 384, padding_idx=0)
+    (drop): Dropout(p=0.0, inplace=False)
+    (blocks): ModuleList(
+      (0): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (1): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (2): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (3): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (4): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (5): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+    )
+    (ln_f): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+  )
+  (lm_head): Linear(in_features=384, out_features=195, bias=False)
+)
+
+
+pos_encoding
+============
+
+
+TransformerForCausalLM(
+  (transformer): Transformer(
+    (wpe): PositionalEncoding()
+    (wte): Embedding(195, 384, padding_idx=0)
+    (drop): Dropout(p=0.0, inplace=False)
+    (blocks): ModuleList(
+      (0): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (1): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (2): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (3): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (4): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (5): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+    )
+    (ln_f): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+  )
+  (lm_head): Linear(in_features=384, out_features=195, bias=False)
+)
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 

@@ -46,7 +46,7 @@ def preprocess_measurements(pl_lazy_frame: pl.LazyFrame,
     if practice_patient_ids is not None:
         pl_lazy_frame = pl_lazy_frame.filter(pl.col("PRACTICE_PATIENT_ID").is_in(practice_patient_ids))
 
-    logging.info(f"Using test/measurement standardisation method: {method.lower()}")
+    logging.info(f"... ... ...  Using standardisation method: {method.lower()}")
     match method.lower():
         case "normalise":            
             bias = (
@@ -129,9 +129,9 @@ def preprocess_measurements(pl_lazy_frame: pl.LazyFrame,
     )
 
     if remove_outliers:
-        logging.info("Removing measurement and test outliers. Using three deviations from mean as cutoff")        
+        logging.info("... ... ... Removing measurement and test outliers. Using three deviations from mean as cutoff")        
         pl_lazy_frame = pl_lazy_frame.filter((pl.col("VALUE") < 3) | (pl.col("VALUE") > 3))
     else:
-        logging.info("Not removing measurement and test outliers (beyond initial pre-processing)")
+        logging.info("... ... ... Not removing measurement and test outliers (beyond initial pre-processing)")
         
     return pl_lazy_frame, standardisation_dict
