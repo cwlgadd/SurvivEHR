@@ -1,6 +1,7 @@
 # Build deep-Learning friendly representations from each stream of input data (static, diagnosis, measurements) from the reformatted SQL database
 from typing import Optional, Any, Union
 from collections.abc import Sequence
+import itertools
 import pathlib
 import sqlite3
 import polars as pl
@@ -56,16 +57,51 @@ class PolarsDataset:
             except OSError as e:
                 raise FileNotFoundError
         else:
-            logging.info(f"Building Polars dataset and saving to {path}")        
+            logging.info(f"Building Polars dataset and saving to {path}")     
             self.meta_information = self._build_DL_representation(save_path=path, **kwargs)            
             with open(path + 'meta_information.pickle', 'wb') as handle:
                 pickle.dump(self.meta_information, handle, protocol=pickle.HIGHEST_PROTOCOL)
                 
         return self.meta_information
-            
+
+    def _train_test_val_split(self):
+        
+        # get a list of practice IDs which are used to chunk the database
+        #    We can optionally pass a filtering kwarg through .fit() method to constrain which practice IDs should be included in the study 
+        #    based on some criteria. For example, asserting that we only want practices in England can be achieved by adding an inclusion
+        #    that applies to the static table
+        logging.info(f"Chunking by unique practice ID with no inclusion conditions")
+        practice_ids = self.collector._extract_distinct(table_names=["static_table"],
+                                                        identifier_column="PRACTICE_ID",
+                                                        # condition= e.g. WHERE 'pass this here'
+                                                       )
+        
+        # Create train/test/val splits 
+        logging.info(f"Creating train/test/val splits using practice_patient_ids")
+        train_practice_ids, test_practice_ids = sk_split(practice_ids, test_size=0.1)       
+        test_practice_ids, val_practice_ids = sk_split(test_practice_ids, test_size=0.5)
+
+        # Get a list of practice_patient_ids for every practice_id used in the training set
+        logging.info(f"Extracting practice_patient_ids for each practice")
+        # Train
+        train_practice_patient_ids = []
+        for practice in tqdm(train_practice_ids, desc="Train", total=len(train_practice_ids)):
+            train_practice_patient_ids.append(self.collector._extract_distinct(["static_table"], "PRACTICE_PATIENT_ID", conditions=[f"PRACTICE_ID = '{practice}'"]))
+        # Test
+        test_practice_patient_ids = []
+        for practice in tqdm(test_practice_ids, desc="Test", total=len(test_practice_ids)):
+            test_practice_patient_ids.append(self.collector._extract_distinct(["static_table"], "PRACTICE_PATIENT_ID", conditions=[f"PRACTICE_ID = '{practice}'"]))
+        # Validation
+        val_practice_patient_ids = []
+        for practice in tqdm(val_practice_ids, desc="Validation", total=len(val_practice_ids)):
+            val_practice_patient_ids.append(self.collector._extract_distinct(["static_table"], "PRACTICE_PATIENT_ID", conditions=[f"PRACTICE_ID = '{practice}'"]))
+
+        self.train_practice_patient_ids = train_practice_patient_ids
+        self.test_practice_patient_ids = test_practice_patient_ids
+        self.val_practice_patient_ids = val_practice_patient_ids
+    
     def _build_DL_representation(self,
                                  save_path: str,
-                                 pratice_inclusion_conditions: Optional[list] = None,                                 
                                  include_measurements: bool = True,
                                  include_diagnoses: bool = True,
                                  preprocess_measurements: bool = False,
@@ -108,40 +144,41 @@ class PolarsDataset:
         if include_diagnoses:            
             tables_to_use.append("diagnosis_table")
 
-        # get a list of practice IDs which are used to chunk the database
-        #    We can optionally pass a filtering kwarg through .fit() method to constrain which practice IDs should be included in the study 
-        #    based on some criteria. For example, asserting that we only want practices in England can be achieved by adding an inclusion
-        #    that applies to the static table
-        logging.info(f"Chunking by unique practice ID: {'no' if pratice_inclusion_conditions is None else pratice_inclusion_conditions} inclusion conditions")
-        practice_ids = self.collector.extract_practice_ids(["static_table"], "PRACTICE_PATIENT_ID", conditions=pratice_inclusion_conditions)
+        # Create train/test/val splits
+        self._train_test_val_split()
         
-        # Create train/test/val splits 
-        logging.info(f"Creating train/test/val splits using practice_patient_ids")
-        train_practice_ids, test_practice_ids = sk_split(practice_ids, test_size=0.1)       
-        test_practice_ids, val_practice_ids = sk_split(test_practice_ids, test_size=0.5)
-
+        
         # Collect meta information that is used for tokenization, but also optionally for standardisation
         # Collect meta information
         #    * create the data container on the first pass, and update it after
         #    * count all event occurrences for tokenizer,
         #    * where values are included also record the number observed for standardisation
         #    * and calculating standardisation statistics for the training set
-        meta_information = None
-        logging.info(f"Collecting meta information of training split for tokenization/standardisation")
-        generator = self.collector._lazy_generate_by_practice_id(train_practice_ids, tables_to_use, "PRACTICE_PATIENT_ID")            
-        for chunk_name, lazy_table_frames_dict in tqdm(generator, total=len(train_practice_ids)):
-            logging.debug(chunk_name)
-            meta_information = self.collector._online_standardisation(meta_information, **lazy_table_frames_dict)
-        logging.debug(f"Collected meta information \n\n {meta_information}")
+        # meta_information = None
+        # logging.info(f"Collecting meta information of training split for tokenization/standardisation")
+        # generator = self.collector._lazy_generate_by_distinct(self.train_practice_patient_ids, tables_to_use, "PRACTICE_PATIENT_ID")            
+        # for _, lazy_table_frames_dict in tqdm(generator, total=len(self.train_practice_patient_ids)):
+        #     # pass
+        #     meta_information = self.collector._online_standardisation(meta_information, **lazy_table_frames_dict)
+        # logging.debug(f"Collected meta information \n\n {meta_information}")
+        
+        all_train = list(itertools.chain.from_iterable(self.train_practice_patient_ids))
+        meta_information = self.collector.get_meta_information(practice_patient_ids=all_train,
+                                                               diagnoses   = include_diagnoses,
+                                                               measurement = include_measurements)
         
         #  Create train/test/val DL Polars datasets
         # Loop over practice IDs
         #    * create the generator that performs a lookup on the database for each practice ID and returns a lazy frame for each table's rows        
         #    * collating the lazy tables into a lazy DL-friendly representation,
-        for split_name, split_ids in zip(["train", "test", "val"], [train_practice_ids, test_practice_ids, val_practice_ids]):
+        for split_name, split_ids in zip(["train", "test", "val"], [self.train_practice_patient_ids, 
+                                                                    self.test_practice_patient_ids, 
+                                                                    self.val_practice_patient_ids]):
             
             logging.info(f"Collating {split_name} split into a DL friendly format")
-            generator = self.collector._lazy_generate_by_practice_id(split_ids, tables_to_use, "PRACTICE_PATIENT_ID")            
+            # generator = self.collector._lazy_generate_by_distinct(split_ids, tables_to_use, "PRACTICE_PATIENT_ID")   
+            generator = self.collector._lazy_generate_by_distinct(split_ids, tables_to_use, "PRACTICE_PATIENT_ID")
+
             for chunk_name, lazy_table_frames_dict in tqdm(generator, total=len(split_ids)):
 
                 # Merge the lazy polars tables provided by the generator into one lazy polars frame

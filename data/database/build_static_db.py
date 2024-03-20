@@ -4,6 +4,7 @@ import os
 from tqdm import tqdm
 from datetime import datetime
 from dateutil import relativedelta
+import logging
 
 # class StaticDB:
 #     """A sample static observations class"""
@@ -31,97 +32,114 @@ from dateutil import relativedelta
 #                         'ETHNICITY': patient.ethnicity, 
 #                         'YEAR_OF_BIRTH': patient.age})
 
-def convert_to_datetime(input):
-    # function that reformats input string to datetime type
-    return datetime.strptime(input, "%Y-%m-%dT%H:%M:%S.%f%z")            
+class Static():
+
+    # @staticmethod
+    # def convert_to_datetime(input):
+    #     # function that reformats input string to datetime type
+    #     return datetime.strptime(input, "%Y-%m-%dT%H:%M:%S.%f%z")    
+    
+    def __init__(self, db_path, path_to_data, load=False):
+        self.db_path = db_path
+        self.connection = None
+        self.cursor = None
+        self.connection_token = 'sqlite://' + self.db_path 
+        self.path_to_data = path_to_data
+
+        if load is False:
+            # Create table        
+            self.connect()
+            logging.info(f"Creating static_table")
+            self.cursor.execute("""CREATE TABLE static_table ( PRACTICE_PATIENT_ID str,
+                                                               PRACTICE_ID int,
+                                                               PATIENT_ID int,
+                                                               ETHNICITY text,      
+                                                               YEAR_OF_BIRTH text,    
+                                                               SEX text,  
+                                                               COUNTRY text,
+                                                               HEALTH_AUTH text,
+                                                               INDEX_DATE text,
+                                                               START_DATE text,
+                                                               END_DATE text
+                                                            )""")
+            self.disconnect()
+
+    
+    def __str__(self):
+        self.connect()
+        self.cursor.execute("SELECT COUNT(*) FROM static_table")
+        s = f'Static table with {self.cursor.fetchone()[0]/1e6:.2f}M records.'
+        self.disconnect()
+        return s
+        
+    def connect(self):
+        try:
+            self.connection = sqlite3.connect(self.db_path)
+            self.cursor = self.connection.cursor()
+            logging.debug("Connected to SQLite database")
+        except sqlite3.Error as e:
+            logging.warning(f"Error connecting to SQLite database: {e}")
+
+    def disconnect(self):
+        if self.connection:
+            self.connection.close()
+            self.connection = None
+            self.cursor = None
+            logging.debug("Disconnected from SQLite database")
+
+    def build_table(self, verbose=1, **kwargs):
+        """
+        """
+        self.connect()
+        self._add_file_to_table(self.path_to_data, verbose=verbose, **kwargs)
+        self._make_index()
+        self.disconnect()
+        
+    def _make_index(self):
+        # Create index
+        logging.info("Creating indexes on static_table")
+        query = "CREATE INDEX IF NOT EXISTS static_index ON static_table (PRACTICE_ID, PATIENT_ID, PRACTICE_PATIENT_ID, HEALTH_AUTH, COUNTRY, SEX, ETHNICITY); "
+        logging.debug(query)
+        self.cursor.execute(query)
+        self.connection.commit()
+
+    def _add_file_to_table(self, fname, chunksize=200000, verbose=0):
+
+        generator = pd.read_csv(fname, chunksize=chunksize, iterator=True, encoding='utf-8', low_memory=False,
+                               dtype={'PATIENT_ID': 'str'})
+        # low_memory=False just silences an error, TODO: add dtypes
+        for df in tqdm(generator, desc="Building static table"):
+    
+            # Start counting indices from 1
+            df.index += 1
             
-def build_static_table(connector, path_to_data, chunksize=200000, verbose=1):
-    r"""
+            # Keep only some interesting columns. Can add more later if needed
+            columns = ['PRACTICE_PATIENT_ID', 'PRACTICE_ID',  'PATIENT_ID',
+                       'ETHNICITY', 'YEAR_OF_BIRTH', 
+                       'SEX', 'COUNTRY',
+                       'HEALTH_AUTH',
+                       'INDEX_DATE','START_DATE','END_DATE',
+                      ]
+            df = df[columns].copy()
+
+            # remove p at the start so we can store as int
+            df['PRACTICE_ID'] = df['PRACTICE_ID'].apply(lambda x: x.replace('p', ''))
+
+            
+            # for col in df.columns:
+            #     if col not in columns:
+            #         df = df.drop(col, axis=1)
     
-    Produced anonymized table:
-    ┌──────────────────────┬─────┬───────────┬───────────────┬─────────────┬─────────────┬───────────────┐
-    │ PRACTICE_PATIENT_ID  ┆ SEX ┆ etc..     ┆ YEAR_OF_BIRTH ┆ INDEX_AGE   ┆ START_AGE   ┆ END_AGE       │
-    │ ---                  ┆ --- ┆ ---       ┆ ---           ┆ ---         ┆ ---         ┆ ---           │
-    │ str                  ┆ str ┆           ┆ str           ┆ i64 (days)  ┆ i64 (days)  ┆ i64 (days)    │
-    ╞══════════════════════╪═════╪═══════════╪═══════════════╪═════════════╪═════════════╪═══════════════╡
-    │ <anonymous 1>        ┆ M   ┆           ┆ yyyy--mm-dd   ┆ dd          ┆ dd          ┆ dd            │
-    │ <anonymous 2>        ┆ F   ┆           ┆ yyyy--mm-dd   ┆ dd          ┆ dd          ┆ dd            │
-    │ …                    ┆ …   ┆ …         ┆ …             ┆             ┆             ┆               │
-    │ <anonymous N>        ┆ M   ┆           ┆ yyyy--mm-dd   ┆ dd          ┆ dd          ┆ dd            │
-    └──────────────────────┴─────┴───────────┴───────────────┴─────────────┴─────────────┴───────────────┘
+            # Pull records from df to update SQLite .db with records or rows in a list
+            records = df.to_records(index=False,
+                                    column_dtypes={
+                                        # "PRACTICE_ID": "int64",
+                                        # "PATIENT_ID": "int64",
+                                        }
+                                   )
 
-    Baseline covariates include
-        * ETHNICITY
-        * SEX
-        * COUNTRY
-        * HEALTH_AUTH
-        
-    """
-    c = connector.cursor()
-    
-    c.execute("""CREATE TABLE static_table (
-                 PRACTICE_PATIENT_ID text,
-                 ETHNICITY text,      
-                 YEAR_OF_BIRTH text,    
-                 SEX text,  
-                 COUNTRY text,
-                 HEALTH_AUTH text,
-                 INDEX_DATE text,
-                 START_DATE text,
-                 END_DATE text
-                 )""")
-    
-    index_start = 1
-    generator = pd.read_csv(path_to_data, chunksize=chunksize, iterator=True, encoding='utf-8', low_memory=False)
-    # low_memory=False just silences an error, TODO: add dtypes
-    for df in tqdm(generator, desc="Building static table"):
-
-        # Start counting indices from 1
-        df.index += index_start
-        
-        # Convert index dates to days since birth
-        date_format = '%Y-%m-%d'
-        # df[["INDEX_DATE", "START_DATE", "END_DATE"]] = df[["INDEX_DATE", "START_DATE", "END_DATE"]].apply(pd.to_datetime, format=date_format)
-        # yob_datetime = pd.to_datetime(df['YEAR_OF_BIRTH'], format=date_format)
-        # df['AGE_AT_INDEX'] = (df['INDEX_DATE'] - yob_datetime).dt.days
-        # df['AGE_AT_START'] = (df['START_DATE'] - yob_datetime).dt.days
-        # df['AGE_AT_END'] = (df['END_DATE'] - yob_datetime).dt.days
-
-        # df['INDEX_DATE'] = df['INDEX_DATE'].dt.strftime(date_format)
-        # df['START_DATE'] = df['START_DATE'].dt.strftime(date_format)
-        # df['END_DATE'] = df['END_DATE'].dt.strftime(date_format)
-        
-        # Keep only some interesting columns. Can add more later if needed
-        columns = ['PRACTICE_PATIENT_ID', 
-                   'ETHNICITY', 'YEAR_OF_BIRTH', 
-                   'SEX', 'COUNTRY',
-                   'HEALTH_AUTH',
-                   # 'AGE_AT_INDEX','AGE_AT_START','AGE_AT_END',
-                   'INDEX_DATE','START_DATE','END_DATE',
-                  ]
-        df = df[columns]
-
-        # for col in df.columns:
-        #     if col not in columns:
-        #         df = df.drop(col, axis=1)
-
-        # Pull records from df to update SQLite .db with records or rows in a list
-        records = df.to_records(index=False,
-                                # column_dtypes={"AGE_AT_INDEX": "int32",
-                                #                "AGE_AT_START": "int32",
-                                #                "AGE_AT_END": "int32",
-                                #                }
-                               )
-        
-        # Add rows to database
-        c.executemany('INSERT INTO static_table VALUES(?,?,?,?,?,?,?,?,?);', records);
-        
-        if verbose > 1:
-            print('Inserted', c.rowcount, 'data owners to the table.')
-
-    c.execute("SELECT COUNT(*) FROM static_table")
-    print('\t Static table built with', c.fetchone()[0], 'records.')
-    
-    #commit the changes to db			
-    connector.commit()
-    
+            # Add rows to database
+            self.cursor.executemany('INSERT INTO static_table VALUES(?,?,?,?,?,?,?,?,?,?,?);', records);
+            
+            if verbose > 1:
+                print('Inserted', self.cursor.rowcount, 'data owners to the table.')

@@ -121,6 +121,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
             dataset=self.train_set,
             batch_size=self.batch_size,
             num_workers=np.min((self.min_workers, os.cpu_count())),
+            pin_memory=True,
             collate_fn=self.collate_fn,
             shuffle=True
         )
@@ -130,6 +131,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
             dataset=self.val_set,
             batch_size=self.batch_size,
             num_workers=np.min((self.min_workers, os.cpu_count())),
+            pin_memory=True,
             collate_fn=self.collate_fn,
             shuffle=False
         )
@@ -139,6 +141,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
             dataset=self.test_set,
             batch_size=self.batch_size,
             num_workers=np.min((self.min_workers, os.cpu_count())),
+            pin_memory=True,
             collate_fn=self.collate_fn,
             shuffle=False
         )
@@ -268,7 +271,7 @@ class FoundationalDataset(Dataset):
                     assert self.meta_information is not None
                     if next_event in standardisation_keys:
                         event_meta = self.meta_information["measurement_table"][self.meta_information["measurement_table"]["event"] == next_event]
-                        next_value = (next_value - event_meta["mean"]) / event_meta["std"]
+                        next_value = (next_value - event_meta["bias"]) / event_meta["scale"]
                 next_value = float(next_value)
             else:
                 next_value = np.nan
