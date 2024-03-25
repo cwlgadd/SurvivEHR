@@ -103,7 +103,7 @@ class Static():
         self.cursor.execute(query)
         self.connection.commit()
 
-    def _add_file_to_table(self, fname, chunksize=200000, verbose=0):
+    def _add_file_to_table(self, fname, chunksize=200000, verbose=0, **kwargs):
 
         generator = pd.read_csv(fname, chunksize=chunksize, iterator=True, encoding='utf-8', low_memory=False,
                                dtype={'PATIENT_ID': 'str'})

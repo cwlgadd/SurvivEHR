@@ -4,9 +4,12 @@ import pandas as pd
 import numpy as np
 from typing import Optional, Any, Union
 import logging
+from CPRD.data.database.build_static_db import Static
+from CPRD.data.database.build_diagnosis_db import Diagnoses
+from CPRD.data.database.build_measurements_and_tests_db import Measurements
 
 
-class SQLiteDataCollector:
+class SQLiteDataCollector(Static, Diagnoses, Measurements):
     
     def __init__(self, db_path):
         self.db_path = db_path
@@ -44,7 +47,7 @@ class SQLiteDataCollector:
         query += f" GROUP BY {identifier_column}"
         
         # Execute the query
-        logging.info(f"Query: {query[:100] if len(query) > 100 else query}")
+        logging.debug(f"Query: {query[:300] if len(query) > 300 else query}")
         self.cursor.execute(query)
 
         # Fetch unique prefixes for the current table and update the set
@@ -85,8 +88,9 @@ class SQLiteDataCollector:
             
     def _lazy_generate_by_distinct(self,
                                    distinct_values: list,
-                                   table_names: list[str], 
                                    identifier_column: str,
+                                   include_diagnoses: bool = True, 
+                                   include_measurements: bool = True,
                                    conditions: Optional[list[str]] = None
                                    ) -> list[pl.LazyFrame]:
         """
@@ -95,6 +99,14 @@ class SQLiteDataCollector:
         columns:      is a list of column names you want to retrieve from each table.
         conditions:   is a list of conditions to filter the data, where each condition applies to a specific table.
         """
+        
+        table_names = ["static_table"]
+        if include_diagnoses:            
+            table_names.append("diagnosis_table")
+        if include_measurements:
+            for measurement_table in self.measurement_table_names:
+                table_names.append(measurement_table)   
+
         # Iterate over each
         for distinct_value in distinct_values:
             rows_by_table = {}
@@ -114,15 +126,15 @@ class SQLiteDataCollector:
                         query += f" WHERE {conditions[idx_table]}"
                                   
                 logging.debug(f"Query: {query[:100] if len(query) > 100 else query}")
-                rows_by_table["lazy_" + table.split("_")[0]] = pl.read_database(query=query, connection_uri=self.connection_token).lazy()
-                    
+                df = pl.read_database(query=query, connection_uri=self.connection_token)
+                if len(df) > 0:
+                    rows_by_table["lazy_" + table] = df.lazy()
+
             # Yield the fetched rows as a chunk
             yield distinct_value, rows_by_table
                 
     def _collate_lazy_tables(self,
-                             lazy_static: pl.LazyFrame,
-                             lazy_diagnosis: Optional[pl.LazyFrame] = None,
-                             lazy_measurement: Optional[pl.LazyFrame] = None,
+                             lazy_frames: pl.LazyFrame,
                              drop_empty_dynamic: bool = True,
                              drop_missing_data: bool = False,
                              exclude_pre_index_age: bool = False,
@@ -131,6 +143,17 @@ class SQLiteDataCollector:
         Notes:  The collection is applied after this function
                 We do not sort within the lazy operation, so the row order will not be deterministic
         """
+        # Static lazy frame
+        lazy_static = lazy_frames["lazy_static_table"]
+
+        # Diagnosis lazy frame, optional
+        lazy_diagnosis = lazy_frames["lazy_diagnosis_table"] if "lazy_diagnosis_table" in lazy_frames.keys() else None
+
+        # Measurement lazy frames, optional
+        measurement_keys = [key for key in lazy_frames if key.startswith("lazy_measurement_")]
+        measurement_lazy_frames = [lazy_frames[key] for key in measurement_keys]
+        lazy_measurement = pl.concat(measurement_lazy_frames)
+        
         #################
         # STATIC EVENTS #
         #################
@@ -242,33 +265,47 @@ class SQLiteDataCollector:
             meta_information["diagnosis_table"] = diagnosis_meta
             
         if measurement is True:
-            # Get total number of entries for each measurement
-            result = self._extract_AGG("measurement_table", identifier_column="EVENT", aggregations="COUNT(*)")  #  condition=condition
-            measurements, counts = zip(*result)
-            
-            # Get total number of entries with corresponding observed values for each measurement
-            result = self._extract_AGG("measurement_table", identifier_column="EVENT", aggregations="COUNT(VALUE)")  # condition="VALUE IS NOT NULL",
-            measurements_obs, counts_obs = zip(*result)
-            obs_counts = [_c if _m in measurements else 0 for _m, _c in zip(measurements_obs, counts_obs)]
-            
-            # Get total number of entries with corresponding observed values for each measurement
-            result = self._extract_AGG("measurement_table", identifier_column="EVENT", aggregations="MIN(VALUE), MAX(VALUE)")  # condition="VALUE IS NOT NULL",
-            measurements_obs, min_obs, max_obs = zip(*result)
-            obs_bias = [_min if _meas in measurements else 0 for _meas, _min, _max in zip(measurements_obs, min_obs, max_obs)]
-            obs_scale = [_max - _min if _meas in measurements else 1 for _meas, _min, _max in zip(measurements_obs, min_obs, max_obs)]
-            
-            obs_dict = {k:v for k,v in zip(measurements_obs, counts_obs)}
-            # Get variance of observed values for each measurement
-            
+
+            measurements, counts, obs_counts, obs_biases, obs_scales = [], [], [], [], []
+            for table in self.measurement_table_names:
+                
+                # Get total number of entries for each unique event in measurement table
+                result = self._extract_AGG(table, identifier_column="EVENT", aggregations="COUNT(*)")  #  condition=condition
+                table_measurements, table_counts = zip(*result)
+                
+                # Get total number of entries with corresponding observed values for each unique event in measurement table
+                result = self._extract_AGG(table, identifier_column="EVENT", aggregations="COUNT(VALUE)")  # condition="VALUE IS NOT NULL",
+                table_measurements_obs, table_counts_obs = zip(*result)
+                table_obs_counts = [_c if _m in table_measurements else 0 for _m, _c in zip(table_measurements_obs, table_counts_obs)]
+                
+                # Get total number of entries with corresponding observed values for each unique event in measurement table
+                result = self._extract_AGG(table, identifier_column="EVENT", aggregations="MIN(VALUE), MAX(VALUE)")  # condition="VALUE IS NOT NULL",
+                table_measurements_obs, table_min_obs, table_max_obs = zip(*result)
+                table_obs_biases = [_min if _meas in table_measurements else 0 for _meas, _min, _max in zip(table_measurements_obs, table_min_obs, table_max_obs)]
+                table_obs_scales = [_max - _min if _meas in table_measurements else 1 for _meas, _min, _max in zip(table_measurements_obs, table_min_obs, table_max_obs)]
+
+                # Collate each tables summary statistics obtained from aggregations across each table
+                #    For example, if one measurement file has height and weight measurements this may be:
+                #        table_measurement = (`height`, `weight`)
+                #        table_counts      = (10100,     10200  )
+                #    Note, if we have measurements split across file this will create repeated entries
+                for idx, _ in enumerate(table_measurements):
+                    measurements.append(table_measurements[idx])
+                    counts.append(table_counts[idx])
+                    obs_counts.append(table_obs_counts[idx])
+                    obs_biases.append(table_obs_biases[idx])
+                    obs_scales.append(table_obs_scales[idx])
+                
+                
             measurement_meta = pd.DataFrame({"event": measurements,
                                              "count": counts,
                                              "count_obs": obs_counts,
-                                             "bias": obs_bias,
-                                             "scale": obs_scale,
+                                             "bias": obs_biases,
+                                             "scale": obs_scales,
                                              })
             logging.info(f"measurement_meta: {measurement_meta}")
 
-            meta_information["measurement_table"] = measurement_meta
+            meta_information["measurement_tables"] = measurement_meta
             
         logging.info(meta_information)
 

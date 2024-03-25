@@ -41,11 +41,11 @@ class TokenizerBase():
         schema={"EVENT": str, "COUNT": pl.UInt32}
         counts = pl.DataFrame(schema=schema)
         if include_measurements:
-            assert "measurement_table" in meta_information.keys()
-            counts_measurements = pl.DataFrame(meta_information["measurement_table"][["event", "count"]], schema=schema)
+            assert "measurement_tables" in meta_information.keys(), meta_information.keys()
+            counts_measurements = pl.DataFrame(meta_information["measurement_tables"][["event", "count"]], schema=schema)
             counts = counts.vstack(counts_measurements)
         if include_diagnoses:
-            assert "diagnosis_table" in meta_information.keys()
+            assert "diagnosis_table" in meta_information.keys(), meta_information.keys()
             counts_diagnosis = pl.DataFrame(meta_information["diagnosis_table"][["event", "count"]], schema=schema)
             counts = counts.vstack(counts_diagnosis)
 

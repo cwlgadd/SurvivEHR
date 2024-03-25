@@ -14608,8 +14608,24 @@ env: TMPDIR=/rds/projects/g/gokhalkm-optimal/DataforCharles
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Using device: cuda.
-/rds/homes/g/gaddcz/Projects/CPRD/data/database
+<pre>Using device: cpu.
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>/rds/bear-apps/2022a/EL8-ice/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/torch/cuda/__init__.py:83: UserWarning: CUDA initialization: CUDA unknown error - this may be due to an incorrectly set up environment, e.g. changing env variable CUDA_VISIBLE_DEVICES after program start. Setting the available devices to be zero. (Triggered internally at  /dev/shm/branfosj-admin/build-2022a/PyTorch/1.12.1/foss-2022a-CUDA-11.7.0/pytorch-v1.12.1/c10/cuda/CUDAFunctions.cpp:109.)
+  return torch._C._cuda_getDeviceCount() &gt; 0
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>/rds/homes/g/gaddcz/Projects/CPRD/data/database
 </pre>
 </div>
 </div>
@@ -14673,7 +14689,7 @@ INFO:root:Creating measurement_table
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Building static table: 6it [00:13,  2.29s/it]
+<pre>Building static table: 6it [00:14,  2.43s/it]
 INFO:root:Creating indexes on static_table
 </pre>
 </div>
@@ -14690,7 +14706,7 @@ INFO:root:Creating indexes on static_table
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Building diagnosis table: 6it [00:21,  3.51s/it]
+<pre>Building diagnosis table: 6it [00:22,  3.82s/it]
 INFO:root:Creating indexes on diagnosis_table
 </pre>
 </div>
@@ -14699,8 +14715,7 @@ INFO:root:Creating indexes on diagnosis_table
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>[(0, &#39;diagnosis_index&#39;, 0, &#39;c&#39;, 0)]
-Diagnosis table with 1.19M records.
+<pre>Diagnosis table with 1.19M records.
 </pre>
 </div>
 </div>
@@ -14708,114 +14723,114 @@ Diagnosis table with 1.19M records.
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Adding 25-Hydroxyvitamin_D2_level_92                                  : 1it [00:00, 15.76it/s]
-Adding 25-Hydroxyvitamin_D3_level_90                                  : 1it [00:00, 15.97it/s]
-Adding AST_-_aspartate_transam._SGOT__46                              : 1it [00:00,  3.94it/s]
-Adding AST_serum_level_47                                             : 2it [00:00,  2.01it/s]
-Adding Albumin___creatinine_ratio_37                                  : 1it [00:00, 23.18it/s]
-Adding Basophil_count_22                                              : 20it [00:11,  1.67it/s]
-Adding Blood_calcium_level_38                                         : 1it [00:00, 99.46it/s]
-Adding Blood_urea_28                                                  : 1it [00:00,  7.83it/s]
-Adding Body_mass_index_3                                              : 22it [00:13,  1.63it/s]
-Adding Brain_natriuretic_peptide_level_66                             : 1it [00:00, 67.14it/s]
-Adding Calcium_adjusted_level_41                                      : 1it [00:00,  8.32it/s]
-Adding Calculated_LDL_cholesterol_level_103                           : 2it [00:00,  2.04it/s]
-Adding Combined_total_vitamin_D2_and_D3_level_93                      : 1it [00:00, 12.04it/s]
-Adding Corrected_serum_calcium_level_42                               : 4it [00:02,  1.81it/s]
-Adding Current_smoker_83                                              : 2it [00:01,  1.64it/s]
-Adding Diastolic_blood_pressure_5                                     : 57it [00:33,  1.68it/s]
-Adding Eosinophil_count_21                                            : 21it [00:13,  1.61it/s]
-Adding Erythrocyte_sedimentation_rate_61                              : 7it [00:04,  1.71it/s]
-Adding Ex_smoker_84                                                   : 7it [00:04,  1.74it/s]
-Adding Free_T4_level_76                                               : 1it [00:00,  4.54it/s]
-Adding GFR_calculated_abbreviated_MDRD_34                             : 18it [00:10,  1.70it/s]
-Adding Haematocrit_-_PCV_16                                           : 2it [00:00,  2.61it/s]
-Adding Haematocrit_15                                                 : 16it [00:09,  1.60it/s]
-Adding Haemoglobin_A1c_level_-_IFCC_standardised_6                    : 8it [00:04,  1.75it/s]
-Adding Haemoglobin_A1c_level_8                                        : 1it [00:00,  1.72it/s]
-Adding Haemoglobin_estimation_9                                       : 23it [00:14,  1.63it/s]
-Adding HbA1c_level__DCCT_aligned__7                                   : 3it [00:01,  1.65it/s]
-Adding INR_-_international_normalised_ratio_81                        : 1it [00:00, 17.49it/s]
-Adding International_normalised_ratio_82                              : 6it [00:03,  1.69it/s]
-Adding Lymphocyte_count_20                                            : 21it [00:12,  1.63it/s]
-Adding Mean_corpusc._Hb._conc.__MCHC__14                              : 13it [00:08,  1.57it/s]
-Adding Mean_corpusc._haemoglobin_MCH__13                              : 20it [00:12,  1.63it/s]
-Adding Mean_corpuscular_volume__MCV__11                               : 22it [00:13,  1.64it/s]
-Adding Monocyte_count_23                                              : 21it [00:13,  1.58it/s]
-Adding N_terminal_pro-brain_natriuretic_peptide_level_67              : 1it [00:00, 127.02it/s]
-Adding Neutrophil_count_19                                            : 21it [00:13,  1.58it/s]
-Adding Never_smoked_tobacco_85                                        : 13it [00:07,  1.67it/s]
-Adding Non_HDL_cholesterol_level_108                                  : 1it [00:00,  2.68it/s]
-Adding O_E_-_height_1                                                 : 14it [00:08,  1.64it/s]
-Adding O_E_-_weight_2                                                 : 25it [00:15,  1.65it/s]
-Adding Plasma_B_natriuretic_peptide_level_69                          : 1it [00:00, 81.24it/s]
-Adding Plasma_C_reactive_protein_60                                   : 3it [00:01,  2.27it/s]
-Adding Plasma_HDL_cholesterol_level_101                               : 2it [00:00,  3.10it/s]
-Adding Plasma_LDL_cholesterol_level_104                               : 1it [00:00,  3.45it/s]
-Adding Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70       : 1it [00:00, 246.40it/s]
-Adding Plasma_TSH_level_73                                            : 1it [00:00,  2.51it/s]
-Adding Plasma_alanine_aminotransferase_level_45                       : 2it [00:00,  2.13it/s]
-Adding Plasma_albumin_level_52                                        : 2it [00:01,  1.82it/s]
-Adding Plasma_alkaline_phosphatase_level_49                           : 2it [00:00,  2.09it/s]
-Adding Plasma_calcium_level_40                                        : 1it [00:00,  2.37it/s]
-Adding Plasma_cholesterol_HDL_ratio_96                                : 1it [00:00,  6.68it/s]
-Adding Plasma_corrected_calcium_level_43                              : 1it [00:00,  3.68it/s]
-Adding Plasma_creatinine_level_32                                     : 2it [00:01,  1.68it/s]
-Adding Plasma_ferritin_level_62                                       : 1it [00:00, 30.02it/s]
-Adding Plasma_free_T4_level_77                                        : 1it [00:00, 10.66it/s]
-Adding Plasma_gamma-glutamyl_transferase_level_58                     : 2it [00:00,  2.65it/s]
-Adding Plasma_potassium_level_27                                      : 2it [00:01,  1.69it/s]
-Adding Plasma_pro-brain_natriuretic_peptide_level_64                  : 1it [00:00, 49.64it/s]
-Adding Plasma_sodium_level_25                                         : 2it [00:01,  1.71it/s]
-Adding Plasma_total_bilirubin_level_54                                : 2it [00:00,  2.19it/s]
-Adding Plasma_total_cholesterol_level_99                              : 2it [00:00,  2.38it/s]
-Adding Plasma_triglyceride_level_106                                  : 1it [00:00,  2.10it/s]
-Adding Plasma_urea_level_30                                           : 1it [00:00,  1.78it/s]
-Adding Platelet_count_12                                              : 22it [00:13,  1.67it/s]
-Adding Red_blood_cell__RBC__count_10                                  : 21it [00:13,  1.56it/s]
-Adding Red_blood_cell_distribution_width_17                           : 11it [00:06,  1.59it/s]
-Adding Serum_25-Hydroxy_vitamin_D3_level_88                           : 1it [00:00,  4.74it/s]
-Adding Serum_C_reactive_protein_level_59                              : 4it [00:02,  1.76it/s]
-Adding Serum_HDL_cholesterol_level_100                                : 11it [00:07,  1.54it/s]
-Adding Serum_LDL_cholesterol_level_102                                : 7it [00:04,  1.65it/s]
-Adding Serum_N-terminal_pro_B-type_natriuretic_peptide_conc_68        : 1it [00:00, 16.66it/s]
-Adding Serum_T4_level_78                                              : 1it [00:00,  6.16it/s]
-Adding Serum_TSH_level_71                                             : 12it [00:07,  1.63it/s]
-Adding Serum_alanine_aminotransferase_level_44                        : 12it [00:07,  1.69it/s]
-Adding Serum_albumin_51                                               : 19it [00:11,  1.67it/s]
-Adding Serum_alkaline_phosphatase_50                                  : 18it [00:11,  1.63it/s]
-Adding Serum_bilirubin_level_53                                       : 5it [00:03,  1.48it/s]
-Adding Serum_calcium_39                                               : 7it [00:04,  1.54it/s]
-Adding Serum_cholesterol_97                                           : 12it [00:07,  1.65it/s]
-Adding Serum_cholesterol_HDL_ratio_94                                 : 6it [00:03,  1.67it/s]
-Adding Serum_creatinine_31                                            : 23it [00:14,  1.61it/s]
-Adding Serum_ferritin_63                                              : 5it [00:02,  1.87it/s]
-Adding Serum_folate_80                                                : 4it [00:02,  1.90it/s]
-Adding Serum_free_T4_level_75                                         : 5it [00:02,  1.76it/s]
-Adding Serum_gamma-glutamyl_transferase_level_57                      : 6it [00:03,  1.84it/s]
-Adding Serum_non_high_density_lipoprotein_cholesterol_level_107       : 3it [00:01,  1.80it/s]
-Adding Serum_potassium_26                                             : 22it [00:13,  1.60it/s]
-Adding Serum_pro-brain_natriuretic_peptide_level_65                   : 1it [00:00, 29.46it/s]
-Adding Serum_sodium_24                                                : 23it [00:13,  1.69it/s]
-Adding Serum_total_25-hydroxy_vitamin_D_level_87                      : 1it [00:00,  5.21it/s]
-Adding Serum_total_bilirubin_level_56                                 : 13it [00:07,  1.69it/s]
-Adding Serum_total_cholesterol_level_98                               : 2it [00:01,  1.53it/s]
-Adding Serum_triglycerides_105                                        : 10it [00:06,  1.62it/s]
-Adding Serum_urea_level_29                                            : 19it [00:11,  1.59it/s]
-Adding Serum_vitamin_B12_79                                           : 4it [00:02,  1.80it/s]
-Adding Serum_vitamin_D2_level_89                                      : 1it [00:00, 22.18it/s]
-Adding Serum_vitamin_D_86                                             : 1it [00:00,  3.40it/s]
-Adding Systolic_blood_pressure_4                                      : 56it [00:34,  1.63it/s]
-Adding TSH_-_thyroid_stim._hormone_72                                 : 2it [00:00,  3.06it/s]
-Adding TSH_level_74                                                   : 1it [00:00, 10.43it/s]
-Adding Total_25-hydroxyvitamin_D_level_91                             : 1it [00:00, 25.84it/s]
-Adding Total_alkaline_phosphatase_48                                  : 2it [00:00,  2.48it/s]
-Adding Total_bilirubin_55                                             : 1it [00:00,  3.70it/s]
-Adding Total_cholesterol_HDL_ratio_95                                 : 4it [00:02,  1.85it/s]
-Adding Total_white_cell_count_18                                      : 22it [00:13,  1.58it/s]
-Adding Urine_albumin_creatinine_ratio_35                              : 4it [00:02,  1.87it/s]
-Adding Urine_microalbumin_creatinine_ratio_36                         : 1it [00:00, 26.44it/s]
-Adding eGFR_using_creatinine__CKD-EPI__per_1.73_square_metres_33      : 4it [00:01,  2.04it/s]
+<pre>Adding 25-Hydroxyvitamin_D2_level_92                                  : 1it [00:00, 14.30it/s]
+Adding 25-Hydroxyvitamin_D3_level_90                                  : 1it [00:00, 14.52it/s]
+Adding AST_-_aspartate_transam._SGOT__46                              : 1it [00:00,  3.61it/s]
+Adding AST_serum_level_47                                             : 2it [00:01,  1.81it/s]
+Adding Albumin___creatinine_ratio_37                                  : 1it [00:00, 20.75it/s]
+Adding Basophil_count_22                                              : 20it [00:13,  1.49it/s]
+Adding Blood_calcium_level_38                                         : 1it [00:00, 88.38it/s]
+Adding Blood_urea_28                                                  : 1it [00:00,  7.05it/s]
+Adding Body_mass_index_3                                              : 22it [00:15,  1.44it/s]
+Adding Brain_natriuretic_peptide_level_66                             : 1it [00:00, 60.89it/s]
+Adding Calcium_adjusted_level_41                                      : 1it [00:00,  7.67it/s]
+Adding Calculated_LDL_cholesterol_level_103                           : 2it [00:01,  1.63it/s]
+Adding Combined_total_vitamin_D2_and_D3_level_93                      : 1it [00:00, 11.05it/s]
+Adding Corrected_serum_calcium_level_42                               : 4it [00:02,  1.61it/s]
+Adding Current_smoker_83                                              : 2it [00:01,  1.50it/s]
+Adding Diastolic_blood_pressure_5                                     : 57it [00:37,  1.50it/s]
+Adding Eosinophil_count_21                                            : 21it [00:14,  1.43it/s]
+Adding Erythrocyte_sedimentation_rate_61                              : 7it [00:04,  1.52it/s]
+Adding Ex_smoker_84                                                   : 7it [00:04,  1.62it/s]
+Adding Free_T4_level_76                                               : 1it [00:00,  4.07it/s]
+Adding GFR_calculated_abbreviated_MDRD_34                             : 18it [00:11,  1.51it/s]
+Adding Haematocrit_-_PCV_16                                           : 2it [00:00,  2.35it/s]
+Adding Haematocrit_15                                                 : 16it [00:11,  1.45it/s]
+Adding Haemoglobin_A1c_level_-_IFCC_standardised_6                    : 8it [00:05,  1.55it/s]
+Adding Haemoglobin_A1c_level_8                                        : 1it [00:00,  1.52it/s]
+Adding Haemoglobin_estimation_9                                       : 23it [00:15,  1.48it/s]
+Adding HbA1c_level__DCCT_aligned__7                                   : 3it [00:02,  1.33it/s]
+Adding INR_-_international_normalised_ratio_81                        : 1it [00:00, 15.77it/s]
+Adding International_normalised_ratio_82                              : 6it [00:03,  1.51it/s]
+Adding Lymphocyte_count_20                                            : 21it [00:14,  1.44it/s]
+Adding Mean_corpusc._Hb._conc.__MCHC__14                              : 13it [00:09,  1.44it/s]
+Adding Mean_corpusc._haemoglobin_MCH__13                              : 20it [00:13,  1.45it/s]
+Adding Mean_corpuscular_volume__MCV__11                               : 22it [00:14,  1.47it/s]
+Adding Monocyte_count_23                                              : 21it [00:14,  1.41it/s]
+Adding N_terminal_pro-brain_natriuretic_peptide_level_67              : 1it [00:00, 113.86it/s]
+Adding Neutrophil_count_19                                            : 21it [00:14,  1.41it/s]
+Adding Never_smoked_tobacco_85                                        : 13it [00:08,  1.50it/s]
+Adding Non_HDL_cholesterol_level_108                                  : 1it [00:00,  2.42it/s]
+Adding O_E_-_height_1                                                 : 14it [00:09,  1.44it/s]
+Adding O_E_-_weight_2                                                 : 25it [00:17,  1.46it/s]
+Adding Plasma_B_natriuretic_peptide_level_69                          : 1it [00:00, 71.90it/s]
+Adding Plasma_C_reactive_protein_60                                   : 3it [00:01,  2.03it/s]
+Adding Plasma_HDL_cholesterol_level_101                               : 2it [00:00,  2.78it/s]
+Adding Plasma_LDL_cholesterol_level_104                               : 1it [00:00,  3.12it/s]
+Adding Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70       : 1it [00:00, 236.59it/s]
+Adding Plasma_TSH_level_73                                            : 1it [00:00,  2.25it/s]
+Adding Plasma_alanine_aminotransferase_level_45                       : 2it [00:01,  1.78it/s]
+Adding Plasma_albumin_level_52                                        : 2it [00:01,  1.48it/s]
+Adding Plasma_alkaline_phosphatase_level_49                           : 2it [00:01,  1.89it/s]
+Adding Plasma_calcium_level_40                                        : 1it [00:00,  2.15it/s]
+Adding Plasma_cholesterol_HDL_ratio_96                                : 1it [00:00,  6.03it/s]
+Adding Plasma_corrected_calcium_level_43                              : 1it [00:00,  3.33it/s]
+Adding Plasma_creatinine_level_32                                     : 2it [00:01,  1.35it/s]
+Adding Plasma_ferritin_level_62                                       : 1it [00:00, 27.28it/s]
+Adding Plasma_free_T4_level_77                                        : 1it [00:00,  9.73it/s]
+Adding Plasma_gamma-glutamyl_transferase_level_58                     : 2it [00:00,  2.39it/s]
+Adding Plasma_potassium_level_27                                      : 2it [00:01,  1.51it/s]
+Adding Plasma_pro-brain_natriuretic_peptide_level_64                  : 1it [00:00, 44.52it/s]
+Adding Plasma_sodium_level_25                                         : 2it [00:01,  1.33it/s]
+Adding Plasma_total_bilirubin_level_54                                : 2it [00:01,  1.96it/s]
+Adding Plasma_total_cholesterol_level_99                              : 2it [00:00,  2.64it/s]
+Adding Plasma_triglyceride_level_106                                  : 1it [00:00,  1.90it/s]
+Adding Plasma_urea_level_30                                           : 1it [00:00,  1.61it/s]
+Adding Platelet_count_12                                              : 22it [00:14,  1.48it/s]
+Adding Red_blood_cell__RBC__count_10                                  : 21it [00:15,  1.39it/s]
+Adding Red_blood_cell_distribution_width_17                           : 11it [00:07,  1.41it/s]
+Adding Serum_25-Hydroxy_vitamin_D3_level_88                           : 1it [00:00,  4.29it/s]
+Adding Serum_C_reactive_protein_level_59                              : 4it [00:02,  1.54it/s]
+Adding Serum_HDL_cholesterol_level_100                                : 11it [00:07,  1.44it/s]
+Adding Serum_LDL_cholesterol_level_102                                : 7it [00:04,  1.49it/s]
+Adding Serum_N-terminal_pro_B-type_natriuretic_peptide_conc_68        : 1it [00:00, 15.24it/s]
+Adding Serum_T4_level_78                                              : 1it [00:00,  5.51it/s]
+Adding Serum_TSH_level_71                                             : 12it [00:08,  1.46it/s]
+Adding Serum_alanine_aminotransferase_level_44                        : 12it [00:07,  1.54it/s]
+Adding Serum_albumin_51                                               : 19it [00:12,  1.50it/s]
+Adding Serum_alkaline_phosphatase_50                                  : 18it [00:12,  1.44it/s]
+Adding Serum_bilirubin_level_53                                       : 5it [00:03,  1.43it/s]
+Adding Serum_calcium_39                                               : 7it [00:04,  1.41it/s]
+Adding Serum_cholesterol_97                                           : 12it [00:08,  1.45it/s]
+Adding Serum_cholesterol_HDL_ratio_94                                 : 6it [00:03,  1.60it/s]
+Adding Serum_creatinine_31                                            : 23it [00:15,  1.45it/s]
+Adding Serum_ferritin_63                                              : 5it [00:03,  1.63it/s]
+Adding Serum_folate_80                                                : 4it [00:02,  1.75it/s]
+Adding Serum_free_T4_level_75                                         : 5it [00:03,  1.52it/s]
+Adding Serum_gamma-glutamyl_transferase_level_57                      : 6it [00:03,  1.60it/s]
+Adding Serum_non_high_density_lipoprotein_cholesterol_level_107       : 3it [00:01,  1.71it/s]
+Adding Serum_potassium_26                                             : 22it [00:15,  1.43it/s]
+Adding Serum_pro-brain_natriuretic_peptide_level_65                   : 1it [00:00, 26.01it/s]
+Adding Serum_sodium_24                                                : 23it [00:15,  1.50it/s]
+Adding Serum_total_25-hydroxy_vitamin_D_level_87                      : 1it [00:00,  4.72it/s]
+Adding Serum_total_bilirubin_level_56                                 : 13it [00:08,  1.51it/s]
+Adding Serum_total_cholesterol_level_98                               : 2it [00:01,  1.34it/s]
+Adding Serum_triglycerides_105                                        : 10it [00:07,  1.42it/s]
+Adding Serum_urea_level_29                                            : 19it [00:13,  1.46it/s]
+Adding Serum_vitamin_B12_79                                           : 4it [00:02,  1.61it/s]
+Adding Serum_vitamin_D2_level_89                                      : 1it [00:00, 20.38it/s]
+Adding Serum_vitamin_D_86                                             : 1it [00:00,  3.06it/s]
+Adding Systolic_blood_pressure_4                                      : 56it [00:38,  1.45it/s]
+Adding TSH_-_thyroid_stim._hormone_72                                 : 2it [00:00,  2.60it/s]
+Adding TSH_level_74                                                   : 1it [00:00,  9.44it/s]
+Adding Total_25-hydroxyvitamin_D_level_91                             : 1it [00:00, 22.56it/s]
+Adding Total_alkaline_phosphatase_48                                  : 2it [00:00,  2.52it/s]
+Adding Total_bilirubin_55                                             : 1it [00:00,  3.35it/s]
+Adding Total_cholesterol_HDL_ratio_95                                 : 4it [00:02,  1.58it/s]
+Adding Total_white_cell_count_18                                      : 22it [00:15,  1.42it/s]
+Adding Urine_albumin_creatinine_ratio_35                              : 4it [00:02,  1.69it/s]
+Adding Urine_microalbumin_creatinine_ratio_36                         : 1it [00:00, 23.73it/s]
+Adding eGFR_using_creatinine__CKD-EPI__per_1.73_square_metres_33      : 4it [00:02,  1.88it/s]
 INFO:root:Creating indexes on measurement_table
 INFO:root:PRACTICE_PATIENT_ID
 INFO:root:EVENT
@@ -14826,9 +14841,7 @@ INFO:root:EVENT
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>[(0, &#39;measurement_PRACTICE_PATIENT_ID_idx&#39;, 0, &#39;c&#39;, 0)]
-[(0, &#39;measurement_EVENT_idx&#39;, 0, &#39;c&#39;, 0), (1, &#39;measurement_PRACTICE_PATIENT_ID_idx&#39;, 0, &#39;c&#39;, 0)]
-Measurement table with 79.02M records.
+<pre>Measurement table with 79.02M records.
 </pre>
 </div>
 </div>
@@ -14848,27 +14861,7 @@ Measurement table with 79.02M records.
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Diagnosis table with 0.00M records.
-</pre>
-</div>
-</div>
-
-</div>
-
-</div>
-
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
-
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>[(0,)]
+<pre>Diagnosis table with 1.19M records.
 </pre>
 </div>
 </div>
@@ -14899,7 +14892,7 @@ Measurement table with 79.02M records.
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
 <pre>[(&#39;p20515_297525820515&#39;, &#39;AST_serum_level_47&#39;, 19.0, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;AST_serum_level_47&#39;, 20.0, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;AST_serum_level_47&#39;, 21.0, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;AST_serum_level_47&#39;, 22.0, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;AST_serum_level_47&#39;, 17.0, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;AST_serum_level_47&#39;, 17.0, &#39;2010-03-11&#39;), (&#39;p20515_297525820515&#39;, &#39;AST_serum_level_47&#39;, 21.0, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;AST_serum_level_47&#39;, 17.0, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;AST_serum_level_47&#39;, 23.0, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;AST_serum_level_47&#39;, 13.0, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;AST_serum_level_47&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;AST_serum_level_47&#39;, 20.0, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Basophil_count_22&#39;, 0.1, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Basophil_count_22&#39;, 0.0, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Basophil_count_22&#39;, 0.0, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Basophil_count_22&#39;, 0.0, &#39;2015-11-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 28.3, &#39;1998-08-14&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 31.3, &#39;2004-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 30.6, &#39;2006-12-20&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 32.4, &#39;2007-09-27&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 32.6, &#39;2008-01-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 32.7, &#39;2008-03-06&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 32.0, &#39;2008-09-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 30.8, &#39;2008-10-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 30.6, &#39;2009-02-17&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 30.3, &#39;2008-11-25&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 29.7, &#39;2009-10-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 29.5, &#39;2010-03-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 28.4, &#39;2011-02-23&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 28.4, &#39;2011-10-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 29.6, &#39;2011-10-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 31.0, &#39;2011-11-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 29.7, &#39;2012-02-21&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 30.0, &#39;2012-04-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 28.1, &#39;2014-11-12&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 28.7, &#39;2017-08-21&#39;), (&#39;p20515_297525820515&#39;, &#39;Body_mass_index_3&#39;, 29.3, &#39;2012-10-01&#39;), (&#39;p20515_297525820515&#39;, &#39;Corrected_serum_calcium_level_42&#39;, 2.4, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Current_smoker_83&#39;, None, &#39;2019-01-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 62.0, &#39;1993-05-17&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 90.0, &#39;1998-08-14&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 85.0, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 94.0, &#39;2005-11-07&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 78.0, &#39;2005-11-15&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 66.0, &#39;2006-07-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 88.0, &#39;2006-08-15&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 60.0, &#39;2007-05-24&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 42.0, &#39;2007-10-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 63.0, &#39;2007-12-12&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 76.0, &#39;2008-02-14&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 70.0, &#39;2008-03-06&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 60.0, &#39;2008-06-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 58.0, &#39;2008-08-12&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 72.0, &#39;2008-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 78.0, &#39;2008-11-25&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 62.0, &#39;2009-02-17&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 88.0, &#39;2009-07-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 78.0, &#39;2009-10-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 84.0, &#39;2010-03-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 72.0, &#39;2010-08-04&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 75.0, &#39;2011-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 88.0, &#39;2011-05-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 68.0, &#39;2011-06-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 78.0, &#39;2011-10-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 78.0, &#39;2011-10-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 56.0, &#39;2012-02-21&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 85.0, &#39;2012-04-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 78.0, &#39;2012-06-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 80.0, &#39;2012-10-01&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 78.0, &#39;2013-06-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 56.0, &#39;2014-04-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 80.0, &#39;2014-12-02&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 80.0, &#39;2015-07-07&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 86.0, &#39;2015-07-31&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 66.0, &#39;2015-09-29&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 80.0, &#39;2017-08-21&#39;), (&#39;p20515_297525820515&#39;, &#39;Diastolic_blood_pressure_5&#39;, 73.0, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Eosinophil_count_21&#39;, 0.5, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Eosinophil_count_21&#39;, 0.5, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Eosinophil_count_21&#39;, 0.5, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Eosinophil_count_21&#39;, 0.5, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Eosinophil_count_21&#39;, 0.5, &#39;2010-03-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Eosinophil_count_21&#39;, 0.5, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Eosinophil_count_21&#39;, 0.5999999999999999, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Eosinophil_count_21&#39;, 0.5, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Eosinophil_count_21&#39;, 0.4, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Eosinophil_count_21&#39;, 0.5999999999999999, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Eosinophil_count_21&#39;, 0.5, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Eosinophil_count_21&#39;, 0.5999999999999999, &#39;2015-11-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Ex_smoker_84&#39;, None, &#39;2006-07-24&#39;), (&#39;p20515_297525820515&#39;, &#39;Ex_smoker_84&#39;, None, &#39;2006-12-20&#39;), (&#39;p20515_297525820515&#39;, &#39;Ex_smoker_84&#39;, None, &#39;2010-03-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Ex_smoker_84&#39;, None, &#39;2011-04-21&#39;), (&#39;p20515_297525820515&#39;, &#39;Ex_smoker_84&#39;, None, &#39;2011-10-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Ex_smoker_84&#39;, None, &#39;2012-04-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Ex_smoker_84&#39;, None, &#39;2012-10-01&#39;), (&#39;p20515_297525820515&#39;, &#39;Ex_smoker_84&#39;, None, &#39;2014-11-12&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 83.36, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 80.0, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 69.0, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 76.0, &#39;2010-03-11&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 84.0, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 75.0, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 90.0, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 84.0, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 77.0, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 76.0, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 66.0, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 67.0, &#39;2015-10-21&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 70.0, &#39;2015-11-05&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 67.0, &#39;2015-11-25&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 67.0, &#39;2015-12-09&#39;), (&#39;p20515_297525820515&#39;, &#39;GFR_calculated_abbreviated_MDRD_34&#39;, 77.0, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Haematocrit_15&#39;, 0.444, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Haematocrit_15&#39;, 0.464, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Haematocrit_15&#39;, 0.4079999999999999, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Haematocrit_15&#39;, 0.452, &#39;2010-03-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Haematocrit_15&#39;, 0.4249999999999999, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Haematocrit_15&#39;, 0.4839999999999999, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Haematocrit_15&#39;, 0.451, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Haematocrit_15&#39;, 0.447, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Haematocrit_15&#39;, 0.455, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Haematocrit_15&#39;, 0.4339999999999999, &#39;2015-11-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Haemoglobin_A1c_level_-_IFCC_standardised_6&#39;, 45.0, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Haemoglobin_estimation_9&#39;, 15.2, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Haemoglobin_estimation_9&#39;, 14.3, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Haemoglobin_estimation_9&#39;, 15.0, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Haemoglobin_estimation_9&#39;, 14.7, &#39;2010-03-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Haemoglobin_estimation_9&#39;, 14.2, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Haemoglobin_estimation_9&#39;, 15.3, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Haemoglobin_estimation_9&#39;, 147.0, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Haemoglobin_estimation_9&#39;, 147.0, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Haemoglobin_estimation_9&#39;, 148.0, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Haemoglobin_estimation_9&#39;, 139.0, &#39;2015-11-18&#39;), (&#39;p20515_297525820515&#39;, &#39;HbA1c_level__DCCT_aligned__7&#39;, 6.3, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;International_normalised_ratio_82&#39;, 1.0, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Lymphocyte_count_20&#39;, 2.4, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Lymphocyte_count_20&#39;, 2.9, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Lymphocyte_count_20&#39;, 2.1, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Lymphocyte_count_20&#39;, 2.1, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Lymphocyte_count_20&#39;, 1.7, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Lymphocyte_count_20&#39;, 2.1, &#39;2010-03-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Lymphocyte_count_20&#39;, 1.8, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Lymphocyte_count_20&#39;, 1.8, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Lymphocyte_count_20&#39;, 1.8, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Lymphocyte_count_20&#39;, 1.5, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Lymphocyte_count_20&#39;, 1.6, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Lymphocyte_count_20&#39;, 1.9, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Lymphocyte_count_20&#39;, 2.0, &#39;2015-11-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._Hb._conc.__MCHC__14&#39;, 32.5, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._Hb._conc.__MCHC__14&#39;, 33.4, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._Hb._conc.__MCHC__14&#39;, 32.2, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._Hb._conc.__MCHC__14&#39;, 32.5, &#39;2010-03-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._Hb._conc.__MCHC__14&#39;, 33.4, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._Hb._conc.__MCHC__14&#39;, 33.9, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._Hb._conc.__MCHC__14&#39;, 31.6, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._haemoglobin_MCH__13&#39;, 28.3, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._haemoglobin_MCH__13&#39;, 28.7, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._haemoglobin_MCH__13&#39;, 28.7, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._haemoglobin_MCH__13&#39;, 28.6, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._haemoglobin_MCH__13&#39;, 28.8, &#39;2010-03-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._haemoglobin_MCH__13&#39;, 29.2, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._haemoglobin_MCH__13&#39;, 29.0, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._haemoglobin_MCH__13&#39;, 28.4, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._haemoglobin_MCH__13&#39;, 28.4, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpusc._haemoglobin_MCH__13&#39;, 28.5, &#39;2015-11-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpuscular_volume__MCV__11&#39;, 87.09999999999998, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpuscular_volume__MCV__11&#39;, 86.0, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpuscular_volume__MCV__11&#39;, 89.2, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpuscular_volume__MCV__11&#39;, 88.5, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpuscular_volume__MCV__11&#39;, 84.29999999999998, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpuscular_volume__MCV__11&#39;, 88.5, &#39;2010-03-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpuscular_volume__MCV__11&#39;, 87.29999999999998, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpuscular_volume__MCV__11&#39;, 85.59999999999998, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpuscular_volume__MCV__11&#39;, 90.0, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpuscular_volume__MCV__11&#39;, 87.2, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpuscular_volume__MCV__11&#39;, 84.29999999999998, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpuscular_volume__MCV__11&#39;, 88.9, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Mean_corpuscular_volume__MCV__11&#39;, 89.09999999999998, &#39;2015-11-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Monocyte_count_23&#39;, 0.8, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Monocyte_count_23&#39;, 0.8, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Monocyte_count_23&#39;, 0.6999999999999998, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Monocyte_count_23&#39;, 0.6999999999999998, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Monocyte_count_23&#39;, 0.6999999999999998, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Monocyte_count_23&#39;, 0.5999999999999999, &#39;2010-03-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Monocyte_count_23&#39;, 0.5999999999999999, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Monocyte_count_23&#39;, 0.8, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Monocyte_count_23&#39;, 0.6999999999999998, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Monocyte_count_23&#39;, 0.6999999999999998, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Monocyte_count_23&#39;, 0.5999999999999999, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Monocyte_count_23&#39;, 0.8, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Monocyte_count_23&#39;, 0.8, &#39;2015-11-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Neutrophil_count_19&#39;, 4.9, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Neutrophil_count_19&#39;, 4.3, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Neutrophil_count_19&#39;, 4.6, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Neutrophil_count_19&#39;, 5.3, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Neutrophil_count_19&#39;, 4.5, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Neutrophil_count_19&#39;, 4.6, &#39;2010-03-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Neutrophil_count_19&#39;, 3.9, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Neutrophil_count_19&#39;, 4.5, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Neutrophil_count_19&#39;, 5.4, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Neutrophil_count_19&#39;, 4.2, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Neutrophil_count_19&#39;, 4.9, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Neutrophil_count_19&#39;, 4.6, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Neutrophil_count_19&#39;, 4.7, &#39;2015-11-18&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_height_1&#39;, 165.0, &#39;1998-08-14&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_height_1&#39;, 167.6, &#39;2008-03-06&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_height_1&#39;, 167.6, &#39;2011-10-11&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_height_1&#39;, 165.1, &#39;2011-11-08&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_height_1&#39;, 167.6, &#39;2014-11-12&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_height_1&#39;, 167.0, &#39;2017-08-21&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 77.12, &#39;1998-08-14&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 85.275, &#39;2004-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 83.461, &#39;2006-12-20&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 88.45099999999998, &#39;2007-09-27&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 88.90399999999998, &#39;2008-01-30&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 90.0, &#39;2008-09-18&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 92.0, &#39;2008-03-06&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 85.275, &#39;2008-11-25&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 86.63599999999998, &#39;2008-10-03&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 86.0, &#39;2009-02-17&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 83.688, &#39;2009-10-26&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 83.0, &#39;2010-03-22&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 80.0, &#39;2011-02-23&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 80.0, &#39;2011-10-03&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 81.0, &#39;2012-02-21&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 82.0, &#39;2012-04-26&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 84.7, &#39;2011-11-08&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 80.0, &#39;2012-10-01&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 83.29999999999998, &#39;2013-06-19&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 79.0, &#39;2014-11-12&#39;), (&#39;p20515_297525820515&#39;, &#39;O_E_-_weight_2&#39;, 80.0, &#39;2017-08-21&#39;), (&#39;p20515_297525820515&#39;, &#39;Platelet_count_12&#39;, 249.0, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Platelet_count_12&#39;, 250.0, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Platelet_count_12&#39;, 276.0, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Platelet_count_12&#39;, 285.0, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Platelet_count_12&#39;, 247.0, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Platelet_count_12&#39;, 232.0, &#39;2010-03-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Platelet_count_12&#39;, 211.0, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Platelet_count_12&#39;, 223.0, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Platelet_count_12&#39;, 246.0, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Platelet_count_12&#39;, 245.0, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Platelet_count_12&#39;, 222.0, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Platelet_count_12&#39;, 241.0, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Platelet_count_12&#39;, 252.0, &#39;2015-11-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell__RBC__count_10&#39;, 5.29, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell__RBC__count_10&#39;, 4.98, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell__RBC__count_10&#39;, 5.24, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell__RBC__count_10&#39;, 4.84, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell__RBC__count_10&#39;, 5.11, &#39;2010-03-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell__RBC__count_10&#39;, 4.87, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell__RBC__count_10&#39;, 5.07, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell__RBC__count_10&#39;, 5.38, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell__RBC__count_10&#39;, 5.17, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell__RBC__count_10&#39;, 5.3, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell__RBC__count_10&#39;, 5.12, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell__RBC__count_10&#39;, 4.87, &#39;2015-11-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell_distribution_width_17&#39;, None, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell_distribution_width_17&#39;, None, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell_distribution_width_17&#39;, None, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell_distribution_width_17&#39;, None, &#39;2010-03-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell_distribution_width_17&#39;, 13.9, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell_distribution_width_17&#39;, 13.9, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Red_blood_cell_distribution_width_17&#39;, 13.7, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_HDL_cholesterol_level_100&#39;, 0.82, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_HDL_cholesterol_level_100&#39;, 0.66, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_HDL_cholesterol_level_100&#39;, 0.63, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_HDL_cholesterol_level_100&#39;, 0.68, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_HDL_cholesterol_level_100&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_HDL_cholesterol_level_100&#39;, 0.64, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_LDL_cholesterol_level_102&#39;, 3.3, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_LDL_cholesterol_level_102&#39;, 4.0, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_LDL_cholesterol_level_102&#39;, 2.0, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_LDL_cholesterol_level_102&#39;, 2.3, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_LDL_cholesterol_level_102&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_LDL_cholesterol_level_102&#39;, 2.21, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_TSH_level_71&#39;, 0.6999999999999998, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_TSH_level_71&#39;, 0.9, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_TSH_level_71&#39;, 1.4, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_TSH_level_71&#39;, 0.6999999999999998, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_TSH_level_71&#39;, 0.5999999999999999, &#39;2010-03-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_TSH_level_71&#39;, 0.3599999999999999, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_TSH_level_71&#39;, 0.4899999999999999, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_TSH_level_71&#39;, 0.3499999999999999, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_TSH_level_71&#39;, 0.67, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_TSH_level_71&#39;, 0.63, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_TSH_level_71&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alanine_aminotransferase_level_44&#39;, 16.0, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alanine_aminotransferase_level_44&#39;, 28.0, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alanine_aminotransferase_level_44&#39;, 10.0, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alanine_aminotransferase_level_44&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alanine_aminotransferase_level_44&#39;, 17.0, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, 41.0, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, 44.0, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, 43.0, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, 42.0, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, 40.0, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, 42.0, &#39;2010-03-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, 45.0, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, 44.0, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, 45.0, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, 45.0, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, 41.0, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, 44.0, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_albumin_51&#39;, 42.0, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alkaline_phosphatase_50&#39;, 92.0, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alkaline_phosphatase_50&#39;, 87.0, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alkaline_phosphatase_50&#39;, 78.0, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alkaline_phosphatase_50&#39;, 94.0, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alkaline_phosphatase_50&#39;, 93.0, &#39;2010-03-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alkaline_phosphatase_50&#39;, 69.0, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alkaline_phosphatase_50&#39;, 85.0, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alkaline_phosphatase_50&#39;, 91.0, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alkaline_phosphatase_50&#39;, 82.0, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alkaline_phosphatase_50&#39;, 88.0, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alkaline_phosphatase_50&#39;, 83.0, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alkaline_phosphatase_50&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_alkaline_phosphatase_50&#39;, 89.0, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_bilirubin_level_53&#39;, 2.0, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_calcium_39&#39;, 2.41, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_calcium_39&#39;, 2.42, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_calcium_39&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_97&#39;, 6.0, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_97&#39;, 6.3, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_97&#39;, 3.7, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_97&#39;, 4.7, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_97&#39;, 6.0, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_97&#39;, 4.1, &#39;2010-03-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_97&#39;, 3.6, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_97&#39;, 4.8, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_97&#39;, 5.6, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_97&#39;, 4.9, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_97&#39;, 3.8, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_97&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_97&#39;, 4.0, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_HDL_ratio_94&#39;, 7.3, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_HDL_ratio_94&#39;, 9.5, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_HDL_ratio_94&#39;, 5.8, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_HDL_ratio_94&#39;, 5.3, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_HDL_ratio_94&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_cholesterol_HDL_ratio_94&#39;, 6.3, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 89.0, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 92.0, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 104.0, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 83.0, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 85.0, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 90.0, &#39;2010-03-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 90.0, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 75.0, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 82.0, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 88.0, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 89.0, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 100.0, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 98.0, &#39;2015-10-21&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 95.0, &#39;2015-11-05&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 99.0, &#39;2015-11-25&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 98.0, &#39;2015-12-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_creatinine_31&#39;, 87.0, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_free_T4_level_75&#39;, 19.3, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_gamma-glutamyl_transferase_level_57&#39;, 24.0, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_gamma-glutamyl_transferase_level_57&#39;, 24.0, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_gamma-glutamyl_transferase_level_57&#39;, 25.0, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_gamma-glutamyl_transferase_level_57&#39;, 24.0, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_gamma-glutamyl_transferase_level_57&#39;, 22.0, &#39;2010-03-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_gamma-glutamyl_transferase_level_57&#39;, 22.0, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_gamma-glutamyl_transferase_level_57&#39;, 23.0, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_gamma-glutamyl_transferase_level_57&#39;, 17.0, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_gamma-glutamyl_transferase_level_57&#39;, 13.0, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_gamma-glutamyl_transferase_level_57&#39;, 16.0, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_gamma-glutamyl_transferase_level_57&#39;, 14.0, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_gamma-glutamyl_transferase_level_57&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_gamma-glutamyl_transferase_level_57&#39;, 14.0, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_non_high_density_lipoprotein_cholesterol_level_107&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_non_high_density_lipoprotein_cholesterol_level_107&#39;, 3.4, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.2, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.8, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.4, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 5.0, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.5, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 3.7, &#39;2010-03-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.5, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.3, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.7, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.9, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.8, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.7, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.4, &#39;2015-10-21&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.3, &#39;2015-11-05&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.4, &#39;2015-11-25&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.6, &#39;2015-12-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_potassium_26&#39;, 4.5, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 137.0, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 141.0, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 139.0, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 139.0, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 139.0, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 139.0, &#39;2010-03-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 142.0, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 138.0, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 142.0, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 138.0, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 139.0, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 141.0, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 140.0, &#39;2015-10-21&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 141.0, &#39;2015-11-05&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 139.0, &#39;2015-11-25&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 143.0, &#39;2015-12-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_sodium_24&#39;, 143.0, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_total_bilirubin_level_56&#39;, 4.0, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_total_bilirubin_level_56&#39;, 7.0, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_total_bilirubin_level_56&#39;, 3.0, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_total_bilirubin_level_56&#39;, 6.0, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_total_bilirubin_level_56&#39;, 5.0, &#39;2010-03-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_total_bilirubin_level_56&#39;, 10.0, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_total_bilirubin_level_56&#39;, 4.0, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_total_bilirubin_level_56&#39;, 4.0, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_total_bilirubin_level_56&#39;, 4.0, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_total_bilirubin_level_56&#39;, 3.0, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_total_bilirubin_level_56&#39;, 3.0, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_total_bilirubin_level_56&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_total_bilirubin_level_56&#39;, 4.0, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_triglycerides_105&#39;, 4.21, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_triglycerides_105&#39;, 3.55, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_triglycerides_105&#39;, 2.2, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_triglycerides_105&#39;, 1.47, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_triglycerides_105&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_triglycerides_105&#39;, 2.54, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 5.5, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 5.7, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 7.1, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 6.1, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 5.3, &#39;2009-04-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 6.6, &#39;2010-03-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 5.6, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 5.1, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 6.0, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 6.9, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 4.4, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 7.0, &#39;2014-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 5.3, &#39;2015-10-21&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 6.9, &#39;2015-11-05&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 4.3, &#39;2015-11-25&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 8.9, &#39;2015-12-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_urea_level_29&#39;, 9.1, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_vitamin_B12_79&#39;, 464.0, &#39;2014-04-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Serum_vitamin_B12_79&#39;, None, &#39;2015-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 92.0, &#39;1993-05-17&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 140.0, &#39;1998-08-14&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 130.0, &#39;2001-02-27&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 168.0, &#39;2004-10-08&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 141.0, &#39;2004-11-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 160.0, &#39;2005-11-07&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 134.0, &#39;2005-11-15&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 134.0, &#39;2006-07-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 136.0, &#39;2006-08-15&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 130.0, &#39;2006-12-20&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 104.0, &#39;2007-05-24&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 96.0, &#39;2007-10-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 138.0, &#39;2007-12-12&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 118.0, &#39;2008-02-14&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 135.0, &#39;2008-03-06&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 90.0, &#39;2008-06-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 118.0, &#39;2008-08-12&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 130.0, &#39;2008-11-13&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 136.0, &#39;2008-11-25&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 115.0, &#39;2009-02-17&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 140.0, &#39;2009-10-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 146.0, &#39;2010-08-04&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 146.0, &#39;2011-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 162.0, &#39;2011-05-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 139.0, &#39;2011-10-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 145.0, &#39;2011-10-11&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 108.0, &#39;2012-02-21&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 126.0, &#39;2011-06-30&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 130.0, &#39;2012-04-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 150.0, &#39;2012-10-01&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 96.0, &#39;2014-04-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 138.0, &#39;2013-06-19&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 130.0, &#39;2014-12-02&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 135.0, &#39;2015-07-07&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 129.0, &#39;2015-07-31&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 119.0, &#39;2015-09-29&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 120.0, &#39;2017-08-21&#39;), (&#39;p20515_297525820515&#39;, &#39;Systolic_blood_pressure_4&#39;, 125.0, &#39;2017-08-22&#39;), (&#39;p20515_297525820515&#39;, &#39;Total_white_cell_count_18&#39;, 8.599999999999998, &#39;2005-11-09&#39;), (&#39;p20515_297525820515&#39;, &#39;Total_white_cell_count_18&#39;, 8.599999999999998, &#39;2007-01-03&#39;), (&#39;p20515_297525820515&#39;, &#39;Total_white_cell_count_18&#39;, 7.9, &#39;2008-02-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Total_white_cell_count_18&#39;, 8.699999999999998, &#39;2009-02-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Total_white_cell_count_18&#39;, 7.9, &#39;2010-03-10&#39;), (&#39;p20515_297525820515&#39;, &#39;Total_white_cell_count_18&#39;, 6.8, &#39;2011-09-28&#39;), (&#39;p20515_297525820515&#39;, &#39;Total_white_cell_count_18&#39;, 7.7, &#39;2012-04-18&#39;), (&#39;p20515_297525820515&#39;, &#39;Total_white_cell_count_18&#39;, 8.5, &#39;2012-09-26&#39;), (&#39;p20515_297525820515&#39;, &#39;Total_white_cell_count_18&#39;, 6.9, &#39;2013-10-16&#39;), (&#39;p20515_297525820515&#39;, &#39;Total_white_cell_count_18&#39;, 7.9, &#39;2014-10-08&#39;)]
-1.615415334701538
+0.05991935729980469
 </pre>
 </div>
 </div>
@@ -14965,7 +14958,30 @@ Measurement table with 79.02M records.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>
+The first five unique practice_patient IDs from practice 20515:
+	[&#39;p20515_297522720515&#39;, &#39;p20515_5685611020515&#39;, &#39;p20515_297194820515&#39;, &#39;p20515_2251234720515&#39;, &#39;p20515_297307220515&#39;] from 3352 total
+
+Total male patients in each practice:
+	 [3352, 11147, 3346, 6035, 6019, 2332, 11073, 7837, 2112, 8992, 9742, 7067, 7739]
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -14995,7 +15011,62 @@ Measurement table with 79.02M records.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<div><style>
+.dataframe > thead > tr > th,
+.dataframe > tbody > tr > td {
+  text-align: right;
+}
+</style>
+<small>shape: (1, 11)</small><table border="1" class="dataframe"><thead><tr><th>PRACTICE_PATIENT_ID</th><th>PRACTICE_ID</th><th>PATIENT_ID</th><th>ETHNICITY</th><th>YEAR_OF_BIRTH</th><th>SEX</th><th>COUNTRY</th><th>HEALTH_AUTH</th><th>INDEX_DATE</th><th>START_DATE</th><th>END_DATE</th></tr><tr><td>str</td><td>i64</td><td>i64</td><td>str</td><td>str</td><td>str</td><td>str</td><td>str</td><td>str</td><td>str</td><td>str</td></tr></thead><tbody><tr><td>&quot;p20515_2975227…</td><td>20515</td><td>297522720515</td><td>&quot;MISSING&quot;</td><td>&quot;1966-07-15&quot;</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>&quot;2005-01-01&quot;</td><td>&quot;2005-01-01&quot;</td><td>&quot;2007-09-27&quot;</td></tr></tbody></table></div>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<div><style>
+.dataframe > thead > tr > th,
+.dataframe > tbody > tr > td {
+  text-align: right;
+}
+</style>
+<small>shape: (5, 4)</small><table border="1" class="dataframe"><thead><tr><th>PRACTICE_PATIENT_ID</th><th>EVENT</th><th>VALUE</th><th>DATE</th></tr><tr><td>str</td><td>str</td><td>f64</td><td>str</td></tr></thead><tbody><tr><td>&quot;p20515_2975227…</td><td>&quot;Body_mass_inde…</td><td>25.1</td><td>&quot;1997-06-02&quot;</td></tr><tr><td>&quot;p20515_2975227…</td><td>&quot;Body_mass_inde…</td><td>26.2</td><td>&quot;2004-02-03&quot;</td></tr><tr><td>&quot;p20515_2975227…</td><td>&quot;Diastolic_bloo…</td><td>86.0</td><td>&quot;1997-06-02&quot;</td></tr><tr><td>&quot;p20515_2975227…</td><td>&quot;Diastolic_bloo…</td><td>78.0</td><td>&quot;2004-02-03&quot;</td></tr><tr><td>&quot;p20515_2975227…</td><td>&quot;Diastolic_bloo…</td><td>88.0</td><td>&quot;2006-04-24&quot;</td></tr></tbody></table></div>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<div><style>
+.dataframe > thead > tr > th,
+.dataframe > tbody > tr > td {
+  text-align: right;
+}
+</style>
+<small>shape: (1, 3)</small><table border="1" class="dataframe"><thead><tr><th>PRACTICE_PATIENT_ID</th><th>EVENT</th><th>DATE</th></tr><tr><td>str</td><td>str</td><td>str</td></tr></thead><tbody><tr><td>&quot;p20515_2975227…</td><td>&quot;DEPRESSION&quot;</td><td>&quot;2002-05-17&quot;</td></tr></tbody></table></div>
+</div>
+
+</div>
+
+</div>
+
+</div>
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -15009,7 +15080,62 @@ Measurement table with 79.02M records.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<div><style>
+.dataframe > thead > tr > th,
+.dataframe > tbody > tr > td {
+  text-align: right;
+}
+</style>
+<small>shape: (5, 11)</small><table border="1" class="dataframe"><thead><tr><th>PRACTICE_PATIENT_ID</th><th>PRACTICE_ID</th><th>PATIENT_ID</th><th>ETHNICITY</th><th>YEAR_OF_BIRTH</th><th>SEX</th><th>COUNTRY</th><th>HEALTH_AUTH</th><th>INDEX_DATE</th><th>START_DATE</th><th>END_DATE</th></tr><tr><td>str</td><td>i64</td><td>i64</td><td>str</td><td>str</td><td>str</td><td>str</td><td>str</td><td>str</td><td>str</td><td>str</td></tr></thead><tbody><tr><td>&quot;p20515_1099848…</td><td>20515</td><td>10998487420515</td><td>&quot;MISSING&quot;</td><td>&quot;1976-07-15&quot;</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>&quot;2022-03-12&quot;</td><td>&quot;2022-03-12&quot;</td><td>&quot;2022-03-19&quot;</td></tr><tr><td>&quot;p20515_1037909…</td><td>20515</td><td>1037909720515</td><td>&quot;WHITE&quot;</td><td>&quot;1990-07-15&quot;</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>&quot;2019-02-28&quot;</td><td>&quot;2019-02-28&quot;</td><td>&quot;2022-03-19&quot;</td></tr><tr><td>&quot;p20515_1066963…</td><td>20515</td><td>1066963220515</td><td>&quot;WHITE&quot;</td><td>&quot;1988-07-15&quot;</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>&quot;2019-03-02&quot;</td><td>&quot;2019-03-02&quot;</td><td>&quot;2022-03-19&quot;</td></tr><tr><td>&quot;p20515_1066963…</td><td>20515</td><td>1066963320515</td><td>&quot;WHITE&quot;</td><td>&quot;1999-07-15&quot;</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>&quot;2019-03-02&quot;</td><td>&quot;2019-03-02&quot;</td><td>&quot;2022-03-19&quot;</td></tr><tr><td>&quot;p20515_1066974…</td><td>20515</td><td>1066974920515</td><td>&quot;WHITE&quot;</td><td>&quot;1989-07-15&quot;</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>&quot;2019-03-05&quot;</td><td>&quot;2019-03-05&quot;</td><td>&quot;2019-04-12&quot;</td></tr></tbody></table></div>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<div><style>
+.dataframe > thead > tr > th,
+.dataframe > tbody > tr > td {
+  text-align: right;
+}
+</style>
+<small>shape: (5, 4)</small><table border="1" class="dataframe"><thead><tr><th>PRACTICE_PATIENT_ID</th><th>EVENT</th><th>VALUE</th><th>DATE</th></tr><tr><td>str</td><td>str</td><td>f64</td><td>str</td></tr></thead><tbody><tr><td>&quot;p20515_1002242…</td><td>&quot;AST_serum_leve…</td><td>27.0</td><td>&quot;2010-08-24&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;AST_serum_leve…</td><td>42.0</td><td>&quot;2011-06-03&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;AST_serum_leve…</td><td>29.0</td><td>&quot;2012-11-16&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;AST_serum_leve…</td><td>30.0</td><td>&quot;2013-11-30&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;AST_serum_leve…</td><td>28.0</td><td>&quot;2016-02-01&quot;</td></tr></tbody></table></div>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<div><style>
+.dataframe > thead > tr > th,
+.dataframe > tbody > tr > td {
+  text-align: right;
+}
+</style>
+<small>shape: (5, 3)</small><table border="1" class="dataframe"><thead><tr><th>PRACTICE_PATIENT_ID</th><th>EVENT</th><th>DATE</th></tr><tr><td>str</td><td>str</td><td>str</td></tr></thead><tbody><tr><td>&quot;p20515_1002242…</td><td>&quot;ALLCA_NOBCC_VF…</td><td>&quot;2017-10-01&quot;</td></tr><tr><td>&quot;p20515_1037909…</td><td>&quot;DEPRESSION&quot;</td><td>&quot;2010-05-20&quot;</td></tr><tr><td>&quot;p20515_1037909…</td><td>&quot;ANXIETY&quot;</td><td>&quot;2020-01-03&quot;</td></tr><tr><td>&quot;p20515_1037909…</td><td>&quot;ALLCA_NOBCC_VF…</td><td>&quot;2020-05-11&quot;</td></tr><tr><td>&quot;p20515_1037909…</td><td>&quot;LYMPHOMA_PREVA…</td><td>&quot;2020-04-02&quot;</td></tr></tbody></table></div>
+</div>
+
+</div>
+
+</div>
+
+</div>
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -15033,7 +15159,72 @@ Measurement table with 79.02M records.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<div><style>
+.dataframe > thead > tr > th,
+.dataframe > tbody > tr > td {
+  text-align: right;
+}
+</style>
+<small>shape: (3_180, 14)</small><table border="1" class="dataframe"><thead><tr><th>PRACTICE_PATIENT_ID</th><th>VALUE</th><th>EVENT</th><th>DAYS_SINCE_BIRTH</th><th>PRACTICE_ID</th><th>PATIENT_ID</th><th>ETHNICITY</th><th>YEAR_OF_BIRTH</th><th>SEX</th><th>COUNTRY</th><th>HEALTH_AUTH</th><th>INDEX_DATE</th><th>START_DATE</th><th>END_DATE</th></tr><tr><td>str</td><td>list[f64]</td><td>list[str]</td><td>list[i64]</td><td>str</td><td>str</td><td>str</td><td>datetime[μs]</td><td>str</td><td>str</td><td>str</td><td>datetime[μs]</td><td>datetime[μs]</td><td>datetime[μs]</td></tr></thead><tbody><tr><td>&quot;p20515_1002242…</td><td>[28.8, 90.0, … 140.0]</td><td>[&quot;Body_mass_index_3&quot;, &quot;Diastolic_blood_pressure_5&quot;, … &quot;Systolic_blood_pressure_4&quot;]</td><td>[21961, 21961, … 26533]</td><td>&quot;p20515&quot;</td><td>&quot;1002242920515&quot;</td><td>&quot;WHITE&quot;</td><td>1946-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-02-22 00:00:00</td><td>2019-02-22 00:00:00</td><td>2020-11-13 00:00:00</td></tr><tr><td>&quot;p20515_1037909…</td><td>[null, null, … 110.0]</td><td>[&quot;O_E_-_weight_2&quot;, &quot;ATOPICECZEMA&quot;, … &quot;Systolic_blood_pressure_4&quot;]</td><td>[230, 1010, … 11272]</td><td>&quot;p20515&quot;</td><td>&quot;1037909720515&quot;</td><td>&quot;WHITE&quot;</td><td>1990-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-02-28 00:00:00</td><td>2019-02-28 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_1066963…</td><td>[25.2, 81.0, … null]</td><td>[&quot;Body_mass_index_3&quot;, &quot;Diastolic_blood_pressure_5&quot;, … &quot;GOUT&quot;]</td><td>[6409, 6409, … 12110]</td><td>&quot;p20515&quot;</td><td>&quot;1066963220515&quot;</td><td>&quot;WHITE&quot;</td><td>1988-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-03-02 00:00:00</td><td>2019-03-02 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_1066963…</td><td>[null, null, … 10.4]</td><td>[&quot;ATOPICECZEMA&quot;, &quot;ASTHMA_PUSHASTHMA&quot;, … &quot;Total_white_cell_count_18&quot;]</td><td>[644, 1876, … 8107]</td><td>&quot;p20515&quot;</td><td>&quot;1066963320515&quot;</td><td>&quot;WHITE&quot;</td><td>1999-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-03-02 00:00:00</td><td>2019-03-02 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_1066974…</td><td>[null, null, … 130.0]</td><td>[&quot;ATOPICECZEMA&quot;, &quot;ASTHMA_PUSHASTHMA&quot;, … &quot;Systolic_blood_pressure_4&quot;]</td><td>[1266, 2693, … 10468]</td><td>&quot;p20515&quot;</td><td>&quot;1066974920515&quot;</td><td>&quot;WHITE&quot;</td><td>1989-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-03-05 00:00:00</td><td>2019-03-05 00:00:00</td><td>2019-04-12 00:00:00</td></tr><tr><td>&quot;p20515_1099618…</td><td>[18.3, null, … 53.0]</td><td>[&quot;Body_mass_index_3&quot;, &quot;Never_smoked_tobacco_85&quot;, … &quot;O_E_-_weight_2&quot;]</td><td>[9276, 9276, … 9276]</td><td>&quot;p20515&quot;</td><td>&quot;10996184120515…</td><td>&quot;WHITE&quot;</td><td>1991-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2022-03-15 00:00:00</td><td>2022-03-15 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_1099848…</td><td>[null, null]</td><td>[&quot;DEPRESSION&quot;, &quot;ANXIETY&quot;]</td><td>[14271, 14271]</td><td>&quot;p20515&quot;</td><td>&quot;10998487420515…</td><td>&quot;MISSING&quot;</td><td>1976-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2022-03-12 00:00:00</td><td>2022-03-12 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_1137545…</td><td>[null, null, … 66.8]</td><td>[&quot;ASTHMA_PUSHASTHMA&quot;, &quot;ATOPICECZEMA&quot;, … &quot;O_E_-_weight_2&quot;]</td><td>[219, 219, … 8970]</td><td>&quot;p20515&quot;</td><td>&quot;1137545520515&quot;</td><td>&quot;WHITE&quot;</td><td>1997-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-03-06 00:00:00</td><td>2019-03-06 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_1142689…</td><td>[24.0, null, … 1.46]</td><td>[&quot;Body_mass_index_3&quot;, &quot;Ex_smoker_84&quot;, … &quot;Serum_triglycerides_105&quot;]</td><td>[9190, 9190, … 12214]</td><td>&quot;p20515&quot;</td><td>&quot;1142689720515&quot;</td><td>&quot;WHITE&quot;</td><td>1987-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-03-07 00:00:00</td><td>2019-03-07 00:00:00</td><td>2021-06-19 00:00:00</td></tr><tr><td>&quot;p20515_1147235…</td><td>[23.1, null, … 317.0]</td><td>[&quot;Body_mass_index_3&quot;, &quot;Never_smoked_tobacco_85&quot;, … &quot;Serum_vitamin_B12_79&quot;]</td><td>[9987, 9987, … 12060]</td><td>&quot;p20515&quot;</td><td>&quot;1147235520515&quot;</td><td>&quot;BLACK&quot;</td><td>1988-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-03-09 00:00:00</td><td>2019-03-09 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_1198049…</td><td>[null, 121.0, … 115.0]</td><td>[&quot;Never_smoked_tobacco_85&quot;, &quot;Systolic_blood_pressure_4&quot;, … &quot;Systolic_blood_pressure_4&quot;]</td><td>[7327, 7327, … 11201]</td><td>&quot;p20515&quot;</td><td>&quot;1198049920515&quot;</td><td>&quot;WHITE&quot;</td><td>1987-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-03-13 00:00:00</td><td>2019-03-13 00:00:00</td><td>2021-04-20 00:00:00</td></tr><tr><td>&quot;p20515_1198050…</td><td>[60.0, 5.9]</td><td>[&quot;O_E_-_height_1&quot;, &quot;O_E_-_weight_2&quot;]</td><td>[54, 54]</td><td>&quot;p20515&quot;</td><td>&quot;1198050020515&quot;</td><td>&quot;MISSING&quot;</td><td>2018-02-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-03-13 00:00:00</td><td>2019-03-13 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td></tr><tr><td>&quot;p20515_9323013…</td><td>[36.7, 86.0, … 140.0]</td><td>[&quot;Body_mass_index_3&quot;, &quot;Diastolic_blood_pressure_5&quot;, … &quot;Systolic_blood_pressure_4&quot;]</td><td>[11371, 11371, … 11522]</td><td>&quot;p20515&quot;</td><td>&quot;932301320515&quot;</td><td>&quot;WHITE&quot;</td><td>1986-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-01-29 00:00:00</td><td>2019-01-29 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_9323021…</td><td>[null, 16.44, … 140.0]</td><td>[&quot;ASTHMA_PUSHASTHMA&quot;, &quot;Body_mass_index_3&quot;, … &quot;Systolic_blood_pressure_4&quot;]</td><td>[2027, 3897, … 6957]</td><td>&quot;p20515&quot;</td><td>&quot;932302120515&quot;</td><td>&quot;WHITE&quot;</td><td>2000-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-01-30 00:00:00</td><td>2019-01-30 00:00:00</td><td>2020-10-01 00:00:00</td></tr><tr><td>&quot;p20515_9326047…</td><td>[24.6, 70.0, … 8.3]</td><td>[&quot;Body_mass_index_3&quot;, &quot;Diastolic_blood_pressure_5&quot;, … &quot;Total_white_cell_count_18&quot;]</td><td>[13357, 13357, … 14841]</td><td>&quot;p20515&quot;</td><td>&quot;932604720515&quot;</td><td>&quot;MIXED_RACE&quot;</td><td>1981-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-02-02 00:00:00</td><td>2019-02-02 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_9326050…</td><td>[14.4, 59.0, … null]</td><td>[&quot;Body_mass_index_3&quot;, &quot;O_E_-_height_1&quot;, … &quot;AUTISM&quot;]</td><td>[160, 160, … 7897]</td><td>&quot;p20515&quot;</td><td>&quot;932605020515&quot;</td><td>&quot;WHITE&quot;</td><td>1997-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-02-02 00:00:00</td><td>2019-02-02 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_9326051…</td><td>[null, 20.5, … 98.0]</td><td>[&quot;Ex_smoker_84&quot;, &quot;Body_mass_index_3&quot;, … &quot;Systolic_blood_pressure_4&quot;]</td><td>[7373, 7510, … 7689]</td><td>&quot;p20515&quot;</td><td>&quot;932605120515&quot;</td><td>&quot;WHITE&quot;</td><td>1997-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-02-02 00:00:00</td><td>2019-02-02 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_9429013…</td><td>[null, 23.1, … 133.0]</td><td>[&quot;ATOPICECZEMA&quot;, &quot;Body_mass_index_3&quot;, … &quot;Systolic_blood_pressure_4&quot;]</td><td>[1437, 7146, … 8510]</td><td>&quot;p20515&quot;</td><td>&quot;942901320515&quot;</td><td>&quot;WHITE&quot;</td><td>1998-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-02-05 00:00:00</td><td>2019-02-05 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_9657293…</td><td>[57.0, null]</td><td>[&quot;O_E_-_height_1&quot;, &quot;ATOPICECZEMA&quot;]</td><td>[64, 518]</td><td>&quot;p20515&quot;</td><td>&quot;965729320515&quot;</td><td>&quot;WHITE&quot;</td><td>2018-01-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-02-06 00:00:00</td><td>2019-02-06 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_9658156…</td><td>[20.5, 143.0, … 122.0]</td><td>[&quot;Body_mass_index_3&quot;, &quot;O_E_-_height_1&quot;, … &quot;Systolic_blood_pressure_4&quot;]</td><td>[3512, 3512, … 6031]</td><td>&quot;p20515&quot;</td><td>&quot;965815620515&quot;</td><td>&quot;WHITE&quot;</td><td>2001-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-02-07 00:00:00</td><td>2019-02-07 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_9658160…</td><td>[null, null, … null]</td><td>[&quot;ANY_DEAFNESS_HEARING_LOSS_V2&quot;, &quot;ALLERGICRHINITISCONJ&quot;, … &quot;DEPRESSION&quot;]</td><td>[691, 3269, … 9273]</td><td>&quot;p20515&quot;</td><td>&quot;965816020515&quot;</td><td>&quot;WHITE&quot;</td><td>1993-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-02-07 00:00:00</td><td>2019-02-07 00:00:00</td><td>2019-08-08 00:00:00</td></tr><tr><td>&quot;p20515_9767549…</td><td>[30.9, 78.0, … 7.9]</td><td>[&quot;Body_mass_index_3&quot;, &quot;Diastolic_blood_pressure_5&quot;, … &quot;Serum_urea_level_29&quot;]</td><td>[26877, 26877, … 26884]</td><td>&quot;p20515&quot;</td><td>&quot;976754920515&quot;</td><td>&quot;SOUTH_ASIAN&quot;</td><td>1944-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-02-14 00:00:00</td><td>2019-02-14 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_9808116…</td><td>[58.0, 5.32]</td><td>[&quot;O_E_-_height_1&quot;, &quot;O_E_-_weight_2&quot;]</td><td>[67, 67]</td><td>&quot;p20515&quot;</td><td>&quot;980811620515&quot;</td><td>&quot;MISSING&quot;</td><td>2017-12-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-02-20 00:00:00</td><td>2019-02-20 00:00:00</td><td>2022-03-19 00:00:00</td></tr><tr><td>&quot;p20515_9808118…</td><td>[157.0, null, … 5.0]</td><td>[&quot;O_E_-_height_1&quot;, &quot;ASTHMA_PUSHASTHMA&quot;, … &quot;Serum_C_reactive_protein_level_59&quot;]</td><td>[4728, 5417, … 13797]</td><td>&quot;p20515&quot;</td><td>&quot;980811820515&quot;</td><td>&quot;WHITE&quot;</td><td>1980-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2019-02-19 00:00:00</td><td>2019-02-19 00:00:00</td><td>2019-07-29 00:00:00</td></tr></tbody></table></div>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output " data-mime-type="text/plain">
+<pre>&#39;p20515_297396920515&#39;</pre>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<div><style>
+.dataframe > thead > tr > th,
+.dataframe > tbody > tr > td {
+  text-align: right;
+}
+</style>
+<small>shape: (1, 14)</small><table border="1" class="dataframe"><thead><tr><th>PRACTICE_PATIENT_ID</th><th>VALUE</th><th>EVENT</th><th>DAYS_SINCE_BIRTH</th><th>PRACTICE_ID</th><th>PATIENT_ID</th><th>ETHNICITY</th><th>YEAR_OF_BIRTH</th><th>SEX</th><th>COUNTRY</th><th>HEALTH_AUTH</th><th>INDEX_DATE</th><th>START_DATE</th><th>END_DATE</th></tr><tr><td>str</td><td>list[f64]</td><td>list[str]</td><td>list[i64]</td><td>str</td><td>str</td><td>str</td><td>datetime[μs]</td><td>str</td><td>str</td><td>str</td><td>datetime[μs]</td><td>datetime[μs]</td><td>datetime[μs]</td></tr></thead><tbody><tr><td>&quot;p20515_2973969…</td><td>[25.8, 80.0, … null]</td><td>[&quot;Body_mass_index_3&quot;, &quot;Diastolic_blood_pressure_5&quot;, … &quot;ANXIETY&quot;]</td><td>[9899, 9899, … 14850]</td><td>&quot;p20515&quot;</td><td>&quot;297396920515&quot;</td><td>&quot;WHITE&quot;</td><td>1979-07-15 00:00:00</td><td>&quot;M&quot;</td><td>&quot;E&quot;</td><td>&quot;North West&quot;</td><td>2007-04-26 00:00:00</td><td>2007-04-26 00:00:00</td><td>2022-03-19 00:00:00</td></tr></tbody></table></div>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<div><style>
+.dataframe > thead > tr > th,
+.dataframe > tbody > tr > td {
+  text-align: right;
+}
+</style>
+<small>shape: (28_775, 4)</small><table border="1" class="dataframe"><thead><tr><th>PRACTICE_PATIENT_ID</th><th>EVENT</th><th>VALUE</th><th>DATE</th></tr><tr><td>str</td><td>str</td><td>f64</td><td>str</td></tr></thead><tbody><tr><td>&quot;p20515_1002242…</td><td>&quot;Diastolic_bloo…</td><td>90.0</td><td>&quot;2006-08-30&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;Diastolic_bloo…</td><td>90.0</td><td>&quot;2008-09-04&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;Diastolic_bloo…</td><td>80.0</td><td>&quot;2008-09-19&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;Diastolic_bloo…</td><td>80.0</td><td>&quot;2008-10-03&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;Diastolic_bloo…</td><td>80.0</td><td>&quot;2009-07-23&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;Diastolic_bloo…</td><td>80.0</td><td>&quot;2010-08-13&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;Diastolic_bloo…</td><td>78.0</td><td>&quot;2011-06-02&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;Diastolic_bloo…</td><td>76.0</td><td>&quot;2012-11-15&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;Diastolic_bloo…</td><td>82.0</td><td>&quot;2013-08-30&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;Diastolic_bloo…</td><td>84.0</td><td>&quot;2013-11-29&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;Diastolic_bloo…</td><td>85.0</td><td>&quot;2016-02-01&quot;</td></tr><tr><td>&quot;p20515_1002242…</td><td>&quot;Diastolic_bloo…</td><td>86.0</td><td>&quot;2017-10-24&quot;</td></tr><tr><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td><td>&hellip;</td></tr><tr><td>&quot;p20515_9429013…</td><td>&quot;Diastolic_bloo…</td><td>66.0</td><td>&quot;2021-11-01&quot;</td></tr><tr><td>&quot;p20515_9658156…</td><td>&quot;Diastolic_bloo…</td><td>77.0</td><td>&quot;2018-01-18&quot;</td></tr><tr><td>&quot;p20515_9658160…</td><td>&quot;Diastolic_bloo…</td><td>90.0</td><td>&quot;2016-06-09&quot;</td></tr><tr><td>&quot;p20515_9658160…</td><td>&quot;Diastolic_bloo…</td><td>120.0</td><td>&quot;2016-06-09&quot;</td></tr><tr><td>&quot;p20515_9658160…</td><td>&quot;Diastolic_bloo…</td><td>164.0</td><td>&quot;2016-06-09&quot;</td></tr><tr><td>&quot;p20515_9658160…</td><td>&quot;Diastolic_bloo…</td><td>80.0</td><td>&quot;2017-09-11&quot;</td></tr><tr><td>&quot;p20515_9658160…</td><td>&quot;Diastolic_bloo…</td><td>80.0</td><td>&quot;2018-02-13&quot;</td></tr><tr><td>&quot;p20515_9658160…</td><td>&quot;Diastolic_bloo…</td><td>74.0</td><td>&quot;2018-04-10&quot;</td></tr><tr><td>&quot;p20515_9658160…</td><td>&quot;Diastolic_bloo…</td><td>85.0</td><td>&quot;2018-11-07&quot;</td></tr><tr><td>&quot;p20515_9767549…</td><td>&quot;Diastolic_bloo…</td><td>78.0</td><td>&quot;2018-02-14&quot;</td></tr><tr><td>&quot;p20515_9808118…</td><td>&quot;Diastolic_bloo…</td><td>84.0</td><td>&quot;2009-01-15&quot;</td></tr><tr><td>&quot;p20515_9808118…</td><td>&quot;Diastolic_bloo…</td><td>80.0</td><td>&quot;2018-02-20&quot;</td></tr></tbody></table></div>
+</div>
+
+</div>
+
+</div>
+
+</div>
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -15048,7 +15239,26 @@ Measurement table with 79.02M records.
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>[NbConvertApp] Converting notebook buildV2.ipynb to html
+[NbConvertApp] Writing 645516 bytes to buildV2.html
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 

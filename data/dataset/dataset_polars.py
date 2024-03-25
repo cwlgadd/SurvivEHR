@@ -77,7 +77,7 @@ class PolarsDataset:
                                                        )
         
         # Create train/test/val splits 
-        logging.info(f"Creating train/test/val splits using practice_patient_ids")
+        logging.info(f"Creating train/test/val splits using practice_ids")
         train_practice_ids, test_practice_ids = sk_split(practice_ids, test_size=0.1)       
         test_practice_ids, val_practice_ids = sk_split(test_practice_ids, test_size=0.5)
 
@@ -136,32 +136,10 @@ class PolarsDataset:
         """
         self.collector.connect()
         
-        # Specify which tables to use. 
-        #    Static table must always be used as this contains the YEAR_OF_BIRTH used to calculate AGE_AT_EVENT positions
-        tables_to_use = ["static_table"]
-        if include_measurements:
-            tables_to_use.append("measurement_table")            
-        if include_diagnoses:            
-            tables_to_use.append("diagnosis_table")
-
         # Create train/test/val splits
         self._train_test_val_split()
         
-        
-        # Collect meta information that is used for tokenization, but also optionally for standardisation
-        # Collect meta information
-        #    * create the data container on the first pass, and update it after
-        #    * count all event occurrences for tokenizer,
-        #    * where values are included also record the number observed for standardisation
-        #    * and calculating standardisation statistics for the training set
-        # meta_information = None
-        # logging.info(f"Collecting meta information of training split for tokenization/standardisation")
-        # generator = self.collector._lazy_generate_by_distinct(self.train_practice_patient_ids, tables_to_use, "PRACTICE_PATIENT_ID")            
-        # for _, lazy_table_frames_dict in tqdm(generator, total=len(self.train_practice_patient_ids)):
-        #     # pass
-        #     meta_information = self.collector._online_standardisation(meta_information, **lazy_table_frames_dict)
-        # logging.debug(f"Collected meta information \n\n {meta_information}")
-        
+        # Collect meta information that is used for tokenization, but also optionally for standardisation        
         all_train = list(itertools.chain.from_iterable(self.train_practice_patient_ids))
         meta_information = self.collector.get_meta_information(practice_patient_ids=all_train,
                                                                diagnoses   = include_diagnoses,
@@ -175,14 +153,16 @@ class PolarsDataset:
                                                                     self.test_practice_patient_ids, 
                                                                     self.val_practice_patient_ids]):
             
-            logging.info(f"Collating {split_name} split into a DL friendly format")
-            # generator = self.collector._lazy_generate_by_distinct(split_ids, tables_to_use, "PRACTICE_PATIENT_ID")   
-            generator = self.collector._lazy_generate_by_distinct(split_ids, tables_to_use, "PRACTICE_PATIENT_ID")
+            logging.info(f"Collating {split_name} split into a DL friendly format. Generating over practices IDs")
+            generator = self.collector._lazy_generate_by_distinct(distinct_values=split_ids, 
+                                                                  identifier_column="PRACTICE_PATIENT_ID",
+                                                                  include_diagnoses=include_diagnoses,
+                                                                  include_measurements=include_measurements)
 
             for chunk_name, lazy_table_frames_dict in tqdm(generator, total=len(split_ids)):
-
+                
                 # Merge the lazy polars tables provided by the generator into one lazy polars frame
-                lazy_batch = self.collector._collate_lazy_tables(**lazy_table_frames_dict, **kwargs)
+                lazy_batch = self.collector._collate_lazy_tables(lazy_table_frames_dict, **kwargs)
 
                 if save_path is not None:
                     # save splits `hive` style partitioning                # TODO: make directories if they dont already exist

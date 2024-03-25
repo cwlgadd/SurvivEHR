@@ -16,13 +16,32 @@ class Measurements():
     def extract_measurement_name(fname):
         # Measurement/test name is contained in the file names following version dependent prefixes. Remove them.
         mname = fname.split("/")[-1]
+
+        # we can remove the file extension (either .csv or .zip)
+        mname = mname[:-4]
+        
+        # depending on DEXTER output version there are prefixes on filenames which we can remove
         prefixes = ["AVF2_masterDataOptimal_v3_fullDB20231112045951_",
                     "AVF2_masterDataOptimal_v220230327110229_"]
         for prefix in prefixes:
             if mname.startswith(prefix):
-                return mname[len(prefix):-4]
+                mname = mname[len(prefix):]
+
+        # and we remove characters which will confuse SQL commands
+        mname = mname.replace("-", "_")
+        mname = mname.replace(".", "")
                 
-        return mname[:-4]
+        return mname
+
+    @property
+    def measurement_table_names(self):
+        self.cursor.execute("""SELECT * FROM sqlite_master;""")
+        names = [_a[1]  for _a in self.cursor.fetchall() if _a[0] == "table" and _a[1].startswith("measurement")]
+        return names
+
+    @property
+    def query_measurement_aggregations(self):
+        pass
     
     def __init__(self, db_path, path_to_data, load=False):
         self.db_path = db_path
@@ -31,21 +50,12 @@ class Measurements():
         self.connection_token = 'sqlite://' + self.db_path 
         self.path_to_data = path_to_data
 
-        if load is False:
-            # Create table                     
-            self.connect()
-            logging.info(f"Creating measurement_table")
-            self.cursor.execute("""CREATE TABLE measurement_table ( PRACTICE_PATIENT_ID str,
-                                                                    EVENT text,
-                                                                    VALUE real,                                                                 
-                                                                    DATE text )""")
-            
-            self.disconnect()
-
     def __str__(self):
         self.connect()
-        self.cursor.execute("SELECT COUNT(*) FROM measurement_table")
-        s = f'Measurement table with {self.cursor.fetchone()[0]/1e6:.2f}M records.'
+        s = "Measurement tables with"
+        for table in self.measurement_table_names:
+            self.cursor.execute(f"SELECT COUNT(*) FROM {table}")
+            s += f'\n{self.cursor.fetchone()[0]}'.ljust(40) + f'{table[12:]} records.' 
         return s
         
     def connect(self):
@@ -82,62 +92,57 @@ class Measurements():
     
         self.connect()
 
-        self.cursor.execute( """PRAGMA temp_store = 1""")
-        
         # Fill table
-        path = self.path_to_data + "*.csv" if unzip is False else path_to_data + "*.zip"
-        for fname in sorted(glob.glob(path)):
-            self._add_file_to_table(fname, verbose=verbose, **kwargs)
+        # Each file is a table which partitions measurements
+        path = self.path_to_data + "*.csv" if unzip is False else self.path_to_data + "*.zip"
+        for filename in sorted(glob.glob(path)):
+            # if filename != "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/timeseries/measurement_and_tests/lab_measurements/AVF2_masterDataOptimal_v3_fullDB20231112045951_Diastolic_blood_pressure_5.zip":
+            #     pass
+            # else:
+        
+            measurement_name = self.extract_measurement_name(filename)
+
+            self._create_measurement_partition(measurement_name)
+            self._file_to_measurement_table(filename, measurement_name, verbose=verbose, **kwargs)
+            
             self.connection.commit()
             
-        self._make_index()
-
         self.disconnect()
     
-    def _make_index(self):
+    def _create_measurement_partition(self, measurement_name):
+                
+        self.cursor.execute("""CREATE TABLE IF NOT EXISTS measurement_""" + measurement_name + """ ( 
+                                        PRACTICE_PATIENT_ID str,
+                                        EVENT text,
+                                        VALUE real,                                                                 
+                                        DATE text )""")
+
         # Create index
-        logging.info("Creating indexes on measurement_table")
-        for index in ["PRACTICE_PATIENT_ID", "EVENT"]:
-            logging.info(index)
-            query = f"CREATE INDEX IF NOT EXISTS measurement_{index}_idx ON measurement_table ({index});"
+        logging.debug(f"Creating PRACTICE_PATIENT_ID index on measurement_{measurement_name}")
+        for index in ["PRACTICE_PATIENT_ID"]:
+            query = f"CREATE INDEX IF NOT EXISTS '{measurement_name}_{index}_idx' ON measurement_{measurement_name} ({index});"
             logging.debug(query)
             self.cursor.execute(query)
-            self.connection.commit()
 
-            # query = f"PRAGMA index_list('measurement_table');"
-            # logging.debug(query)
-            # self.cursor.execute(query)
-            # result = self.cursor.fetchall()
-            # print(result)
-
-    def _delete_index(self):
-        pass
-
-    def _add_file_to_table(self, fname, chunksize=200000, verbose=0):
-        
-        mt_name = self.extract_measurement_name(fname)
+    def _file_to_measurement_table(self, filename, measurement_name, chunksize=200000, verbose=0):
+        """
+        """
     
-        if verbose > 0:
-            print(f'Inserting {mt_name} into table from \n\t {fname}.')
+        logging.debug(f'Inserting {measurement_name} into table from \n\t {filename}.')
     
-        generator = pd.read_csv(fname, chunksize=chunksize, iterator=True, low_memory=False, on_bad_lines='skip')
+        generator = pd.read_csv(filename, chunksize=chunksize, iterator=True, low_memory=False, on_bad_lines='skip')
         # low_memory=False just silences an error, TODO: add dtypes
         # on_bad_lines='skip', some lines have extra delimeters from DEXTER bug, handle this by skipping them. This maintains backwards compat
-        for chunk_idx, df in enumerate(tqdm(generator, desc=f"Adding {mt_name}".ljust(70))):
+        for chunk_idx, df in enumerate(tqdm(generator, desc=f"Adding {measurement_name}".ljust(70))):
 
-            # Start counting indices from 1
-            df.index += 1
-            
-            # DEXTER changed output column header for event date, to keep compatibility use the ordering
-            if chunk_idx == 0 and verbose > 2:
-                print(df.columns.tolist())
-                
+            # DEXTER gives multiple different file formats in the measurement files
+            file_columns = df.columns
             event_date_col, event_value_col = None, None
-            for colname in df.columns:
+            for colname in file_columns:
                 # get the column name which contains the value, checking across all the column names used by DEXTER
                 if colname.lower().endswith("value"):
                     event_value_col = colname
-                elif colname.lower().endswith(mt_name.lower()):
+                elif colname.lower().endswith(measurement_name.lower()):
                     event_value_col = colname
     
                 # get the column name which contains the date, checking across all the column names used by DEXTER
@@ -145,15 +150,12 @@ class Measurements():
                     event_date_col = colname
                 if colname.lower().endswith("event_date)"):
                     event_date_col = colname
+            assert event_date_col is not None and event_value_col is not None
 
-            if chunk_idx == 0 and verbose > 2:
-                print(f"Using event_date_col {event_date_col}, and event_value_col {event_value_col}")
-    
             # Subset to the ID and event details
             df = df[["PRACTICE_PATIENT_ID", event_value_col, event_date_col]].copy()
+            df.insert(1, 'EVENT', measurement_name)
 
-            df.insert(1, 'EVENT', mt_name)
-    
             # Pull records from df to update SQLite .db with
             #   records or rows in a list of tuples [(ID, MEASUREMENT NAME, MEASUREMENT VALUE, AGE AT MEASUREMENT, EVENT TYPE),]
             records = df.to_records(index=False,
@@ -161,14 +163,17 @@ class Measurements():
                                         event_value_col: np.float64,
                                         }
                                     )
-            if chunk_idx == 0 and verbose > 2:
-                print(records)
+            if chunk_idx == 0:
+                logging.debug(f"Used event_date_col {event_date_col}, and event_value_col {event_value_col}")
+                logging.debug(f"Selected from available columns {file_columns.tolist()}")
+                logging.debug(records)
                           
-            # Add rows to database....... (practice_id, patient_id, value, event, date) 
-            self.cursor.executemany('INSERT INTO measurement_table VALUES(?,?,?,?);', records);           # Add rows to database
-
-            if verbose > 1:
-                print('Inserted', self.cursor.rowcount, 'records to the table.')    
-
+            self._records_to_table_measurement(records, measurement_name)
     
-    
+    def _records_to_table_measurement(self, records, measurement_name, **kwargs):
+
+            
+        # Add rows to database....... (practice_id, patient_id, value, event, date) 
+        self.cursor.executemany('INSERT INTO measurement_' + measurement_name + ' VALUES(?,?,?,?);', records);           # Add rows to database
+
+        logging.debug('Inserted', self.cursor.rowcount, 'records to the table.')

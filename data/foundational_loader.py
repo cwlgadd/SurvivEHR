@@ -68,7 +68,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         # Get the DL friendly representation, either by loading or building from scratch.
         polars_dataset = PolarsDataset(path_to_db=path_to_db)
         meta_information = polars_dataset.fit(path=path_to_db + "polars/", load=load, **kwargs)
-        logging.info(meta_information)
+        logging.debug(meta_information)
     
         # Create tokenizer, and build based on vocabulary from training set. 
         #   Vocabularly begins with the PAD (padding) token, then the UNK (unknown) token, and is then ordered by token frequency        
@@ -259,7 +259,7 @@ class FoundationalDataset(Dataset):
         
         # Unpack rows, and optionally standardise values
         sequence_tokens, sequence_values, sequence_ages = [], [], []
-        standardisation_keys = self.meta_information["measurement_table"].event.tolist() if self.meta_information is not None else None
+        standardisation_keys = self.meta_information["measurement_tables"].event.tolist() if self.meta_information is not None else None
         for next_event, next_value, next_age in zip(row_df["EVENT"], row_df["VALUE"], row_df["DAYS_SINCE_BIRTH"]):
 
             # e.g. ["bmi", "DEPRESSION", "bmi", ...] 
@@ -270,7 +270,7 @@ class FoundationalDataset(Dataset):
                 if self.standardise_values:
                     assert self.meta_information is not None
                     if next_event in standardisation_keys:
-                        event_meta = self.meta_information["measurement_table"][self.meta_information["measurement_table"]["event"] == next_event]
+                        event_meta = self.meta_information["measurement_tables"][self.meta_information["measurement_tables"]["event"] == next_event]
                         next_value = (next_value - event_meta["bias"]) / event_meta["scale"]
                 next_value = float(next_value)
             else:

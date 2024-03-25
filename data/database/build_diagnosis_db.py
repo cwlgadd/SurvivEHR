@@ -71,7 +71,7 @@ class Diagnoses():
         # result = self.cursor.fetchall()
         # print(result)
         
-    def _add_file_to_table(self, fname, chunksize=200000, verbose=0):
+    def _add_file_to_table(self, fname, chunksize=200000, verbose=0, **kwargs):
         
         generator = pd.read_csv(fname, chunksize=chunksize, iterator=True, encoding='utf-8', low_memory=False)
         # low_memory=False just silences an error, TODO: add dtypes
