@@ -7,7 +7,8 @@ import logging
 from CPRD.data.database.build_static_db import Static
 from CPRD.data.database.build_diagnosis_db import Diagnoses
 from CPRD.data.database.build_measurements_and_tests_db import Measurements
-
+from tqdm import tqdm
+import time
 
 class SQLiteDataCollector(Static, Diagnoses, Measurements):
     
@@ -33,18 +34,24 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
 
     def _extract_AGG(self,
                      table_name:          str,
-                     identifier_column:   str,
+                     identifier_column:   Optional[str] = None,
                      aggregations:        str = "COUNT(*)",
                      condition:           Optional[str] = None,
                      ):
         # Construct the SQL query to extract unique prefixes for each table
-        query = f"SELECT {identifier_column}, {aggregations} FROM {table_name}"
+        query = f"SELECT "
+        
+        if identifier_column is not None:
+            query += f"{identifier_column}, "
+            
+        query += f"{aggregations} FROM {table_name}"
 
         # If we want to add a condition
         if condition is not None:
             query += f" WHERE {condition}"
 
-        query += f" GROUP BY {identifier_column}"
+        if identifier_column:
+            query += f" GROUP BY {identifier_column}"
         
         # Execute the query
         logging.debug(f"Query: {query[:300] if len(query) > 300 else query}")
@@ -85,7 +92,75 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
             unique_prefixes.update([prefix[0] for prefix in prefixes])
 
         return list(unique_prefixes)
+
+    def _lazy_generate_by_join(self,
+                               distinct_values: list[list],
+                               identifier_column: str,
+                               include_diagnoses: bool = True, 
+                               include_measurements: bool = True,
+                               conditions: Optional[list[str]] = None
+                              ) -> list[pl.LazyFrame]:
+        """
+        Generator which provides lazy frames by an identifying column and certain values.
+
+        TODO: this isn't used yet. In theory should be faster, but currently with higher memory requirements
+        """
+        table_names = ["static_table"]
+        if include_diagnoses:            
+            table_names.append("diagnosis_table")
+        if include_measurements:
+            for measurement_table in self.measurement_table_names:
+                table_names.append(measurement_table)   
+
+        # Iterate over each
+        for inner_list in distinct_values:
+
+            start = time.time()
+            # Create temporary table that we can join against
+            self.cursor.execute(f"""CREATE TABLE IF NOT EXISTS generate_by_join (PRACTICE_PATIENT_ID TEXT);""")
+
+            # Add each identifier to the temporary table
+            insert_query = f'INSERT INTO generate_by_join ({identifier_column}) VALUES (?)'
+            self.cursor.executemany(insert_query, [(id,) for id in inner_list])
+
+            self.cursor.execute("CREATE INDEX IF NOT EXISTS generate_by_join_index ON generate_by_join (PRACTICE_PATIENT_ID);")
+            logging.info(f"Creating join table, filling, and indexing took {time.time()-start} seconds")
+
+            rows_by_table = {}
+            for idx_table, table in enumerate(table_names):
+                print(table)
+
+                # EXPLAIN QUERY PLAN
+                join_query = f"""SELECT {table}.*
+                                    FROM generate_by_join 
+                                    JOIN {table} 
+                                        ON generate_by_join.PRACTICE_PATIENT_ID = {table}.PRACTICE_PATIENT_ID;"""
+                self.cursor.execute(join_query)
+                # print(self.cursor.fetchall()[0])
+                result = self.cursor.fetchmany(100)
+                print(result)
             
+                # join_query = f"""SELECT * FROM generate_by_join"""
+                # self.cursor.execute(join_query)
+                # print(self.cursor.fetchone())
+                
+                # join_query = f"SELECT * FROM {table} WHERE PRACTICE_PATIENT_ID = 'p21505_6499892121505'"
+                # df = pl.read_database(join_query, connection_uri=self.connection_token)
+                # df = pl.read_database(join_query, connection=self.connection)
+                # self.cursor.execute(join_query)
+                # data = self.cursor.fetchall()
+                # columns = [description[0] for description in self.cursor.description]
+                # df = pl.DataFrame(data, schema=columns)
+
+                # df = pl.DataFrame(self.cursor.fetchall())
+                
+                # print(df.head())
+
+            self.cursor.execute("DROP TABLE generate_by_join;")
+                
+                
+                # Construct query for fetching rows with the current prefix for the current table
+    
     def _lazy_generate_by_distinct(self,
                                    distinct_values: list,
                                    identifier_column: str,
@@ -111,24 +186,31 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         for distinct_value in distinct_values:
             rows_by_table = {}
             for idx_table, table in enumerate(table_names):
+                
+                start = time.time()
+                
                 # Construct query for fetching rows with the current prefix for the current table
                 if type(distinct_value) == list:
-                    _dv = [f"'{dv}'" for dv in distinct_value]
-                    sep_list = ",".join(_dv)
+                    sep_list = ",".join([f"'{dv}'" for dv in distinct_value])
+                    chunk_size = len(sep_list)
                     query = f"SELECT * FROM {table} WHERE {identifier_column} IN ({sep_list});"  # LIMIT {chunk_size}
+                    
                 else:
                     query = f"SELECT * FROM {table} WHERE {identifier_column} = '{distinct_value}'"  # LIMIT {chunk_size}
+                    chunk_size = 1 
                     
                 if conditions is not None:
                     if conditions[idx_table] is not None:
                         #  conditions for each table, e.g. a query asking for only certain diagnoses or measurements to be 
                         #  included in the generator
-                        query += f" WHERE {conditions[idx_table]}"
+                        query += f" {conditions[idx_table]}"
                                   
-                logging.debug(f"Query: {query[:100] if len(query) > 100 else query}")
+                logging.debug(f"Query: {query[:120] if len(query) > 100 else query}...")
                 df = pl.read_database(query=query, connection_uri=self.connection_token)
                 if len(df) > 0:
                     rows_by_table["lazy_" + table] = df.lazy()
+
+                logging.debug(f"loaded {chunk_size} patients from table in {(time.time()-start) / chunk_size} seconds/patient")
 
             # Yield the fetched rows as a chunk
             yield distinct_value, rows_by_table
@@ -136,7 +218,7 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
     def _collate_lazy_tables(self,
                              lazy_frames: pl.LazyFrame,
                              drop_empty_dynamic: bool = True,
-                             drop_missing_data: bool = False,
+                             drop_missing_data: bool = True,
                              exclude_pre_index_age: bool = False,
                              ) -> pl.LazyFrame:
         """
@@ -261,40 +343,34 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
             diagnosis_meta = pd.DataFrame({"event": diagnoses,
                                            "count": [i for i in counts],
                                            })
-            logging.info(f"diagnosis_meta:\n{diagnosis_meta}")
             meta_information["diagnosis_table"] = diagnosis_meta
+            logging.debug(f"diagnosis_meta: \n{diagnosis_meta}")
             
         if measurement is True:
 
-            measurements, counts, obs_counts, obs_biases, obs_scales = [], [], [], [], []
-            for table in self.measurement_table_names:
+            measurements, counts, obs_counts, obs_biases, obs_scales, obs_means = [], [], [], [], [], []
+            for table in tqdm(self.measurement_table_names, desc="Measurements".rjust(50), total=len(self.measurement_table_names)):
+
+                measurement = table[12:]
                 
                 # Get total number of entries for each unique event in measurement table
-                result = self._extract_AGG(table, identifier_column="EVENT", aggregations="COUNT(*)")  #  condition=condition
-                table_measurements, table_counts = zip(*result)
-                
-                # Get total number of entries with corresponding observed values for each unique event in measurement table
-                result = self._extract_AGG(table, identifier_column="EVENT", aggregations="COUNT(VALUE)")  # condition="VALUE IS NOT NULL",
-                table_measurements_obs, table_counts_obs = zip(*result)
-                table_obs_counts = [_c if _m in table_measurements else 0 for _m, _c in zip(table_measurements_obs, table_counts_obs)]
-                
-                # Get total number of entries with corresponding observed values for each unique event in measurement table
-                result = self._extract_AGG(table, identifier_column="EVENT", aggregations="MIN(VALUE), MAX(VALUE)")  # condition="VALUE IS NOT NULL",
-                table_measurements_obs, table_min_obs, table_max_obs = zip(*result)
-                table_obs_biases = [_min if _meas in table_measurements else 0 for _meas, _min, _max in zip(table_measurements_obs, table_min_obs, table_max_obs)]
-                table_obs_scales = [_max - _min if _meas in table_measurements else 1 for _meas, _min, _max in zip(table_measurements_obs, table_min_obs, table_max_obs)]
+                result = self._extract_AGG(table, aggregations=f"COUNT(*), COUNT(VALUE), MIN(VALUE), MAX(VALUE), AVG(VALUE)")  #  condition=condition
+                table_counts, table_counts_obs, table_min_obs, table_max_obs, table_mean_obs = result[0]
 
-                # Collate each tables summary statistics obtained from aggregations across each table
-                #    For example, if one measurement file has height and weight measurements this may be:
-                #        table_measurement = (`height`, `weight`)
-                #        table_counts      = (10100,     10200  )
-                #    Note, if we have measurements split across file this will create repeated entries
-                for idx, _ in enumerate(table_measurements):
-                    measurements.append(table_measurements[idx])
-                    counts.append(table_counts[idx])
-                    obs_counts.append(table_obs_counts[idx])
-                    obs_biases.append(table_obs_biases[idx])
-                    obs_scales.append(table_obs_scales[idx])
+                # variance 
+                # f"""SELECT 
+                #     (SUM((column_name - (SELECT AVG(VALUE) FROM table_name)) * (column_name - (SELECT AVG(column_name) 
+                #     FROM table_name))) / (COUNT(column_name) - 1)) AS variance
+                #     FROM table_name;
+                # """
+                
+                # Collate each tables summary statistics, here we have assumed that each measurement table contains a unique event
+                measurements.append(measurement)
+                counts.append(table_counts)
+                obs_counts.append(table_counts_obs)
+                obs_biases.append(table_min_obs)
+                obs_scales.append(table_max_obs - table_min_obs)
+                obs_means.append(table_mean_obs)
                 
                 
             measurement_meta = pd.DataFrame({"event": measurements,
@@ -302,13 +378,12 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                                              "count_obs": obs_counts,
                                              "bias": obs_biases,
                                              "scale": obs_scales,
+                                             "mean": obs_means,                                             
                                              })
-            logging.info(f"measurement_meta: {measurement_meta}")
 
             meta_information["measurement_tables"] = measurement_meta
+            logging.debug(f"measurement_meta: \n{measurement_meta}")
             
-        logging.info(meta_information)
-
         return meta_information
                              
     

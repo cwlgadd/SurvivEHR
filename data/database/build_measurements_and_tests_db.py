@@ -52,10 +52,17 @@ class Measurements():
 
     def __str__(self):
         self.connect()
-        s = "Measurement tables with"
+        s = "Measurement table:"
+        s += "\nMeasurement & Count (thousands)"
+        total_count = 0
         for table in self.measurement_table_names:
             self.cursor.execute(f"SELECT COUNT(*) FROM {table}")
-            s += f'\n{self.cursor.fetchone()[0]}'.ljust(40) + f'{table[12:]} records.' 
+            measurement = table[12:]
+            count = self.cursor.fetchone()[0]
+            s += f'\n{measurement}:'.ljust(40) + f'& {count:,}'.rjust(15) 
+            total_count += count
+        s += "\nTotal".ljust(40) + f"& {total_count}"
+        
         return s
         
     def connect(self):
@@ -96,9 +103,6 @@ class Measurements():
         # Each file is a table which partitions measurements
         path = self.path_to_data + "*.csv" if unzip is False else self.path_to_data + "*.zip"
         for filename in sorted(glob.glob(path)):
-            # if filename != "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/timeseries/measurement_and_tests/lab_measurements/AVF2_masterDataOptimal_v3_fullDB20231112045951_Diastolic_blood_pressure_5.zip":
-            #     pass
-            # else:
         
             measurement_name = self.extract_measurement_name(filename)
 
