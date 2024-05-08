@@ -243,11 +243,17 @@ class FoundationalDataset(Dataset):
             
         # Read the corresponding row from the Parquet file        
         row_df = pq.read_table(file, filters=[('row_nr','=', idx)]).to_pandas().loc[0]
-        
+        print(row_df)
+
+        # Static variables
+        ##################
+
+        # Dynamic variables
+        ##################
         # Unpack rows, and optionally standardise values
         sequence_tokens, sequence_values, sequence_ages = [], [], []
         for next_event, next_value, next_age in zip(row_df["EVENT"], row_df["VALUE"], row_df["DAYS_SINCE_BIRTH"]):
-
+    
             ## TOKENS
             ##########
             # e.g. ["bmi", "DEPRESSION", "bmi", ...] 

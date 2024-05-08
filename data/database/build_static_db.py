@@ -49,6 +49,10 @@ class Static():
         if load is False:
             # Create table        
             self.connect()
+            
+            logging.info(f"Removing previous static table (if exists)")
+            self.cursor.execute("""DROP TABLE IF EXISTS static_table;""")
+            
             logging.info(f"Creating static_table")
             self.cursor.execute("""CREATE TABLE static_table ( PRACTICE_ID integer,
                                                                PATIENT_ID integer,
@@ -56,6 +60,7 @@ class Static():
                                                                YEAR_OF_BIRTH text,    
                                                                SEX text,  
                                                                COUNTRY text,
+                                                               IMD integer,
                                                                HEALTH_AUTH text,
                                                                INDEX_DATE text,
                                                                START_DATE text,
@@ -111,7 +116,6 @@ class Static():
         # low_memory=False just silences an error, TODO: add dtypes
         for df in tqdm(generator, desc="Building static table"):
 
-            
             # Start counting indices from 1
             df.index += 1
             
@@ -119,6 +123,7 @@ class Static():
             columns = ['PRACTICE_ID',  'PATIENT_ID',
                        'ETHNICITY', 'YEAR_OF_BIRTH', 
                        'SEX', 'COUNTRY',
+                       'IMD',
                        'HEALTH_AUTH',
                        'INDEX_DATE','START_DATE','END_DATE',
                       ]
@@ -140,7 +145,7 @@ class Static():
                                     #     }
                                    )
             # Add rows to database
-            self.cursor.executemany('INSERT INTO static_table VALUES(?,?,?,?,?,?,?,?,?,?);', records);
+            self.cursor.executemany('INSERT INTO static_table VALUES(?,?,?,?,?,?,?,?,?,?,?);', records);
             
             if verbose > 1:
                 print('Inserted', self.cursor.rowcount, 'data owners to the table.')

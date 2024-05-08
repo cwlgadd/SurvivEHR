@@ -11,12 +11,14 @@ from tqdm import tqdm
 from tdigest import TDigest
 
 class SQLiteDataCollector(Static, Diagnoses, Measurements):
-    
+    """ A class which interfaces with the SQLite database to collect and collate patient records
+
+        Functionality additionally includes collecting meta information from the SQLite database 
+    """
     def __init__(self, db_path):
         self.db_path = db_path
         self.connection = None
         self.cursor = None
-        # self.db_path = "/rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModel/preprocessing/processed/cprd.db"        
         self.connection_token = 'sqlite://' + self.db_path 
 
     def connect(self):
@@ -33,9 +35,9 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
             logging.debug("Disconnected from SQLite database")
 
     def _extract_distinct(self,
-                          table_names:         list[str],
-                          identifier_column:   str,
-                          conditions:          Optional[list] = None,
+                          table_names:          list[str],
+                          identifier_column:    str,
+                          inclusion_conditions: Optional[list] = None,
                           ) -> list[str]:
         """
         Get a list of distinct `identifier_column' values, contained in a collection of tables
@@ -50,9 +52,9 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
             query = f"SELECT DISTINCT {identifier_column} FROM {table}"
 
             # If we want to add a condition
-            if conditions is not None:
-                if conditions[idx_table] is not None:
-                    query += f" WHERE {conditions[idx_table]}"
+            if inclusion_conditions is not None:
+                if inclusion_conditions[idx_table] is not None:
+                    query += f" WHERE {inclusion_conditions[idx_table]}"
             
             # Execute the query
             logging.debug(f"Query: {query[:100] if len(query) > 100 else query}")
@@ -124,72 +126,6 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         
         return digest
     
-    # def _lazy_generate_by_join(self,
-    #                            distinct_values: list[list],
-    #                            identifier_column: str,
-    #                            include_diagnoses: bool = True, 
-    #                            include_measurements: bool = True,
-    #                            conditions: Optional[list[str]] = None
-    #                           ) -> list[pl.LazyFrame]:
-    #     """
-    #     Generator which provides lazy frames by an identifying column and certain values.
-
-    #     TODO: this isn't used yet. In theory should be faster, but currently with higher memory requirements
-    #     """
-    #     table_names = ["static_table"]
-    #     if include_diagnoses:            
-    #         table_names.append("diagnosis_table")
-    #     if include_measurements:
-    #         for measurement_table in self.measurement_table_names:
-    #             table_names.append(measurement_table)   
-
-    #     # Iterate over each
-    #     for inner_list in distinct_values:
-
-    #         # Create temporary table that we can join against
-    #         self.cursor.execute(f"""CREATE TABLE IF NOT EXISTS generate_by_join (PRACTICE_PATIENT_ID TEXT);""")
-
-    #         # Add each identifier to the temporary table
-    #         insert_query = f'INSERT INTO generate_by_join ({identifier_column}) VALUES (?)'
-    #         self.cursor.executemany(insert_query, [(id,) for id in inner_list])
-
-    #         self.cursor.execute("CREATE INDEX IF NOT EXISTS generate_by_join_index ON generate_by_join (PRACTICE_PATIENT_ID);")
-
-    #         rows_by_table = {}
-    #         for idx_table, table in enumerate(table_names):
-    #             print(table)
-
-    #             # EXPLAIN QUERY PLAN
-    #             join_query = f"""SELECT {table}.*
-    #                                 FROM generate_by_join 
-    #                                 JOIN {table} 
-    #                                     ON generate_by_join.PRACTICE_PATIENT_ID = {table}.PRACTICE_PATIENT_ID;"""
-    #             self.cursor.execute(join_query)
-    #             # print(self.cursor.fetchall()[0])
-    #             result = self.cursor.fetchmany(100)
-    #             print(result)
-            
-    #             # join_query = f"""SELECT * FROM generate_by_join"""
-    #             # self.cursor.execute(join_query)
-    #             # print(self.cursor.fetchone())
-                
-    #             # join_query = f"SELECT * FROM {table} WHERE PRACTICE_PATIENT_ID = 'p21505_6499892121505'"
-    #             # df = pl.read_database(join_query, connection_uri=self.connection_token)
-    #             # df = pl.read_database(join_query, connection=self.connection)
-    #             # self.cursor.execute(join_query)
-    #             # data = self.cursor.fetchall()
-    #             # columns = [description[0] for description in self.cursor.description]
-    #             # df = pl.DataFrame(data, schema=columns)
-
-    #             # df = pl.DataFrame(self.cursor.fetchall())
-                
-    #             # print(df.head())
-
-    #         self.cursor.execute("DROP TABLE generate_by_join;")
-                
-                
-    #             # Construct query for fetching rows with the current prefix for the current table
-    
     def _generate_lazy_by_distinct(self,
                                    distinct_values: list,
                                    identifier_column: str,
@@ -230,7 +166,7 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                     if conditions[idx_table] is not None:
                         #  conditions for each table, e.g. a query asking for only certain diagnoses or measurements to be 
                         #  included in the generator
-                        query += f" {conditions[idx_table]}"
+                        query += f"AND {conditions[idx_table]}"
                                   
                 logging.debug(f"Query: {query[:120] if len(query) > 100 else query}")
                 df = pl.read_database(query=query, connection_uri=self.connection_token)
@@ -341,7 +277,9 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         #    If identifier exists in one but not the other, default behaviour is to fill with null, these are handled by filtering later
         #    All these operations are performed lazily
         lazy_combined_frame = lazy_combined_frame.join(lazy_static, on=["PRACTICE_ID", "PATIENT_ID"], how="left")
-        # print(lazy_combined_frame.head().collect())
+
+        # with pl.Config(tbl_cols=-1):
+        #     print(lazy_combined_frame.head().collect())
 
         return lazy_combined_frame
 

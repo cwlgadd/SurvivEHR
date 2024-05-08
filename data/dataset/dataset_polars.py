@@ -66,16 +66,16 @@ class PolarsDataset:
                 
         return self.meta_information
 
-    def _train_test_val_split(self):
+    def _train_test_val_split(self, inclusion_conditions=None):
         
         # get a list of practice IDs which are used to chunk the database
         #    We can optionally pass a filtering kwarg through .fit() method to constrain which practice IDs should be included in the study 
         #    based on some criteria. For example, asserting that we only want practices in England can be achieved by adding an inclusion
         #    that applies to the static table
-        logging.info(f"Chunking by unique practice ID with no inclusion conditions")
+        logging.info(f"Chunking by unique practice ID with {'no' if inclusion_conditions is None else inclusion_conditions} inclusion conditions")
         practice_ids = self.collector._extract_distinct(table_names=["static_table"],
                                                         identifier_column="PRACTICE_ID",
-                                                        # condition= e.g. WHERE 'pass this part'
+                                                        inclusion_conditions=inclusion_conditions
                                                        )
         
         # Create train/test/val splits, each is list of practice_id
@@ -88,6 +88,7 @@ class PolarsDataset:
                                  include_measurements: bool = True,
                                  include_diagnoses: bool = True,
                                  preprocess_measurements: bool = False,
+                                 inclusion_conditions: Optional[str] = False,
                                  **kwargs,
                                 ) -> pl.LazyFrame:
         r"""
@@ -97,37 +98,18 @@ class PolarsDataset:
             
         KWARGS:
         
-        RETURNS:
-            Polars lazy frame, of the (anonymized) form:
-            ┌──────────────────────┬─────┬─────────────┬───────────────┬──────────────────────┬─────────────────────────┬─────────────────────┐
-            │ PRACTICE_PATIENT_ID  ┆ SEX ┆ cov 2 ...   ┆ YEAR_OF_BIRTH ┆ VALUE                ┆ EVENT                   ┆ AGE_AT_EVENT        │
-            │ ---                  ┆ --- ┆ ---         ┆ ---           ┆ ---                  ┆ ---                     ┆ ---                 │
-            │ str                  ┆ str ┆ <->         ┆ str           ┆ list[f64]            ┆ list[str]               ┆ list[i64]           │
-            ╞══════════════════════╪═════╪═════════════╪═══════════════╪══════════════════════╪═════════════════════════╪═════════════════════╡
-            │ <anonymous 1>        ┆ M   ┆ ...         ┆ yyy-mm-dd     ┆ [null, 21.92]        ┆ ["diagnosis name", ...] ┆ [age 1, age 2]      │
-            │ <anonymous 2>        ┆ F   ┆ ...         ┆ yyy-mm-dd     ┆ [27.1, 75.0, … 91.0] ┆ ["record name", ...]    ┆ [age 1, age 2, … ]  │
-            │ …                    ┆ …   ┆ ...         ┆ …             ┆ …                    ┆ …                       ┆ …                   │
-            │ <anonymous N>        ┆ F   ┆ ...         ┆ yyy-mm-dd     ┆ [70.0, 0.1, … 80.0]  ┆ ["record name", ...]    ┆ [age 1, age 2, … ]  │
-            └──────────────────────┴─────┴─────────────┴───────────────┴──────────────────────┴─────────────────────────┴─────────────────────┘
-            with index cols: (age at index, age at start, age at end)
-
-            Baseline covariates include
-                * SEX            ("M", "F")
-                * ETHNICITY      ()
-                * YEAR_OF_BIRTH  (yy-mm-dd format)
-                * 
         """
         self.collector.connect()
         
         # Create train/test/val splits
-        self._train_test_val_split()
+        self._train_test_val_split(inclusion_conditions=inclusion_conditions)
         
         # Collect meta information that is used for tokenization, but also optionally for standardisation        
         # all_train = list(itertools.chain.from_iterable(self.train_practice_ids))
         meta_information = self.collector.get_meta_information(practice_ids = None, #self.train_practice_ids,
                                                                diagnoses    = include_diagnoses,
                                                                measurement  = include_measurements)
-        print(meta_information)
+        logging.debug(meta_information)
         
         #  Create train/test/val DL Polars datasets
         # Loop over practice IDs
