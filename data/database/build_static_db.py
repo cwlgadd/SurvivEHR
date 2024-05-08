@@ -50,9 +50,8 @@ class Static():
             # Create table        
             self.connect()
             logging.info(f"Creating static_table")
-            self.cursor.execute("""CREATE TABLE static_table ( PRACTICE_PATIENT_ID str,
-                                                               PRACTICE_ID int,
-                                                               PATIENT_ID int,
+            self.cursor.execute("""CREATE TABLE static_table ( PRACTICE_ID integer,
+                                                               PATIENT_ID integer,
                                                                ETHNICITY text,      
                                                                YEAR_OF_BIRTH text,    
                                                                SEX text,  
@@ -62,6 +61,7 @@ class Static():
                                                                START_DATE text,
                                                                END_DATE text
                                                             )""")
+            self.build_table()
             self.disconnect()
 
     
@@ -98,7 +98,7 @@ class Static():
     def _make_index(self):
         # Create index
         logging.info("Creating indexes on static_table")
-        query = "CREATE INDEX IF NOT EXISTS static_index ON static_table (PRACTICE_ID, PATIENT_ID, PRACTICE_PATIENT_ID, HEALTH_AUTH, COUNTRY, SEX, ETHNICITY); "
+        query = "CREATE INDEX IF NOT EXISTS static_index ON static_table (PRACTICE_ID, PATIENT_ID, HEALTH_AUTH, COUNTRY, SEX, ETHNICITY); "
         logging.debug(query)
         self.cursor.execute(query)
         self.connection.commit()
@@ -106,15 +106,17 @@ class Static():
     def _add_file_to_table(self, fname, chunksize=200000, verbose=0, **kwargs):
 
         generator = pd.read_csv(fname, chunksize=chunksize, iterator=True, encoding='utf-8', low_memory=False,
-                               dtype={'PATIENT_ID': 'str'})
+                               dtype={'PATIENT_ID': 'str'}
+                               )
         # low_memory=False just silences an error, TODO: add dtypes
         for df in tqdm(generator, desc="Building static table"):
-    
+
+            
             # Start counting indices from 1
             df.index += 1
             
             # Keep only some interesting columns. Can add more later if needed
-            columns = ['PRACTICE_PATIENT_ID', 'PRACTICE_ID',  'PATIENT_ID',
+            columns = ['PRACTICE_ID',  'PATIENT_ID',
                        'ETHNICITY', 'YEAR_OF_BIRTH', 
                        'SEX', 'COUNTRY',
                        'HEALTH_AUTH',
@@ -124,22 +126,22 @@ class Static():
 
             # remove p at the start so we can store as int
             df['PRACTICE_ID'] = df['PRACTICE_ID'].apply(lambda x: x.replace('p', ''))
+            # df['PATIENT_ID'] = df['PATIENT_ID'].astype(int)
 
-            
             # for col in df.columns:
             #     if col not in columns:
             #         df = df.drop(col, axis=1)
     
             # Pull records from df to update SQLite .db with records or rows in a list
             records = df.to_records(index=False,
-                                    column_dtypes={
-                                        # "PRACTICE_ID": "int64",
-                                        # "PATIENT_ID": "int64",
-                                        }
+                                    # column_dtypes={
+                                    #     "PRACTICE_ID": int,
+                                    #     "PATIENT_ID": int,
+                                    #     }
                                    )
-
             # Add rows to database
-            self.cursor.executemany('INSERT INTO static_table VALUES(?,?,?,?,?,?,?,?,?,?,?);', records);
+            self.cursor.executemany('INSERT INTO static_table VALUES(?,?,?,?,?,?,?,?,?,?);', records);
             
             if verbose > 1:
                 print('Inserted', self.cursor.rowcount, 'data owners to the table.')
+

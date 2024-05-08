@@ -8,7 +8,7 @@ from CPRD.data.database.build_static_db import Static
 from CPRD.data.database.build_diagnosis_db import Diagnoses
 from CPRD.data.database.build_measurements_and_tests_db import Measurements
 from tqdm import tqdm
-import time
+from tdigest import TDigest
 
 class SQLiteDataCollector(Static, Diagnoses, Measurements):
     
@@ -32,13 +32,49 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
             self.connection.close()
             logging.debug("Disconnected from SQLite database")
 
+    def _extract_distinct(self,
+                          table_names:         list[str],
+                          identifier_column:   str,
+                          conditions:          Optional[list] = None,
+                          ) -> list[str]:
+        """
+        Get a list of distinct `identifier_column' values, contained in a collection of tables
+        """
+        # Initialize an empty set to store unique prefixes
+        unique_prefixes = set()
+        
+        # Iterate over each table
+        for idx_table, table in enumerate(table_names):
+            
+            # Construct the SQL query to extract unique prefixes for each table
+            query = f"SELECT DISTINCT {identifier_column} FROM {table}"
+
+            # If we want to add a condition
+            if conditions is not None:
+                if conditions[idx_table] is not None:
+                    query += f" WHERE {conditions[idx_table]}"
+            
+            # Execute the query
+            logging.debug(f"Query: {query[:100] if len(query) > 100 else query}")
+            self.cursor.execute(query)
+            
+            # Fetch unique prefixes for the current table and update the set
+            prefixes = self.cursor.fetchall()
+            unique_prefixes.update([prefix[0] for prefix in prefixes])
+
+        return list(unique_prefixes)
+
     def _extract_AGG(self,
                      table_name:          str,
                      identifier_column:   Optional[str] = None,
                      aggregations:        str = "COUNT(*)",
                      condition:           Optional[str] = None,
                      ):
-        # Construct the SQL query to extract unique prefixes for each table
+        """
+        Perform (optionally grouped) aggregations over tables. 
+        
+        For example, how many of each diagnosis, total observed values for a certain measurement, etc.
+        """
         query = f"SELECT "
         
         if identifier_column is not None:
@@ -61,107 +97,100 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         result = self.cursor.fetchall()
 
         return result
-    
-    def _extract_distinct(self,
-                          table_names:         list[str],
-                          identifier_column:   str,
-                          conditions:          Optional[list] = None,
-                          ) -> list[str]:
+
+    def _t_digest_values(self,
+                         table_name:          str,
+                         ):
         """
-        Get a list of unique practice IDs contained in a collection of tables
-        """
-        # Initialize an empty set to store unique prefixes
-        unique_prefixes = set()
+        Approximate percentiles using Ted Dunning's t-digest algorithm (see https://github.com/tdunning/t-digest)
         
-        # Iterate over each table
-        for idx_table, table in enumerate(table_names):
-            # Construct the SQL query to extract unique prefixes for each table
-            query = f"SELECT DISTINCT {identifier_column} FROM {table}"
-
-            # If we want to add a condition
-            if conditions is not None:
-                if conditions[idx_table] is not None:
-                    query += f" WHERE {conditions[idx_table]}"
-            
-            # Execute the query
-            logging.debug(f"Query: {query[:100] if len(query) > 100 else query}")
-            self.cursor.execute(query)
-            
-            # Fetch unique prefixes for the current table and update the set
-            prefixes = self.cursor.fetchall()
-            unique_prefixes.update([prefix[0] for prefix in prefixes])
-
-        return list(unique_prefixes)
-
-    def _lazy_generate_by_join(self,
-                               distinct_values: list[list],
-                               identifier_column: str,
-                               include_diagnoses: bool = True, 
-                               include_measurements: bool = True,
-                               conditions: Optional[list[str]] = None
-                              ) -> list[pl.LazyFrame]:
+           This is a data structure for online accumulation of rank-based statistics, such as quantiles and trimmed means.
         """
-        Generator which provides lazy frames by an identifying column and certain values.
 
-        TODO: this isn't used yet. In theory should be faster, but currently with higher memory requirements
-        """
-        table_names = ["static_table"]
-        if include_diagnoses:            
-            table_names.append("diagnosis_table")
-        if include_measurements:
-            for measurement_table in self.measurement_table_names:
-                table_names.append(measurement_table)   
+        digest = TDigest()
+        
+        self.cursor.execute(f"SELECT VALUE FROM {table_name}")
 
-        # Iterate over each
-        for inner_list in distinct_values:
-
-            start = time.time()
-            # Create temporary table that we can join against
-            self.cursor.execute(f"""CREATE TABLE IF NOT EXISTS generate_by_join (PRACTICE_PATIENT_ID TEXT);""")
-
-            # Add each identifier to the temporary table
-            insert_query = f'INSERT INTO generate_by_join ({identifier_column}) VALUES (?)'
-            self.cursor.executemany(insert_query, [(id,) for id in inner_list])
-
-            self.cursor.execute("CREATE INDEX IF NOT EXISTS generate_by_join_index ON generate_by_join (PRACTICE_PATIENT_ID);")
-            logging.info(f"Creating join table, filling, and indexing took {time.time()-start} seconds")
-
-            rows_by_table = {}
-            for idx_table, table in enumerate(table_names):
-                print(table)
-
-                # EXPLAIN QUERY PLAN
-                join_query = f"""SELECT {table}.*
-                                    FROM generate_by_join 
-                                    JOIN {table} 
-                                        ON generate_by_join.PRACTICE_PATIENT_ID = {table}.PRACTICE_PATIENT_ID;"""
-                self.cursor.execute(join_query)
-                # print(self.cursor.fetchall()[0])
-                result = self.cursor.fetchmany(100)
-                print(result)
+        fetches_count = 0
+        while True:
+            records = self.cursor.fetchmany(10000)
             
-                # join_query = f"""SELECT * FROM generate_by_join"""
-                # self.cursor.execute(join_query)
-                # print(self.cursor.fetchone())
-                
-                # join_query = f"SELECT * FROM {table} WHERE PRACTICE_PATIENT_ID = 'p21505_6499892121505'"
-                # df = pl.read_database(join_query, connection_uri=self.connection_token)
-                # df = pl.read_database(join_query, connection=self.connection)
-                # self.cursor.execute(join_query)
-                # data = self.cursor.fetchall()
-                # columns = [description[0] for description in self.cursor.description]
-                # df = pl.DataFrame(data, schema=columns)
-
-                # df = pl.DataFrame(self.cursor.fetchall())
-                
-                # print(df.head())
-
-            self.cursor.execute("DROP TABLE generate_by_join;")
-                
-                
-                # Construct query for fetching rows with the current prefix for the current table
+            if not records or fetches_count > 1e5 / 10000:
+                # exit loop when no more records to fetch, or we reach some approximating limit 
+                break 
+            values = np.array([_record[0] for _record in records if _record[0] is not None])
+            digest.batch_update(values)
+            fetches_count += 1
+        
+        return digest
     
-    def _lazy_generate_by_distinct(self,
+    # def _lazy_generate_by_join(self,
+    #                            distinct_values: list[list],
+    #                            identifier_column: str,
+    #                            include_diagnoses: bool = True, 
+    #                            include_measurements: bool = True,
+    #                            conditions: Optional[list[str]] = None
+    #                           ) -> list[pl.LazyFrame]:
+    #     """
+    #     Generator which provides lazy frames by an identifying column and certain values.
+
+    #     TODO: this isn't used yet. In theory should be faster, but currently with higher memory requirements
+    #     """
+    #     table_names = ["static_table"]
+    #     if include_diagnoses:            
+    #         table_names.append("diagnosis_table")
+    #     if include_measurements:
+    #         for measurement_table in self.measurement_table_names:
+    #             table_names.append(measurement_table)   
+
+    #     # Iterate over each
+    #     for inner_list in distinct_values:
+
+    #         # Create temporary table that we can join against
+    #         self.cursor.execute(f"""CREATE TABLE IF NOT EXISTS generate_by_join (PRACTICE_PATIENT_ID TEXT);""")
+
+    #         # Add each identifier to the temporary table
+    #         insert_query = f'INSERT INTO generate_by_join ({identifier_column}) VALUES (?)'
+    #         self.cursor.executemany(insert_query, [(id,) for id in inner_list])
+
+    #         self.cursor.execute("CREATE INDEX IF NOT EXISTS generate_by_join_index ON generate_by_join (PRACTICE_PATIENT_ID);")
+
+    #         rows_by_table = {}
+    #         for idx_table, table in enumerate(table_names):
+    #             print(table)
+
+    #             # EXPLAIN QUERY PLAN
+    #             join_query = f"""SELECT {table}.*
+    #                                 FROM generate_by_join 
+    #                                 JOIN {table} 
+    #                                     ON generate_by_join.PRACTICE_PATIENT_ID = {table}.PRACTICE_PATIENT_ID;"""
+    #             self.cursor.execute(join_query)
+    #             # print(self.cursor.fetchall()[0])
+    #             result = self.cursor.fetchmany(100)
+    #             print(result)
+            
+    #             # join_query = f"""SELECT * FROM generate_by_join"""
+    #             # self.cursor.execute(join_query)
+    #             # print(self.cursor.fetchone())
+                
+    #             # join_query = f"SELECT * FROM {table} WHERE PRACTICE_PATIENT_ID = 'p21505_6499892121505'"
+    #             # df = pl.read_database(join_query, connection_uri=self.connection_token)
+    #             # df = pl.read_database(join_query, connection=self.connection)
+    #             # self.cursor.execute(join_query)
+    #             # data = self.cursor.fetchall()
+    #             # columns = [description[0] for description in self.cursor.description]
+    #             # df = pl.DataFrame(data, schema=columns)
+
+    #             # df = pl.DataFrame(self.cursor.fetchall())
+                
+    #             # print(df.head())
+
+    #         self.cursor.execute("DROP TABLE generate_by_join;")
+                
+                
+    #             # Construct query for fetching rows with the current prefix for the current table
+    
+    def _generate_lazy_by_distinct(self,
                                    distinct_values: list,
                                    identifier_column: str,
                                    include_diagnoses: bool = True, 
@@ -187,8 +216,6 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
             rows_by_table = {}
             for idx_table, table in enumerate(table_names):
                 
-                start = time.time()
-                
                 # Construct query for fetching rows with the current prefix for the current table
                 if type(distinct_value) == list:
                     sep_list = ",".join([f"'{dv}'" for dv in distinct_value])
@@ -205,12 +232,10 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                         #  included in the generator
                         query += f" {conditions[idx_table]}"
                                   
-                logging.debug(f"Query: {query[:120] if len(query) > 100 else query}...")
+                logging.debug(f"Query: {query[:120] if len(query) > 100 else query}")
                 df = pl.read_database(query=query, connection_uri=self.connection_token)
                 if len(df) > 0:
                     rows_by_table["lazy_" + table] = df.lazy()
-
-                logging.debug(f"loaded {chunk_size} patients from table in {(time.time()-start) / chunk_size} seconds/patient")
 
             # Yield the fetched rows as a chunk
             yield distinct_value, rows_by_table
@@ -227,14 +252,18 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         """
         # Static lazy frame
         lazy_static = lazy_frames["lazy_static_table"]
+        # print(lazy_static.collect().head())
 
         # Diagnosis lazy frame, optional
         lazy_diagnosis = lazy_frames["lazy_diagnosis_table"] if "lazy_diagnosis_table" in lazy_frames.keys() else None
+        # print(lazy_diagnosis.collect().head())
+        # print(lazy_diagnosis.collect().tail())
 
         # Measurement lazy frames, optional
         measurement_keys = [key for key in lazy_frames if key.startswith("lazy_measurement_")]
         measurement_lazy_frames = [lazy_frames[key] for key in measurement_keys]
         lazy_measurement = pl.concat(measurement_lazy_frames)
+        # print(lazy_measurement.collect().head())
         
         #################
         # STATIC EVENTS #
@@ -274,16 +303,20 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         else:
             raise NotImplementedError
 
+        # print(lazy_static.head().collect())
+        # print(lazy_combined_frame.head().collect())
+        
         # Convert event date to time since birth by linking the dynamic diagnosis and measurement frames to the static one
         # Subtract the dates and create a new column for the result            
         lazy_combined_frame = (
             lazy_combined_frame
             .with_columns(pl.col("DATE").str.to_datetime("%Y-%m-%d"))
-            .join(lazy_static, on="PRACTICE_PATIENT_ID", how="inner")
+            .join(lazy_static, on=["PRACTICE_ID", "PATIENT_ID"], how="inner")
             .select([
                   (pl.col("DATE") - pl.col("YEAR_OF_BIRTH")).dt.days().alias("DAYS_SINCE_BIRTH"), "*"
                 ])
             )
+        # print(lazy_combined_frame.head().collect())
 
         # Remove entries before conception (negative to include pregnancy period)
         agg_cols = ["VALUE", "EVENT", "DAYS_SINCE_BIRTH"]
@@ -291,10 +324,11 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
             lazy_combined_frame
             .sort("DAYS_SINCE_BIRTH")
             .filter(pl.col("DAYS_SINCE_BIRTH") > -365)                                  
-            .groupby("PRACTICE_PATIENT_ID")     
+            .groupby(["PRACTICE_ID", "PATIENT_ID"])
             .agg(agg_cols)                                                # Turn into lists
-            .sort("PRACTICE_PATIENT_ID")                                  # make lazy collection deterministic
+            .sort(["PRACTICE_ID", "PATIENT_ID"])                                  # make lazy collection deterministic
         )
+        # print(lazy_combined_frame.head().collect())
 
         if drop_empty_dynamic:
             logging.debug("Removing patients with no observed events")
@@ -306,38 +340,30 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         # Align the polars frames, linking on patient idenfitifer, then concatentate into a single frame (dropping repeated identifier)
         #    If identifier exists in one but not the other, default behaviour is to fill with null, these are handled by filtering later
         #    All these operations are performed lazily
-        # lazy_static, lazy_combined_frame = pl.align_frames(lazy_static, lazy_combined_frame, on="PRACTICE_PATIENT_ID")            # align on identifiers
-        # lazy_combined_frame = pl.concat([lazy_static, lazy_combined_frame], how="diagonal")       
-        lazy_combined_frame = lazy_combined_frame.join(lazy_static, on="PRACTICE_PATIENT_ID", how="left")
+        lazy_combined_frame = lazy_combined_frame.join(lazy_static, on=["PRACTICE_ID", "PATIENT_ID"], how="left")
+        # print(lazy_combined_frame.head().collect())
 
-        # Spit practice and patient ID for hive saving
-        lazy_combined_frame = (
-            lazy_combined_frame.with_columns(
-                [
-                    pl.col('PRACTICE_PATIENT_ID').apply(lambda s: s.split('_')[0]).alias('PRACTICE_ID'),
-                    pl.col('PRACTICE_PATIENT_ID').apply(lambda s: s.split('_')[1]).alias('PATIENT_ID')
-                    ])
-        )
-            
         return lazy_combined_frame
 
     def get_meta_information(self,
-                             practice_patient_ids:  list,
+                             practice_ids:          Optional[list] = None,
                              diagnoses:             bool = True,
                              measurement:           bool = True,
                             ) -> dict:
 
-        logging.info("Collecting meta information from database. This will be used for tokenization and standardisation.")
+        # Standardisation is TODO
+        logging.info("Collecting meta information from database. This will be used for tokenization and (optionally) standardisation.")
         
         # Initialise meta information 
         meta_information = {}
 
         # TODO: calculate these only on training splits! Especially if standardisation gets implemented
-        sep_list = ",".join([f"'{dv}'" for dv in practice_patient_ids])
-        condition = f"PRACTICE_PATIENT_ID IN ({sep_list});" 
+        if practice_ids is not None:
+            raise NotImplementedError
+            # condition = f"PRACTICE_ID IN ({",".join([f"'{dv}'" for dv in practice_ids])});" 
         
         if diagnoses is True:
-            
+            logging.info("\t Diagnosis meta information")
             result = self._extract_AGG("diagnosis_table", identifier_column="EVENT", aggregations="COUNT(*)")
             diagnoses, counts = zip(*result)
             diagnosis_meta = pd.DataFrame({"event": diagnoses,
@@ -347,38 +373,46 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
             logging.debug(f"diagnosis_meta: \n{diagnosis_meta}")
             
         if measurement is True:
-
-            measurements, counts, obs_counts, obs_biases, obs_scales, obs_means = [], [], [], [], [], []
+            logging.info("\t Measurements meta information")
+            measurements = []                                                # List of measurements
+            counts, obs_counts = [], []                                      # List of measurement counts, and how many of those have observed values
+            obs_digest, obs_mins, obs_maxes, obs_means = [], [], [], []      # T-digest data structure for approximate quantiles, and exact statistics for observed values
+            cutoff_lower, cutoff_upper = [], []                              # Cut-off values based on approximate quantiles, used for filtering and standardisation
+            
             for table in tqdm(self.measurement_table_names, desc="Measurements".rjust(50), total=len(self.measurement_table_names)):
 
+                # Get the measurement name from the table's name
                 measurement = table[12:]
+
+                # Online accumulation to approximate quantiles which will then be used for standardisation and outlier removal.
+                digest = self._t_digest_values(table)
+                # From summary statistics get the standardisation limits
+                iqr = digest.percentile(75) - digest.percentile(25)
+                cutoff_lower.append(digest.percentile(25) - 1.5*iqr)
+                cutoff_upper.append(digest.percentile(75) + 1.5*iqr)
                 
-                # Get total number of entries for each unique event in measurement table
+                # Get total number of entries, number of observed values, and statistics, for each unique event in measurement table
                 result = self._extract_AGG(table, aggregations=f"COUNT(*), COUNT(VALUE), MIN(VALUE), MAX(VALUE), AVG(VALUE)")  #  condition=condition
                 table_counts, table_counts_obs, table_min_obs, table_max_obs, table_mean_obs = result[0]
 
-                # variance 
-                # f"""SELECT 
-                #     (SUM((column_name - (SELECT AVG(VALUE) FROM table_name)) * (column_name - (SELECT AVG(column_name) 
-                #     FROM table_name))) / (COUNT(column_name) - 1)) AS variance
-                #     FROM table_name;
-                # """
-                
                 # Collate each tables summary statistics, here we have assumed that each measurement table contains a unique event
                 measurements.append(measurement)
                 counts.append(table_counts)
                 obs_counts.append(table_counts_obs)
-                obs_biases.append(table_min_obs)
-                obs_scales.append(table_max_obs - table_min_obs)
+                obs_digest.append(digest)
+                obs_mins.append(table_min_obs)
+                obs_maxes.append(table_max_obs)
                 obs_means.append(table_mean_obs)
-                
                 
             measurement_meta = pd.DataFrame({"event": measurements,
                                              "count": counts,
                                              "count_obs": obs_counts,
-                                             "bias": obs_biases,
-                                             "scale": obs_scales,
-                                             "mean": obs_means,                                             
+                                             "digest": obs_digest,
+                                             "min": obs_mins,
+                                             "max": obs_maxes,
+                                             "mean": obs_means,
+                                             "approx_lqr": cutoff_lower,
+                                             "approx_uqr": cutoff_upper
                                              })
 
             meta_information["measurement_tables"] = measurement_meta

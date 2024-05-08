@@ -50,6 +50,9 @@ class Measurements():
         self.connection_token = 'sqlite://' + self.db_path 
         self.path_to_data = path_to_data
 
+        if load is False:
+            self.build_table()
+
     def __str__(self):
         self.connect()
         s = "Measurement table:"
@@ -80,21 +83,10 @@ class Measurements():
             self.cursor = None
             logging.debug("Disconnected from SQLite database")
 
-    def build_table(self, unzip=False, verbose=1, **kwargs):
+    def build_table(self, unzip=True, verbose=1, **kwargs):
         r""" 
         Build measurements and tests table in database
     
-        Example of produced table (this is not real data):
-        ┌──────────────────────┬───────┬──────────────────┬──────────────┐
-        │ PRACTICE_PATIENT_ID  ┆ VALUE ┆ EVENT            ┆  ┆
-        │ ---                  ┆ ---   ┆ ---              ┆ ---          ┆
-        │ str                  ┆ f64   ┆ str              ┆ i64 (days)   ┆
-        ╞══════════════════════╪═══════╪══════════════════╪══════════════╡
-        │ <anonymous 1>        ┆ 23.3  ┆ bmi              ┆ 10254        ┆
-        │ <anonymous 1>        ┆ 24.1  ┆ bmi              ┆ 11829        ┆
-        │ …                    ┆ …     ┆ …                ┆ …            ┆
-        │ <anonymous N>        ┆ 0.17  ┆ eosinophil_count ┆ 12016        ┆
-        └──────────────────────┴───────┴──────────────────┴──────────────┴
         """
     
         self.connect()
@@ -116,14 +108,15 @@ class Measurements():
     def _create_measurement_partition(self, measurement_name):
                 
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS measurement_""" + measurement_name + """ ( 
-                                        PRACTICE_PATIENT_ID str,
+                                        PRACTICE_ID int,
+                                        PATIENT_ID int,
                                         EVENT text,
                                         VALUE real,                                                                 
                                         DATE text )""")
 
         # Create index
         logging.debug(f"Creating PRACTICE_PATIENT_ID index on measurement_{measurement_name}")
-        for index in ["PRACTICE_PATIENT_ID"]:
+        for index in ["PRACTICE_ID"]:
             query = f"CREATE INDEX IF NOT EXISTS '{measurement_name}_{index}_idx' ON measurement_{measurement_name} ({index});"
             logging.debug(query)
             self.cursor.execute(query)
@@ -134,7 +127,8 @@ class Measurements():
     
         logging.debug(f'Inserting {measurement_name} into table from \n\t {filename}.')
     
-        generator = pd.read_csv(filename, chunksize=chunksize, iterator=True, low_memory=False, on_bad_lines='skip')
+        generator = pd.read_csv(filename, chunksize=chunksize, iterator=True, low_memory=False, on_bad_lines='skip',
+                                dtype={'PRACTICE_PATIENT_ID': 'str'})
         # low_memory=False just silences an error, TODO: add dtypes
         # on_bad_lines='skip', some lines have extra delimeters from DEXTER bug, handle this by skipping them. This maintains backwards compat
         for chunk_idx, df in enumerate(tqdm(generator, desc=f"Adding {measurement_name}".ljust(70))):
@@ -156,28 +150,35 @@ class Measurements():
                     event_date_col = colname
             assert event_date_col is not None and event_value_col is not None
 
+            # Add practice ID column
+            split = df['PRACTICE_PATIENT_ID'].str.split('_')
+            df['PRACTICE_ID'] = split.str[0].str.lstrip('p')
+            df['PATIENT_ID'] = split.str[1]
+            
             # Subset to the ID and event details
-            df = df[["PRACTICE_PATIENT_ID", event_value_col, event_date_col]].copy()
-            df.insert(1, 'EVENT', measurement_name)
+            df = df[["PRACTICE_ID", "PATIENT_ID", event_value_col, event_date_col]].copy()
+            df.insert(2, 'EVENT', measurement_name)
 
             # Pull records from df to update SQLite .db with
             #   records or rows in a list of tuples [(ID, MEASUREMENT NAME, MEASUREMENT VALUE, AGE AT MEASUREMENT, EVENT TYPE),]
             records = df.to_records(index=False,
-                                    column_dtypes={
-                                        event_value_col: np.float64,
-                                        }
+                                    # column_dtypes={
+                                    #     event_value_col: np.float64,                                        
+                                    #     "PRACTICE_ID": "int64",
+                                    #     "PATIENT_ID": "int64",
+                                    #     }
                                     )
             if chunk_idx == 0:
                 logging.debug(f"Used event_date_col {event_date_col}, and event_value_col {event_value_col}")
                 logging.debug(f"Selected from available columns {file_columns.tolist()}")
-                logging.debug(records)
+                # logging.debug(records)
                           
             self._records_to_table_measurement(records, measurement_name)
-    
+
     def _records_to_table_measurement(self, records, measurement_name, **kwargs):
 
             
         # Add rows to database....... (practice_id, patient_id, value, event, date) 
-        self.cursor.executemany('INSERT INTO measurement_' + measurement_name + ' VALUES(?,?,?,?);', records);           # Add rows to database
+        self.cursor.executemany('INSERT INTO measurement_' + measurement_name + ' VALUES(?,?,?,?,?);', records);           # Add rows to database
 
-        logging.debug('Inserted', self.cursor.rowcount, 'records to the table.')
+        logging.debug(f'Inserted {self.cursor.rowcount} records to the table.')

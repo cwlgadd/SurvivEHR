@@ -3,6 +3,7 @@
 import torch
 from typing import Optional
 import logging
+import numpy as np
 # from pytorch_lognormal_mixture import LogNormalMixtureDistribution
 
 
@@ -63,45 +64,51 @@ class GaussianRegressionLayer(torch.nn.Module):
             assert target_tokens is not None
             assert target_values is not None
             
-            # create empty value dist - not all of these will be filled (such as when the target is a diagnosis)
-            value_dist = torch.distributions.normal.Normal(loc=torch.zeros_like(target_tokens[:, 1:]), 
-                                                           scale=torch.ones_like(target_tokens[:, 1:]))  
             # initialise loss
             loss = 0
             for token in self.measurement_tokens:
+
+                # create empty value dist - not all of these will be filled (such as when the target is a diagnosis)
+                value_dist = torch.distributions.normal.Normal(loc=torch.zeros_like(target_tokens[:, 1:]), 
+                                                               scale=torch.ones_like(target_tokens[:, 1:]))  
+
+                # Mask based on whether this token belongs to this layer head 
+                token_mask = torch.where(target_tokens[:, 1:] == token, 1, 0)                
+                # And add in value mask for missing (or removed in the case of outliers) values
+                value_mask = torch.where(target_values[:, 1:].isnan(), 0, 1)
+                # Add in attention mask (this is redundant but here for code clarity)                
+                atn_mask = attention_mask[:, 1:] if attention_mask is not None else torch.ones_like(target_tokens[:, 1:])
+                # combine
+                mask = token_mask & value_mask & atn_mask
                 
-                # Pass the first N-1 hidden states through the token specific regression layer. We do not need the last hidden state as there 
-                # is no target
-                token_value_dist = self(hidden_states[:, :-1, :],
-                                        token_key=self.token_key(token))           # Normal(mean: torch.Size([bsz, seq_len-1]), std: torch.Size([bsz, seq_len-1]))
-
-                # Mask based on given attention mask and token mask
-                token_mask = torch.where(target_tokens[:, 1:] == token, 1, 0)
-                if attention_mask is not None:
-                    token_mask = attention_mask[:, 1:] & token_mask                 # shape: torch.Size([bsz, seq_len - 1])
-
+                # Pass the first N-1 hidden states through the token specific regression layer. 
+                # We do not need the last hidden state as there is no target
+                # TODO: We pass everything, even if it is later masked - this can be significantly optimised but kept like this for readability.
+                # gives: Normal(mean: torch.Size([bsz, seq_len-1]), std: torch.Size([bsz, seq_len-1])) object
+                token_value_dist = self(hidden_states[:, :-1, :], token_key=self.token_key(token))
+                
                 # update value_dist with token's entries
-                value_dist.loc = torch.where(token_mask == 1, token_value_dist.loc, value_dist.loc)
-                value_dist.scale = torch.where(token_mask == 1, token_value_dist.scale, value_dist.scale)
+                value_dist.loc = torch.where(mask == 1, token_value_dist.loc, value_dist.loc)
+                value_dist.scale = torch.where(mask == 1, token_value_dist.scale, value_dist.scale)
                 
                 # set target values that were masked or do not belong to current looped token to zero. 
                 # They are masked in the loss, this just lets us pass the entire tensor through
-                token_values = torch.where(token_mask == 1, target_values[:, 1:], 0) 
+                token_values = torch.where(mask == 1, target_values[:, 1:], 0) 
 
                 # Calculate loss, including on masked values which were set to zero just to avoid errors
-                log_prob = value_dist.log_prob(token_values)                 # shape: torch.Size([bsz, seq_len - 1])
+                log_prob = value_dist.log_prob(token_values)                 # shape: torch.Size([bsz, seq_len - 1])               
 
                 # Mask and sum across sequence (so log likelihood factorises as a product along the sequence)
                 #  As we do not filter to ensure that sequences have at least one token entry, we also add a small positive constant to 
                 #  the denominator to avoid division by zero for sequences containing none of looped token.
-                #  in those case the numerator is zero due to all entries being masked and so the ll is also zero
+                #  in those cases the numerator is also zero due to all entries being masked and so the ll is also zero
                 token_ll_per_patient = (log_prob * token_mask.float()).sum(-1) / (token_mask.float().sum(-1) + 1e-5)  # shape: torch.Size([bsz])
                 # print(token_ll_per_patient.shape)
                 
                 # average across batch
                 loss += -token_ll_per_patient.mean() 
                 
-            loss /= len(self.measurement_tokens)
+            # loss /= len(self.measurement_tokens)
 
         else:  
 

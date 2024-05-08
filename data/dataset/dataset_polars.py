@@ -7,6 +7,7 @@ import sqlite3
 import polars as pl
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pyarrow.dataset as ds
 import pickle
 import numpy as np
 from CPRD.data.dataset.collector import SQLiteDataCollector
@@ -16,8 +17,7 @@ from tqdm import tqdm
 import psutil
 import os
 
-import time
-            
+
 class PolarsDataset:
     r"""
         Combine data streams
@@ -75,33 +75,13 @@ class PolarsDataset:
         logging.info(f"Chunking by unique practice ID with no inclusion conditions")
         practice_ids = self.collector._extract_distinct(table_names=["static_table"],
                                                         identifier_column="PRACTICE_ID",
-                                                        # condition= e.g. WHERE 'pass this here'
+                                                        # condition= e.g. WHERE 'pass this part'
                                                        )
         
-        # Create train/test/val splits 
+        # Create train/test/val splits, each is list of practice_id
         logging.info(f"Creating train/test/val splits using practice_ids")
-        train_practice_ids, test_practice_ids = sk_split(practice_ids, test_size=0.1)       
-        test_practice_ids, val_practice_ids = sk_split(test_practice_ids, test_size=0.5)
-
-        # Get a list of practice_patient_ids for every practice_id used in the training set
-        logging.info(f"Extracting practice_patient_ids for each practice")
-        # Train
-        train_practice_patient_ids = []
-        for practice in tqdm(train_practice_ids, desc="Train".rjust(50), total=len(train_practice_ids)):
-            train_practice_patient_ids.append(self.collector._extract_distinct(["static_table"], "PRACTICE_PATIENT_ID", conditions=[f"PRACTICE_ID = '{practice}'"]))
-        # Test
-        test_practice_patient_ids = []
-        for practice in tqdm(test_practice_ids, desc="Test".rjust(50), total=len(test_practice_ids)):
-            test_practice_patient_ids.append(self.collector._extract_distinct(["static_table"], "PRACTICE_PATIENT_ID", conditions=[f"PRACTICE_ID = '{practice}'"]))
-        # Validation
-        val_practice_patient_ids = []
-        for practice in tqdm(val_practice_ids, desc="Validation".rjust(50), total=len(val_practice_ids)):
-            val_practice_patient_ids.append(self.collector._extract_distinct(["static_table"], "PRACTICE_PATIENT_ID", conditions=[f"PRACTICE_ID = '{practice}'"]))
-
-        # A list for each practice_id, where each is a list of the practice_patient_ids
-        self.train_practice_patient_ids = train_practice_patient_ids
-        self.test_practice_patient_ids = test_practice_patient_ids
-        self.val_practice_patient_ids = val_practice_patient_ids
+        self.train_practice_ids, test_practice_ids = sk_split(practice_ids, test_size=0.1)       
+        self.test_practice_ids, self.val_practice_ids = sk_split(test_practice_ids, test_size=0.5)
     
     def _build_DL_representation(self,
                                  save_path: str,
@@ -143,58 +123,54 @@ class PolarsDataset:
         self._train_test_val_split()
         
         # Collect meta information that is used for tokenization, but also optionally for standardisation        
-        all_train = list(itertools.chain.from_iterable(self.train_practice_patient_ids))
-        # meta_information = self.collector.get_meta_information(practice_patient_ids=all_train,
-        #                                                        diagnoses   = include_diagnoses,
-        #                                                        measurement = include_measurements)
+        # all_train = list(itertools.chain.from_iterable(self.train_practice_ids))
+        meta_information = self.collector.get_meta_information(practice_ids = None, #self.train_practice_ids,
+                                                               diagnoses    = include_diagnoses,
+                                                               measurement  = include_measurements)
+        print(meta_information)
         
         #  Create train/test/val DL Polars datasets
         # Loop over practice IDs
         #    * create the generator that performs a lookup on the database for each practice ID and returns a lazy frame for each table's rows        
         #    * collating the lazy tables into a lazy DL-friendly representation,
-        for split_name, split_ids in zip(["train", "test", "val"], [self.train_practice_patient_ids, 
-                                                                    self.test_practice_patient_ids, 
-                                                                    self.val_practice_patient_ids]):
+        for split_name, split_ids in zip(["train", "test", "val"], [self.train_practice_ids,  self.test_practice_ids,  self.val_practice_ids]):
 
-            # Control chunking, by default we are chunking per practice_id, 
-            #    but we can edit lines below to merge practices for bigger queries, or split to query individuals.
-            # Split IDs to one patient at a time, this reduces memory times
-            # split_ids = [[_i] for _i in list(itertools.chain.from_iterable(split_ids))]
-            # group split_ids 5 practices at a time, this is just to reduce loading times.
-            # chunk_splits = 10
-            # split_ids = [list(itertools.chain.from_iterable(itertools.islice(split_ids,i,i+chunk_splits))) for i in range(0,len(split_ids),chunk_splits)]
-            # print(f"number of practice groups {len(split_ids)}")
-            
+            # Create the generator which we will chunk over
             logging.info(f"Collating {split_name} split into a DL friendly format. Generating over practices IDs")
-            generator = self.collector._lazy_generate_by_distinct(distinct_values=split_ids,
-                                                                  identifier_column="PRACTICE_PATIENT_ID",
+            generator = self.collector._generate_lazy_by_distinct(distinct_values=split_ids,
+                                                                  identifier_column="PRACTICE_ID",
                                                                   include_diagnoses=include_diagnoses,
                                                                   include_measurements=include_measurements)
             
-
-            start = time.time()
             for chunk_name, lazy_table_frames_dict in tqdm(generator, total=len(split_ids)):
-                logging.info(f"collect time {time.time()-start}")
                 
                 # Merge the lazy polars tables provided by the generator into one lazy polars frame
-                start = time.time()
                 lazy_batch = self.collector._collate_lazy_tables(lazy_table_frames_dict, **kwargs)
-                logging.info(f"lazy collate time {time.time()-start}")
 
                 if save_path is not None:
-                    start = time.time()
                     # save splits `hive` style partitioning                # TODO: make directories if they dont already exist
                     # use parquet which is a columnal format               # TODO: is this the best for fast loading? Row format would be faster
                     path: pathlib.Path = f"{save_path}/split={split_name}"    # /{chunk_name}.parquet
 
-                    df = lazy_batch.with_row_count().collect().to_pandas() # include row count so we can lazily filter the in reads
-                    table = pa.Table.from_pandas(df)
+                    df = lazy_batch.collect().to_pandas() # include row count so we can lazily filter the in reads  .with_row_count()
                     
-                    pq.write_to_dataset(table, root_path=path, 
-                                        partition_cols=['COUNTRY', 'HEALTH_AUTH', 'PRACTICE_ID'],
-                                       )
-                    logging.info(f"save time {time.time()-start}")
-                start = time.time()
+                    logging.debug(f'{df.iloc[0]["COUNTRY"]}, {df.iloc[0]["HEALTH_AUTH"]}, {df.iloc[0]["PRACTICE_ID"]}')
+
+                    for df_chunk in [df[i:i+500] for i in range(0, len(df), 500)]:
+
+                        df_chunk = df_chunk.copy()
+                        df_chunk['row_nr'] = np.arange(len(df_chunk))
+
+                        table = pa.Table.from_pandas(df_chunk)
+                        pq.write_to_dataset(table, root_path=path, 
+                                            partition_cols=['COUNTRY', 'HEALTH_AUTH', 'PRACTICE_ID'],
+                                           )
+                        # ds.write_dataset(table, path, 
+                        #                  format="parquet",
+                        #                  partitioning=['COUNTRY', 'HEALTH_AUTH', 'PRACTICE_ID'],
+                        #                  max_rows_per_file=500,
+                        #                  max_rows_per_group=500,
+                        #                    )
 
         self.collector.disconnect()
 

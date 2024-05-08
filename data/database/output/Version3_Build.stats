@@ -1,32 +1,16 @@
 +--------------------------------------------------------------------------+
 | Job on the BlueBEAR cluster:
-| Starting at Wed Mar 27 09:42:57 2024 for gaddcz(836045)
-| Identity jobid 8151616 jobname sbatch
+| Starting at Tue Apr 16 15:43:59 2024 for gaddcz(836045)
+| Identity jobid 8457303 jobname sbatch
 | Running against project subramaa-mum-predict and in partition icelake-gpua100-shared
-| Requested cpu=4,mem=16G,node=1,billing=4,gres/gpu=1 - 07:00:00 walltime
+| Requested cpu=4,mem=16G,node=1,billing=4,gres/gpu=1 - 20:00:00 walltime
 | Assigned to nodes bear-pg0208u03a
 | Command (null)
 | WorkDir /rds/homes/g/gaddcz/ondemand/data/sys/myjobs/projects/default/12
 +--------------------------------------------------------------------------+
 +--------------------------------------------------------------------------+
-| Finished at Wed Mar 27 16:43:00 2024 for gaddcz(836045) on the BlueBEAR Cluster
-| Required (00:23.461 cputime, 12094617K memory used) - 07:00:04 walltime
-| JobState COMPLETING - Reason TimeLimit
-| Exitcode 0:15
-+--------------------------------------------------------------------------+
-+--------------------------------------------------------------------------+
-| Job on the BlueBEAR cluster:
-| Starting at Wed Mar 27 22:10:38 2024 for gaddcz(836045)
-| Identity jobid 8162029 jobname sbatch
-| Running against project subramaa-mum-predict and in partition icelake-gpua100-shared
-| Requested cpu=4,mem=16G,node=1,billing=4,gres/gpu=1 - 20:00:00 walltime
-| Assigned to nodes bear-pg0208u09a
-| Command (null)
-| WorkDir /rds/homes/g/gaddcz/ondemand/data/sys/myjobs/projects/default/12
-+--------------------------------------------------------------------------+
-+--------------------------------------------------------------------------+
-| Finished at Thu Mar 28 07:22:03 2024 for gaddcz(836045) on the BlueBEAR Cluster
-| Required (08:37:42 cputime, 12746448K memory used) - 09:11:25 walltime
+| Finished at Wed Apr 17 04:11:15 2024 for gaddcz(836045) on the BlueBEAR Cluster
+| Required (11:51:45 cputime, 2719905K memory used) - 12:27:16 walltime
 | JobState COMPLETING - Reason None
 | Exitcode 0:0
 +--------------------------------------------------------------------------+

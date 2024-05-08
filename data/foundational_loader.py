@@ -18,6 +18,7 @@ import random
 import logging
 from pathlib import Path
 from tqdm import tqdm
+import pickle
 
 # Testing modules
 from CPRD.data.database import queries
@@ -60,7 +61,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
                 ):
        
         
-        super(FoundationalDataModule, self).__init__()
+        super().__init__()
         
         self.batch_size = batch_size
         self.min_workers = min_workers 
@@ -68,6 +69,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         # Get the DL friendly representation, either by loading or building from scratch.
         polars_dataset = PolarsDataset(path_to_db=path_to_db)
         meta_information = polars_dataset.fit(path=path_to_db + "polars/", load=load, **kwargs)
+        self.meta_information = meta_information
         logging.debug(meta_information)
     
         # Create tokenizer, and build based on vocabulary from training set. 
@@ -78,11 +80,23 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         
         # Train/test/validation GenerativeDatasets
         parquet_path = path_to_db + "polars/"
-        dataset_kwargs = {"max_seq_length": max_seq_length, "tokenizer": self.tokenizer, "meta_information": meta_information}
-        self.train_set = FoundationalDataset(parquet_path + "split=train/", **dataset_kwargs)
-        self.test_set = FoundationalDataset(parquet_path + "split=test/", **dataset_kwargs)
-        self.val_set = FoundationalDataset(parquet_path + "split=val/", **dataset_kwargs)
-    
+        dataset_kwargs = {"max_seq_length": max_seq_length, "standardise_values": True, "meta_information": meta_information, "load": load}
+        self.train_set = FoundationalDataset(parquet_path, "train", tokenizer=self.tokenizer, **dataset_kwargs)
+        self.test_set = FoundationalDataset(parquet_path, "test", tokenizer=self.tokenizer, **dataset_kwargs)
+        self.val_set = FoundationalDataset(parquet_path, "val", tokenizer=self.tokenizer, **dataset_kwargs)
+
+    def standardise(self, event, value):
+        _row = self.meta_information["measurement_tables"][self.meta_information["measurement_tables"].event==event]
+        _lqr = _row["approx_lqr"].to_numpy()[0]
+        _uqr = _row["approx_uqr"].to_numpy()[0]
+        return float(( value - _lqr ) /  (_uqr - _lqr))
+        
+    def unstandardise(self, event, value):
+        _row = self.meta_information["measurement_tables"][self.meta_information["measurement_tables"].event==event]
+        _lqr = _row["approx_lqr"].to_numpy()[0]
+        _uqr = _row["approx_uqr"].to_numpy()[0]
+        return float(( value * (_uqr - _lqr) ) + _lqr)
+        
     def decode(self, sequence:list[int]):
         return self.train_set.tokenizer.decode(sequence)
     
@@ -109,9 +123,6 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
             "tokens": pad_sequence(batch_dict["tokens"], padding_value=0).T,
             "ages": pad_sequence(batch_dict["ages"]).T,
             "values": pad_sequence(batch_dict["values"], padding_value=torch.nan).T,
-            # "target_tokens": pad_sequence(batch_dict["target_tokens"], padding_value=0).T,
-            # "target_ages": pad_sequence(batch_dict["target_ages"]).T,
-            # "target_values": pad_sequence(batch_dict["target_values"], padding_value=torch.nan).T,
             "attention_mask": pad_sequence(batch_dict["attention_mask"]).T
             }
         return worker_batch
@@ -152,93 +163,65 @@ class FoundationalDataset(Dataset):
     """
     def __init__(self,
                  parquet_path: str, 
+                 split: str,
                  tokenizer:TokenizerBase,
+                 load: bool=False, 
                  max_seq_length:int = 256,
                  standardise_values:bool = True,
                  meta_information:Optional[dict] = None
                 ):
         super().__init__()
-
-        logging.info("Creating dataset")
         
         self.parquet_path = parquet_path
+        self.sub_dir = f"split={split}/"
         self.tokenizer = tokenizer
         self.max_seq_length = max_seq_length
         self.standardise_values = standardise_values
         self.meta_information = meta_information
+        self.meta_measurement = meta_information["measurement_tables"] if meta_information is not None else None
+        if self.standardise_values is True:
+            assert self.meta_information is not None
+
+        logging.info(f"Creating {self.sub_dir} dataset")
+        logging.debug(f"\t Using root {self.parquet_path}")
+        
+        self.dataset = pq.ParquetDataset(parquet_path + self.sub_dir, validate_schema=False)
 
         # create a hash map that lets us look up the correct parquet in O(1)
-        # logging.info("Creating hash map")
-        # self.file_row_map = self._create_file_row_map()
-
-        # Get all files at specified path,
-        #    calculate how many samples are in each file for faster reading
-        pathlist = Path(parquet_path).rglob('*.parquet')
-        self.parquet_files = []
-        self.row_group_counts = []
-        for file in tqdm(pathlist, desc="Calculating chunk index splits "):
-            df = pq.read_table(file).to_pandas()
-            self.parquet_files.append(file)            
-            self.row_group_counts.append(df.shape[0])
+        #    TODO: update to use fragments API        
+        if load is True:
+            try:
+                logging.info(f"\t Loading {self.sub_dir} hash map for parquet")
+                with open(self.parquet_path + f'lookup_hashmap_{split}.pickle', 'rb') as handle:
+                   self.file_row_count_dict = pickle.load(handle)
+            except OSError as e:
+                raise FileNotFoundError
+        else:
+            logging.info(f"\t Creating {self.sub_dir} hash map from parquet")
+            logging.debug(f"\t\t saving to {self.parquet_path}")     
+            self.file_row_count_dict = self._get_file_row_counts(self.parquet_path + f'split={split}/')
+            with open(self.parquet_path + f'lookup_hashmap_{split}.pickle', 'wb') as handle:
+                pickle.dump(self.file_row_count_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
-    def _create_file_row_map(self):
-        """
-        Create a hash map of file paths and row group offsets.
-
-        Returns:
-            dict: A hash map where keys are file paths and values are lists of row group offsets.
-        """
-        pathlist = Path(self.parquet_path).rglob('*.parquet')
-        file_row_map = {}                                                         # Create an empty hash map to store file paths and row group offsets
-        total_rows = 0                                                            # Initialize total_rows to track cumulative row counts across all files
-        
-         # Iterate over each file in the root directory
-        for file_path in pathlist:
-            
-            parquet_file = pq.ParquetFile(file_path)                              # Open the Parquet file
-            num_row_groups = parquet_file.metadata.num_row_groups                 # Get the number of row groups in the Parquet file
-            row_group_offsets = [total_rows] * num_row_groups                     # Create a list of row group offsets for the current file    
-            file_row_map[file_path] = row_group_offsets                           # Store the file path and row group offsets in the hash map
-            total_rows += parquet_file.metadata.num_rows                          # Update total_rows by adding the number of rows in the current file
-        
-        return file_row_map                                                       # return populated hash map
+        # Pre-calculate total number of samples (patients) on initialisation        
+        self.total_samples = sum(self.file_row_count_dict.values())
+        logging.info(f"\t Hash map created for {self.sub_dir} with {self.total_samples:,} samples")
         
     def __len__(self):
         """ 
             Get the total number of rows across all Parquet files.
         """
-        return sum(self.row_group_counts)
+        return self.total_samples
+    
+    def _get_file_row_counts(self, parquet_path):
 
-    def _get_file_and_row_group(self, idx):
-        """
-        Get the file path and row group index corresponding to the given index.
-
-        Args:
-            idx (int): Index of the sample.
-
-        Returns:
-            tuple: A tuple containing the file path and row group index.
-        """    
-        # Iterate over the hash map entries (file paths and row group offsets)
-        for file_path, row_group_offsets in self.file_row_map.items():
-             # If the index is less than the cumulative row count for the current file
-            if idx < row_group_offsets[-1]:
-                # Find the row group index corresponding to the index within the current file
-                row_group_idx = next(i for i, offset in enumerate(row_group_offsets) if idx < offset)
-
-                # Open the Parquet file
-                parquet_file = pq.ParquetFile(file_path)
-                
-                # Read the specified row group from the Parquet file
-                table = parquet_file.read_row_group(row_group_idx)
-                
-                # Convert the row group to a Pandas DataFrame and get the first row
-                row_df = table.to_pandas().loc[0]
-
-                return row_df
-
-        # If the index exceeds the total number of samples, raise an IndexError
-        raise IndexError(f"Index {idx} out of range")
+        # Get all files at specified path, and calculate how many samples are in each file for faster reading during __getitem__
+        file_row_counts = {}
+        for file in tqdm(Path(parquet_path).rglob('*.parquet'), 
+                         desc="Getting file row counts. This allows the creation of an index to file map, increasing read efficiency"):
+            file_row_counts[file] = pq.ParquetFile(file).metadata.num_rows   # update hash map
+    
+        return file_row_counts
     
     def __getitem__(self, idx):
         r"""
@@ -246,46 +229,77 @@ class FoundationalDataset(Dataset):
             
             tokenized and padded event stream and static variables
         """
+        
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        # Determine which file and row to read based on the index
-        file_idx = 0
-        while idx >= self.row_group_counts[file_idx]:
-            idx -= self.row_group_counts[file_idx]
-            file_idx += 1
+        # Determine which file and row the idx corresponds to.
+        #    TODO: replace with a better sorting algorithm. Can use the fact that most files have a maximum row number to estimate where to start search. Regardless, this won't be a bottleneck 
+        for file in self.file_row_count_dict.keys():
+            if idx >= self.file_row_count_dict[file]:
+                idx -= self.file_row_count_dict[file]
+            else:
+                break
+            
         # Read the corresponding row from the Parquet file        
-        row_df = pq.read_table(self.parquet_files[file_idx], filters=[('row_nr','=', idx)]).to_pandas().loc[0]
+        row_df = pq.read_table(file, filters=[('row_nr','=', idx)]).to_pandas().loc[0]
         
         # Unpack rows, and optionally standardise values
         sequence_tokens, sequence_values, sequence_ages = [], [], []
-        standardisation_keys = self.meta_information["measurement_tables"].event.tolist() if self.meta_information is not None else None
         for next_event, next_value, next_age in zip(row_df["EVENT"], row_df["VALUE"], row_df["DAYS_SINCE_BIRTH"]):
 
+            ## TOKENS
+            ##########
             # e.g. ["bmi", "DEPRESSION", "bmi", ...] 
             sequence_tokens.append(next_event)
 
-            # e.g.  [23.3, np.nan, 27.7, ...] if not standardising, else [0.12, np.nan, 0.23, ...]
-            if next_value is not None:
-                if self.standardise_values:
-                    assert self.meta_information is not None
-                    if next_event in standardisation_keys:
-                        event_meta = self.meta_information["measurement_tables"][self.meta_information["measurement_tables"]["event"] == next_event]
-                        next_value = (next_value - event_meta["bias"]) / event_meta["scale"]
-                next_value = float(next_value)
-            else:
+            ## VALUES
+            #########
+            # Manual removal of some quirky values from DExtER
+            if next_event in ["Ex_smoker_84", "Never_smoked_tobacco_85"]:
                 next_value = np.nan
-            sequence_values.append(next_value)
+            
+            # e.g.  [23.3, np.nan, 27.7, ...] if not standardising, else [0.12, np.nan, 0.23, ...]
+            if next_value is None:
+                # If the next token does not have a value then we just set it as np.nan
+                next_value = np.nan
+            else:
+                # Else we can continue to process it
+                event_meta = self.meta_measurement[self.meta_measurement.event == next_event]   
+                if next_event in self.meta_measurement.event.tolist():
+                    lqr, uqr = event_meta.approx_lqr.to_numpy()[0], event_meta.approx_uqr.to_numpy()[0]
+                else:
+                    lqr, uqr = -np.inf, np.inf
+                    
+                # Define outlier boundaries based on quantiles
+                if next_value < lqr or next_value > uqr:
+                    # If it does have a value, but this is an outlier, we set it as np.nan which is the same way we record missing values above
+                    next_value = np.nan
+                else:
+                    if self.standardise_values and next_event in self.meta_measurement.event.tolist():
+                        # Else we can optionally continue by standardising it
+                        next_value = (next_value -lqr) / (uqr - lqr)
 
+                        # if lqr < 300 or upr > 300:
+                        #     print(f"{next_event}: {lqr} - {uqr}: \t\t{next_value} -> {new_value}")
+
+            # # Testing for tabular models
+            # if next_value is np.nan:
+            #     print(f"{next_event}: \t\t{next_value}")
+                            
+            sequence_values.append(float(next_value))
+
+            ## AGES
+            ########
             # e.g. [6661, 7569, 7866, ...]
-            sequence_ages.append(int(next_age))
+            sequence_ages.append(next_age)
 
-            # print(f"{next_event}, {next_value}, {next_age}")
+            # print(f"\n\n {next_event}, {next_value}, {next_age}")
         
         if not self.tokenizer.is_tabular:
-            # Merge together events and their values. When value is None, do not include it. 
-            # E.g. events = ["bmi", "DEPRESSION", "bmi"] and values = [23.3, None, 27.7] --> merge to --> "bmi", "2", "3", ".", "3", "DEPRESSION", "bmi", "2", "7", ".", "7""
-            #      ages   = [6661, 7569, 7866] --> merge to --> [6661,6661,6661,6661,6661,7569, ...]
+            # Merge together events and their values (and when value is None, do not include it)
+            #     E.g. events = ["bmi", "DEPRESSION", "bmi"] and values = [23.3, None, 27.7] --> merge to --> "bmi", "2", "3", ".", "3", "DEPRESSION", "bmi", "2", "7", ".", "7""
+            #          ages   = [6661, 7569, 7866] --> merge to --> [6661,6661,6661,6661,6661,7569, ...]
             sequence_tokens = [[_event] + wrap(str(_value), 1) if _value is not np.nan else [_event] for _event, _value in zip(sequence_tokens, sequence_values)]
             sequence_tokens = sum(sequence_tokens, [])        # concat list of lists            
             sequence_ages = [[_age] + [_age for _ in range(len(str(_value)))] if _value is not np.nan else [_age] for _age, _value in zip(sequence_ages, sequence_values)]
@@ -301,19 +315,10 @@ class FoundationalDataset(Dataset):
             encoded_tokens = encoded_tokens[start_pos:start_pos+self.max_seq_length]            
             sequence_ages = sequence_ages[start_pos:start_pos+self.max_seq_length]
             sequence_values = sequence_values[start_pos:start_pos+self.max_seq_length]
-            # sequence_tokens = sequence_tokens[start_pos:start_pos+self.max_seq_length]
-        # print(f"{sequence_tokens} \n\t-> {encoded_tokens} \n\t-> {self.tokenizer.decode(encoded_tokens)}")
-        
-        # stagger and split for input and targets
-        encoded_tokens = torch.tensor(encoded_tokens)    # [:-1]
-        sequence_ages = torch.tensor(sequence_ages)
-        sequence_values = torch.tensor(sequence_values)
 
-        return {"identifier": row_df["PRACTICE_PATIENT_ID"],
-                #"sex": row_df["SEX"],
-                #"ethnicity": row_df["ETHNICITY"],
-                #"year_of_birth": row_df["YEAR_OF_BIRTH"],
-                "tokens": encoded_tokens,
-                "ages": sequence_ages,
-                "values": sequence_values,
+        # print([f"{_event} {_value}" for _event, _value in zip(sequence_tokens, sequence_values)])
+        
+        return {"tokens": torch.tensor(encoded_tokens),
+                "ages": torch.tensor(sequence_ages),
+                "values": torch.tensor(sequence_values),
                }

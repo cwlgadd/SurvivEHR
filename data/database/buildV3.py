@@ -43,9 +43,9 @@ if __name__ == "__main__":
     diagnosis = Diagnoses(PATH_TO_DB, PATH_TO_DIAGNOSIS, load=load)
     measurements = Measurements(PATH_TO_DB, PATH_TO_MEASUREMENTS, load=load)
 
-    for table in [static, diagnosis, measurements]:
-        if load == False:
-            table.build_table(verbose=4, unzip=True, chunksize=1e6)
+    for table in [static, diagnosis, measurements]:  # 
+        # if load == False:
+        #     table.build_table(verbose=4, unzip=True, chunksize=1e6)
         print(table)
     
     

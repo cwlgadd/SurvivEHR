@@ -18,10 +18,12 @@ class Diagnoses():
             # Create table                     
             self.connect()
             logging.info(f"Creating diagnosis_table")
-            self.cursor.execute("""CREATE TABLE diagnosis_table (PRACTICE_PATIENT_ID str,
+            self.cursor.execute("""CREATE TABLE diagnosis_table (PRACTICE_ID integer,
+                                                                 PATIENT_ID integer,
                                                                  EVENT text,
                                                                  DATE text
                                                                  )""")
+            self.build_table()
             self.disconnect()
 
     def __str__(self):
@@ -60,7 +62,7 @@ class Diagnoses():
     def _make_index(self):
         # Create index
         logging.info("Creating indexes on diagnosis_table")
-        query = "CREATE INDEX IF NOT EXISTS diagnosis_index ON diagnosis_table (PRACTICE_PATIENT_ID);"
+        query = "CREATE INDEX IF NOT EXISTS diagnosis_index ON diagnosis_table (PRACTICE_ID);"
         logging.debug(query)
         self.cursor.execute(query)
         self.connection.commit()
@@ -73,7 +75,8 @@ class Diagnoses():
         
     def _add_file_to_table(self, fname, chunksize=200000, verbose=0, **kwargs):
         
-        generator = pd.read_csv(fname, chunksize=chunksize, iterator=True, encoding='utf-8', low_memory=False)
+        generator = pd.read_csv(fname, chunksize=chunksize, iterator=True, encoding='utf-8', low_memory=False,
+                               dtype={'PRACTICE_PATIENT_ID': 'str'})
         # low_memory=False just silences an error, TODO: add dtypes
         for df in tqdm(generator, desc="Building diagnosis table"):
             
@@ -99,18 +102,20 @@ class Diagnoses():
     
             # Rename and subset dataframe
             df = df.rename(columns=rename_dict)
-            df_conditions = df[["PRACTICE_PATIENT_ID"] + condition_names]
+
+            # Add practice ID column
+            df['PRACTICE_ID'] = df['PRACTICE_PATIENT_ID'].str.split('_').str[0].str.lstrip('p')
+            df['PATIENT_ID'] = df['PRACTICE_PATIENT_ID'].str.split('_').str[1]
             
-            # Remove any un-interesting or censored conditions
-            # columns_to_drop = ['']
-            # for col in df.columns:
-            #     if col in columns_to_drop:
-            #         df = df.drop(col, axis=1)
-    
-            for condition in df_conditions.columns[1:]:
+            #### Conditions            
+            ###############
+            df_conditions = df[["PRACTICE_ID", "PATIENT_ID"] + condition_names]
+            # print(df_conditions.head())
+   
+            for condition in df_conditions.columns[2:]:
                 
                 # Subset to the ID and condition
-                df_one_condition = df_conditions[["PRACTICE_PATIENT_ID", condition]].dropna()
+                df_one_condition = df_conditions[["PRACTICE_ID", "PATIENT_ID", condition]].dropna()
                 
                 # Add condition as new column
                 df_one_condition["condition"] = condition
@@ -119,26 +124,18 @@ class Diagnoses():
                 df_one_condition = df_one_condition.rename(columns={condition: "age_at_diagnosis"})   
                 
                 # and order them as we want to see them in the table
-                df_one_condition = df_one_condition[["PRACTICE_PATIENT_ID", "condition", "age_at_diagnosis"]].copy()
-    
-                # split practice and patient id
-                # df_one_condition[['PRACTICE_ID', 'PATIENT_ID']] = df_one_condition['PRACTICE_PATIENT_ID'].str.split('_', expand=True).copy()
-    
-                # # remove p at the start so we can store as int
-                # df_one_condition['PRACTICE_ID'] = df_one_condition['PRACTICE_ID'].apply(lambda x: x.replace('p', ''))
-    
-                # Subset to the ID and event details
-                # df_one_condition = df_one_condition[["PRACTICE_ID", "PATIENT_ID", "condition", "age_at_diagnosis"]].copy()
-                
+                df_one_condition = df_one_condition[["PRACTICE_ID", "PATIENT_ID", "condition", "age_at_diagnosis"]].copy()
+                # print(df_one_condition.head())
+
                 # Pull records from df to update SQLite .db with
                 #   records or rows in a list of tuples [(ID, CONDITION, AGE_AT_DIAGNOSIS),]
                 records = df_one_condition.to_records(index=False,
-                                                      column_dtypes={
-                                                          # "PRACTICE_ID": "int64",
-                                                          # "PATIENT_ID": "int64",
-                                                          }
+                                                      # column_dtypes={
+                                                      #     "PRACTICE_ID": "int64",
+                                                      #     "PATIENT_ID": "int64",
+                                                      #     }
                                                       )
-                self.cursor.executemany('INSERT INTO diagnosis_table VALUES(?,?,?);', records);           # Add rows to database
+                self.cursor.executemany('INSERT INTO diagnosis_table VALUES(?,?,?,?);', records);           # Add rows to database
             
                 if verbose > 1:
                     print(f'Inserted {self.cursor.rowcount} {condition} records to the table.')
@@ -147,7 +144,7 @@ class Diagnoses():
             # For death
             #####################
             # Subset to the ID and death
-            df_death = df[["PRACTICE_PATIENT_ID", "DEATH_DATE", "YEAR_OF_BIRTH"]].dropna()
+            df_death = df[["PRACTICE_ID", "PATIENT_ID", "DEATH_DATE", "YEAR_OF_BIRTH"]].dropna()
             
             # add condition column
             df_death["condition"] = "DEATH"
@@ -160,19 +157,21 @@ class Diagnoses():
     
             # # Subset to the IDs and event details
             # df_death = df_death[["PRACTICE_ID", "PATIENT_ID", "condition", "DEATH_DATE"]]
-            df_death = df_death[["PRACTICE_PATIENT_ID", "condition", "DEATH_DATE"]]
-            
+            df_death = df_death[["PRACTICE_ID", "PATIENT_ID", "condition", "DEATH_DATE"]]
+            # print(df_death.head())
+
             # Pull records from df to update SQLite .db with
             #   records or rows in a list of tuples [(ID, CONDITION, AGE_AT_DIAGNOSIS),]
             records = df_death.to_records(index=False,
-                                          column_dtypes={
-                                              # "PRACTICE_ID": "int64",
-                                              # "PATIENT_ID": "int64",
-                                              }
+                                          # column_dtypes={
+                                          #     "PRACTICE_ID": "int64",
+                                          #     "PATIENT_ID": "int64",
+                                          #     }
                                           )
     
-            self.cursor.executemany('INSERT INTO diagnosis_table VALUES(?,?,?);', records);           # Add rows to database
+            self.cursor.executemany('INSERT INTO diagnosis_table VALUES(?,?,?,?);', records);           # Add rows to database
 
             
             if verbose > 1:
                 print('Inserted', self.cursor.rowcount, 'DEATH records to the table.')
+
