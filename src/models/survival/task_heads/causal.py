@@ -44,11 +44,12 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         #         torch.nn.init.normal_(p, mean=0.0, std=0.02/math.sqrt(2 * config.n_layer))
 
     def forward(self, 
-                tokens: torch.tensor,
-                ages: torch.tensor,
-                values: torch.tensor,
-                attention_mask: Optional[torch.tensor] = None,
-                is_generation: bool = False
+                tokens:                 torch.tensor,
+                ages:                   torch.tensor,
+                values:                 torch.tensor,
+                static_covariates:      Optional[torch.tensor] = None
+                attention_mask:         Optional[torch.tensor] = None,
+                is_generation:          bool = False
                 ):
         r"""
         ARGS:

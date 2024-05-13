@@ -3,62 +3,76 @@ from torch import nn
 import math
 from typing import Optional
 import logging
-
+from CPRD.src.modules.data_embeddings.dynamic_embedding_layer import JointDynamicEmbeddingLayer, SplitDynamicEmbeddingLayer
 
 class DataEmbeddingLayer(torch.nn.Module):
-    r"""
+    r""" This class embeds a PyTorch Batch into a fixed size embedding.
     """
     def __init__(
         self,
-        vocab_size: int,
-        embed_dim: int,
-        # value_embed_dim: Optional[int] = None
+        vocab_size:             int,
+        embed_dim:              int,
+        static_weight:          float= 1 / 2,
+        dynamic_weight:         float= 1 / 2,
+        **kwargs
     ):
 
         super().__init__()
         self.vocab_size = vocab_size
         self.embed_dim = embed_dim
-        # self.v_embed_dim = value_embed_dim if value_embed_dim is not None else embed_dim
 
-        # Split case        
-        self.token_embed_layer = nn.Embedding(self.vocab_size, self.embed_dim, padding_idx=0)
-        #  note, we don't need embedding bag as we do not need to model groups of events. 
-        #        However, it is useful to use for the numerical embedding for the per_sample_weights 
-        #        in order to relatively weight different values. Similarly mode is only to allow for
-        #        using sample weights functionality.
-        self.value_embed_layer =  nn.EmbeddingBag(self.vocab_size, self.embed_dim, mode="sum", padding_idx=0)
+        # 
+        self.static_proj = nn.Linear(16, self.embed_dim)
+
         
+        # self.dynamic_embedding_layer = JointDynamicEmbeddingLayer(vocab_size=vocab_size,
+        #                                                           embed_dim=embed_dim,
+        #                                                           **kwargs)
+        self.dynamic_embedding_layer = SplitDynamicEmbeddingLayer(vocab_size=vocab_size,
+                                                                  embed_dim=embed_dim,
+                                                                  cat_event_embed_dim=embed_dim,
+                                                                  num_value_embed_dim=embed_dim,
+                                                                  **kwargs)
 
-    def _split_embed(
+    def _static_embedding(
+        self,
+        covariates: torch.Tensor                     # bsz, num_covariates
+    ):
+        batch_size, num_covariates = covariates.shape
+
+        return self.static_proj(covariates)
+    
+    def _dynamic_embedding(
         self, 
         tokens: torch.Tensor,                        # bsz, seq_len
         values: Optional[torch.Tensor] = None        # bsz, seq_len
     ):
+        """ Return an embedding of the token indices, weighted by values if present.
+
+            Masked values are indicated by np.nan or torch.nan elements
         """
-        """
-        tok_emb = self.token_embed_layer(tokens)              # shape: (batch_size, sequence_length, embed_dim)
-        
-        if values is None:
-            # logging.info(f"X returning without values {values}")
-            return tok_emb
+        assert tokens.shape == values.shape
+        batch_size, sequence_length = tokens.shape
 
-        # For tokens with no accompanying value, set to padding indx, and so they do not contribute to the gradient
-        valued_tokens = torch.where(torch.isnan(values), 0, tokens)
-        values = torch.where(torch.isnan(values), 0, values)
+        # Flatten sequence
+        tokens = tokens.reshape(-1)
+        values = values if values is None else values.reshape(-1)
 
-        val_emb = self.value_embed_layer(valued_tokens.reshape((-1,1)), per_sample_weights=values.reshape((-1,1)))
-        val_emb = val_emb.reshape(tok_emb.shape)
-
-        return tok_emb + val_emb  
+        # Return embedding
+        return self.dynamic_embedding_layer(tokens, values).view(batch_size, sequence_length, self.embed_dim)
 
     def forward(
         self,
-        tokens: torch.Tensor,                   # bsz, seq_len
-        values: Optional[torch.Tensor] = None,         # bsz, seq_len
+        tokens:                      torch.Tensor,                          # bsz, seq_len
+        values:                      Optional[torch.Tensor] = None,         # bsz, seq_len
+        covariates:                  Optional[torch.Tensor] = None,         # bsz, num_covariates
     ):
-        """
-        """
+        
+        embedded = self._dynamic_embedding(tokens=tokens, values=values)      # shape: (batch_size, sequence_length, embed_dim)
 
-        embedded = self._split_embed(tokens=tokens, values=values)      # shape: (batch_size, sequence_length, embed_dim)
+        if covariates is not None:
+            static = self._static_embedding(covariates=covariates)
+            print(static.shape)
+            embedded += static
         
         return embedded

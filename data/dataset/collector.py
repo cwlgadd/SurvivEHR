@@ -285,6 +285,7 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
 
     def get_meta_information(self,
                              practice_ids:          Optional[list] = None,
+                             static:                bool = True,
                              diagnoses:             bool = True,
                              measurement:           bool = True,
                             ) -> dict:
@@ -299,6 +300,18 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         if practice_ids is not None:
             raise NotImplementedError
             # condition = f"PRACTICE_ID IN ({",".join([f"'{dv}'" for dv in practice_ids])});" 
+
+        if static is True:
+            logging.info("\t Static meta information")
+            static_meta = {}
+            for categorical_covariate in ["SEX", "IMD", "ETHNICITY"]:                
+                result = self._extract_AGG("static_table", identifier_column=categorical_covariate, aggregations="COUNT(*)")
+                category, counts = zip(*result)
+                static_meta[categorical_covariate] = pd.DataFrame({"category": category,
+                                                                   "count": [i for i in counts],
+                                                                   })
+            meta_information["static_table"] = static_meta
+            logging.debug(f"static_meta: \n{static_meta}")
         
         if diagnoses is True:
             logging.info("\t Diagnosis meta information")

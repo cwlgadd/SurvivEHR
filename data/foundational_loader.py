@@ -1,4 +1,5 @@
 from sklearn.model_selection import train_test_split as sk_split
+from sklearn.preprocessing import OneHotEncoder
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
@@ -120,11 +121,13 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         batch_dict["attention_mask"] = [torch.ones_like(d) for d in batch_dict["tokens"]]
         
         worker_batch = {
+            "static_covariates": pad_sequence(batch_dict["static_covariates"], padding_value=0),   # not actually padded, will only ever see fixed length sequences
             "tokens": pad_sequence(batch_dict["tokens"], padding_value=0).T,
             "ages": pad_sequence(batch_dict["ages"]).T,
             "values": pad_sequence(batch_dict["values"], padding_value=torch.nan).T,
             "attention_mask": pad_sequence(batch_dict["attention_mask"]).T
             }
+
         return worker_batch
 
     def train_dataloader(self):
@@ -206,6 +209,20 @@ class FoundationalDataset(Dataset):
         # Pre-calculate total number of samples (patients) on initialisation        
         self.total_samples = sum(self.file_row_count_dict.values())
         logging.info(f"\t Hash map created for {self.sub_dir} with {self.total_samples:,} samples")
+
+        # Create one-hot encoder map for static categorical variables.
+        #   Note we use one hot even when the data is ordinal (e.g. with IMD deprivation score) so we can include the predict with missing data at inference time
+        self.static_1hot = {}
+        for _key in self.meta_information["static_table"].keys():
+            encoder = OneHotEncoder(handle_unknown='error')
+            encoder.fit([[cat] for cat in self.meta_information["static_table"][_key]["category"]])
+            self.static_1hot[_key] = encoder
+        #     print(encoder.categories_)
+        # print(self.static_1hot)
+        # print( self.static_1hot["SEX"].transform(np.array([["M"]], dtype=object)).toarray() )
+        # print( self.static_1hot["ETHNICITY"].transform(np.array([["WHITE"]], dtype=object)).toarray() )
+        # print( self.static_1hot["IMD"].transform(np.array([[4]], dtype=object)).toarray() )
+        # print( self.static_1hot["IMD"].transform(np.array([[4.0]], dtype=object)).toarray() )
         
     def __len__(self):
         """ 
@@ -243,10 +260,10 @@ class FoundationalDataset(Dataset):
             
         # Read the corresponding row from the Parquet file        
         row_df = pq.read_table(file, filters=[('row_nr','=', idx)]).to_pandas().loc[0]
-        print(row_df)
 
         # Static variables
         ##################
+        static_covariates = self._parquet_row_to_static_covariates(row_df)
 
         # Dynamic variables
         ##################
@@ -283,8 +300,12 @@ class FoundationalDataset(Dataset):
                     next_value = np.nan
                 else:
                     if self.standardise_values and next_event in self.meta_measurement.event.tolist():
-                        # Else we can optionally continue by standardising it
+                        # Else we can optionally continue by standardising it to [0,1]
                         next_value = (next_value -lqr) / (uqr - lqr)
+
+                        # But if we use a joint data embedding we will be scaling token embeddings by the value, and so we 
+                        # instead we scale to [-0.5,0.5], so the average token is unit scale
+                        next_value = next_value - 0.5 
 
                         # if lqr < 300 or upr > 300:
                         #     print(f"{next_event}: {lqr} - {uqr}: \t\t{next_value} -> {new_value}")
@@ -324,7 +345,36 @@ class FoundationalDataset(Dataset):
 
         # print([f"{_event} {_value}" for _event, _value in zip(sequence_tokens, sequence_values)])
         
-        return {"tokens": torch.tensor(encoded_tokens),
+        return {"static_covariates": torch.tensor(static_covariates),
+                "tokens": torch.tensor(encoded_tokens),
                 "ages": torch.tensor(sequence_ages),
                 "values": torch.tensor(sequence_values),
                }
+
+    def _parquet_row_to_static_covariates(self, row_df):
+        """ From the row loaded from a parquet file, get the encoded static variables. For example, one hot encodings where applicable
+        """
+
+        covariates = []
+
+        # one-hot covariates
+        for _key in self.meta_information["static_table"].keys():
+
+            # Dummy variable warning 
+            #    Currently we include a third category for gender (I), which (TODO: double check this..) as an intersex gender. 
+            #    If we drop this we need to be careful of dummy variables as SEX becomes binary.
+            X_c = np.array([[row_df[_key]]], dtype=object)
+            Xt_c =  self.static_1hot[_key].transform(X_c).toarray()
+            covariates.append(Xt_c)
+
+        # continuous
+        # Year-of-birth
+        yob_lower, yob_upper = 1900, 2024
+        yob_standardised = (row_df["YEAR_OF_BIRTH"].year - yob_lower ) / (yob_upper - yob_lower)
+        covariates.append(np.asarray(yob_standardised).reshape((1,-1)))
+
+        covariates = np.hstack(covariates)
+        # print(covariates)
+        # print(covariates.shape)
+
+        return covariates

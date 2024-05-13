@@ -84,11 +84,12 @@ class PolarsDataset:
         self.test_practice_ids, self.val_practice_ids = sk_split(test_practice_ids, test_size=0.5)
     
     def _build_DL_representation(self,
-                                 save_path: str,
-                                 include_measurements: bool = True,
-                                 include_diagnoses: bool = True,
+                                 save_path:               str,
+                                 include_static:          bool = True,
+                                 include_measurements:    bool = True,
+                                 include_diagnoses:       bool = True,
                                  preprocess_measurements: bool = False,
-                                 inclusion_conditions: Optional[str] = False,
+                                 inclusion_conditions:    Optional[str] = False,
                                  **kwargs,
                                 ) -> pl.LazyFrame:
         r"""
@@ -107,8 +108,10 @@ class PolarsDataset:
         # Collect meta information that is used for tokenization, but also optionally for standardisation        
         # all_train = list(itertools.chain.from_iterable(self.train_practice_ids))
         meta_information = self.collector.get_meta_information(practice_ids = None, #self.train_practice_ids,
+                                                               static       = include_static,
                                                                diagnoses    = include_diagnoses,
-                                                               measurement  = include_measurements)
+                                                               measurement  = include_measurements
+                                                              )
         logging.debug(meta_information)
         
         #  Create train/test/val DL Polars datasets
