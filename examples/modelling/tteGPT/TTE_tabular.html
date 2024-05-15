@@ -14594,6 +14594,31 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Added path &#39;/rds/homes/g/gaddcz/Projects/CPRD/virtual-env-icelake/lib/python3.10/site-packages&#39; at start of search paths.
+env: SQLITE_TMPDIR=/rds/projects/g/gokhalkm-optimal/DataforCharles
+env: TMPDIR=/rds/projects/g/gokhalkm-optimal/DataforCharles
+/rds/projects/g/gokhalkm-optimal/DataforCharles
+/rds/projects/g/gokhalkm-optimal/DataforCharles
+
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
 <pre>cuda
 /rds/homes/g/gaddcz/Projects/CPRD/examples/modelling/tteGPT
 </pre>
@@ -14637,7 +14662,18 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>INFO:root:Building polars dataset
+<pre>INFO:root:Loading Polars dataset from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/
+INFO:root:Using tokenizer tabular
+INFO:root:Tokenzier created based on 3584.43M tokens
+INFO:root:Creating split=train/ dataset
+INFO:root:	 Loading split=train/ hash map for parquet
+INFO:root:	 Hash map created for split=train/ with 22,912,046 samples
+INFO:root:Creating split=test/ dataset
+INFO:root:	 Loading split=test/ hash map for parquet
+INFO:root:	 Hash map created for split=test/ with 1,207,449 samples
+INFO:root:Creating split=val/ dataset
+INFO:root:	 Loading split=val/ hash map for parquet
+INFO:root:	 Hash map created for split=val/ with 1,226,576 samples
 </pre>
 </div>
 </div>
@@ -14645,31 +14681,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Using all available 129717 samples
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>INFO:root:Using measurements
-INFO:root:Using test/measurement standardisation method: normalise
-INFO:root:Removing measurement and test outliers. Using three deviations from mean as cutoff
-INFO:root:Using diagnoses
-INFO:root:Dropping samples with no dynamic events
-INFO:root:Using tabular tokenizer
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>107683 training samples
-5983 validation samples
-5982 test samples
-90 vocab elements
+<pre>184 vocab elements
 </pre>
 </div>
 </div>
@@ -14684,66 +14696,7 @@ INFO:root:Using tabular tokenizer
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Standardisation">Standardisation<a class="anchor-link" href="#Standardisation">&#182;</a></h2><p>This was performed automatically across measurements and tests in the dataloader. The standardisation statistics (bias and scale respectively) are given in the dictionary object.</p>
-<p>We define two mappings to simplify notation later</p>
-
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
-
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-
-
-<div class="jp-RenderedText jp-OutputArea-output " data-mime-type="text/plain">
-<pre>{&#39;calculated_LDL_cholesterol_level&#39;: (2.5891371173802233, 1.0358897687206567),
- &#39;calcium_adjusted_level&#39;: (2.315393830170679, 0.10855075164585075),
- &#39;bmi&#39;: (29.629965163503474, 7.013281083178253),
- &#39;blood_urea&#39;: (6.702299445123703, 4.281261339020057),
- &#39;serum_level&#39;: (27.19654609350041, 20.584990688686364),
- &#39;aspartate_transam&#39;: (26.791031390134528, 18.877776290025214),
- &#39;brain_natriuretic_peptide_level&#39;: (156.9857534246576, 291.8915253494199),
- &#39;basophil_count&#39;: (0.06984214216499786, 0.10630741873638763),
- &#39;hydroxyvitamin3&#39;: (52.36982317356912, 30.382475290251843),
- &#39;eosinophil_count&#39;: (0.22162065765491276, 0.18957815785763468),
- &#39;creatinine_ratio&#39;: (4.435476477683948, 8.185329269651573),
- &#39;combined_total_vitamin_D2_and_D3_level&#39;: (56.94353322028673,
-  29.241759267841857),
- &#39;corrected_serum_calcium_level&#39;: (2.319034923472716, 0.12451622974555095),
- &#39;blood_calcium&#39;: (2.334465408805031, 0.1487655865623607),
- &#39;hydroxyvitamin2&#39;: (3.268025477707002, 2.8054309314024435),
- &#39;diastolic_blood_pressure&#39;: (78.86937661562213, 11.727257179342669)}</pre>
-</div>
-
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>0.052762014256647304
-20.0
-</pre>
-</div>
-</div>
-
-</div>
-
-</div>
-
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
-<div class="jp-Cell-inputWrapper">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="View-the-frequency-of-tokens-in-the-extracted-data">View the frequency of tokens in the extracted data<a class="anchor-link" href="#View-the-frequency-of-tokens-in-the-extracted-data">&#182;</a></h2>
+<h2 id="View-a-single-patient">View a single patient<a class="anchor-link" href="#View-a-single-patient">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -14758,124 +14711,23 @@ INFO:root:Using tabular tokenizer
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>shape: (89, 3)
-┌───────────────────────────────────┬─────────┬──────────┐
-│ EVENT                             ┆ counts  ┆ freq     │
-│ ---                               ┆ ---     ┆ ---      │
-│ str                               ┆ u32     ┆ f64      │
-╞═══════════════════════════════════╪═════════╪══════════╡
-│ UNK                               ┆ 0       ┆ 0.0      │
-│ diastolic_blood_pressure          ┆ 2225637 ┆ 0.422717 │
-│ bmi                               ┆ 865334  ┆ 0.164354 │
-│ eosinophil_count                  ┆ 810692  ┆ 0.153975 │
-│ basophil_count                    ┆ 531161  ┆ 0.100884 │
-│ corrected_serum_calcium_level     ┆ 149279  ┆ 0.028353 │
-│ DEPRESSION                        ┆ 86599   ┆ 0.016448 │
-│ serum_level                       ┆ 75850   ┆ 0.014406 │
-│ calculated_LDL_cholesterol_level  ┆ 69118   ┆ 0.013128 │
-│ ANXIETY                           ┆ 48221   ┆ 0.009159 │
-│ HYPERTENSION                      ┆ 32950   ┆ 0.006258 │
-│ TYPE2DIABETES                     ┆ 27246   ┆ 0.005175 │
-│ OSTEOARTHRITIS                    ┆ 25318   ┆ 0.004809 │
-│ ASTHMA_PUSHASTHMA                 ┆ 25308   ┆ 0.004807 │
-│ ATOPICECZEMA                      ┆ 23119   ┆ 0.004391 │
-│ ALLERGICRHINITISCONJ              ┆ 18431   ┆ 0.003501 │
-│ ANY_DEAFNESS_HEARING_LOSS         ┆ 17141   ┆ 0.003256 │
-│ aspartate_transam                 ┆ 16967   ┆ 0.003223 │
-│ PREVALENT_IBS                     ┆ 11703   ┆ 0.002223 │
-│ ALLCA_NOBCC_VFINAL                ┆ 11679   ┆ 0.002218 │
-│ IHD_NOMI                          ┆ 11295   ┆ 0.002145 │
-│ ALCOHOLMISUSE                     ┆ 11167   ┆ 0.002121 │
-│ CKDSTAGE3TO5                      ┆ 10489   ┆ 0.001992 │
-│ blood_urea                        ┆ 9570    ┆ 0.001818 │
-│ PERIPHERAL_NEUROPATHY             ┆ 8808    ┆ 0.001673 │
-│ calcium_adjusted_level            ┆ 8494    ┆ 0.001613 │
-│ HYPOTHYROIDISM_DRAFT_V1           ┆ 8055    ┆ 0.00153  │
-│ COPD                              ┆ 7682    ┆ 0.001459 │
-│ AF                                ┆ 6243    ┆ 0.001186 │
-│ combined_total_vitamin_D2_and_D3… ┆ 5854    ┆ 0.001112 │
-│ OSTEOPOROSIS                      ┆ 5792    ┆ 0.0011   │
-│ HF                                ┆ 5771    ┆ 0.001096 │
-│ PSORIASIS                         ┆ 5622    ┆ 0.001068 │
-│ SUBSTANCEMISUSE                   ┆ 5593    ┆ 0.001062 │
-│ GOUT                              ┆ 5342    ┆ 0.001015 │
-│ MINFARCTION                       ┆ 4962    ┆ 0.000942 │
-│ STROKEUNSPECIFIED                 ┆ 4490    ┆ 0.000853 │
-│ ALL_DEMENTIA                      ┆ 4445    ┆ 0.000844 │
-│ hydroxyvitamin3                   ┆ 3898    ┆ 0.00074  │
-│ hydroxyvitamin2                   ┆ 3562    ┆ 0.000677 │
-│ VALVULARDISEASES                  ┆ 3229    ┆ 0.000613 │
-│ PAD_STRICT                        ┆ 3194    ┆ 0.000607 │
-│ OTHER_CHRONIC_LIVER_DISEASE_OPTI… ┆ 2916    ┆ 0.000554 │
-│ TYPE1DM                           ┆ 2868    ┆ 0.000545 │
-│ EPILEPSY                          ┆ 2576    ┆ 0.000489 │
-│ OSA                               ┆ 2446    ┆ 0.000465 │
-│ FIBROMYALGIA                      ┆ 2401    ┆ 0.000456 │
-│ POLYCYSTIC_OVARIAN_SYNDROME_PCOS  ┆ 2242    ┆ 0.000426 │
-│ NAFLD                             ┆ 2173    ┆ 0.000413 │
-│ RHEUMATOIDARTHRITIS               ┆ 2062    ┆ 0.000392 │
-│ EATINGDISORDERS                   ┆ 1990    ┆ 0.000378 │
-│ HYPERTHYROIDISM                   ┆ 1908    ┆ 0.000362 │
-│ PMRANDGCA                         ┆ 1906    ┆ 0.000362 │
-│ ENDOMETRIOSIS_ADENOMYOSIS_V2      ┆ 1822    ┆ 0.000346 │
-│ PTSDDIAGNOSIS                     ┆ 1693    ┆ 0.000322 │
-│ ISCHAEMICSTROKE                   ┆ 1508    ┆ 0.000286 │
-│ creatinine_ratio                  ┆ 1479    ┆ 0.000281 │
-│ VISUAL_IMPAIRMENT                 ┆ 1424    ┆ 0.00027  │
-│ BIPOLAR                           ┆ 1375    ┆ 0.000261 │
-│ SCHIZOPHRENIAMM                   ┆ 1325    ┆ 0.000252 │
-│ BRONCHIECTASIS                    ┆ 1074    ┆ 0.000204 │
-│ CHRONIC_LIVER_DISEASE_ALCOHOL     ┆ 902     ┆ 0.000171 │
-│ AORTICANEURYSM                    ┆ 878     ┆ 0.000167 │
-│ ULCERATIVE_COLITIS                ┆ 837     ┆ 0.000159 │
-│ CHRONICFATIGUESYNDROMEMM          ┆ 816     ┆ 0.000155 │
-│ LEARNINGDISABILITY                ┆ 740     ┆ 0.000141 │
-│ PERNICIOUSANAEMIA                 ┆ 723     ┆ 0.000137 │
-│ STROKE_HAEMRGIC                   ┆ 714     ┆ 0.000136 │
-│ PARKINSONS                        ┆ 695     ┆ 0.000132 │
-│ MENIERESDISEASE                   ┆ 692     ┆ 0.000131 │
-│ brain_natriuretic_peptide_level   ┆ 597     ┆ 0.000113 │
-│ LYMPHOMA_PREVALENCE               ┆ 582     ┆ 0.000111 │
-│ ILD_SH                            ┆ 546     ┆ 0.000104 │
-│ CROHNS_DISEASE                    ┆ 545     ┆ 0.000104 │
-│ AUTISM                            ┆ 500     ┆ 0.000095 │
-│ PSORIATICARTHRITIS2021            ┆ 487     ┆ 0.000092 │
-│ MS                                ┆ 418     ┆ 0.000079 │
-│ LEUKAEMIA_PREVALENCE              ┆ 395     ┆ 0.000075 │
-│ HIVAIDS                           ┆ 296     ┆ 0.000056 │
-│ SJOGRENSSYNDROME                  ┆ 237     ┆ 0.000045 │
-│ SYSTEMIC_LUPUS_ERYTHEMATOSUS      ┆ 220     ┆ 0.000042 │
-│ HAEMOCHROMATOSIS                  ┆ 195     ┆ 0.000037 │
-│ blood_calcium                     ┆ 147     ┆ 0.000028 │
-│ PLASMACELL_NEOPLASM               ┆ 137     ┆ 0.000026 │
-│ ADDISON_DISEASE                   ┆ 100     ┆ 0.000019 │
-│ SYSTEMIC_SCLEROSIS                ┆ 73      ┆ 0.000014 │
-│ DOWNSSYNDROME                     ┆ 41      ┆ 0.000008 │
-│ CYSTICFIBROSIS                    ┆ 39      ┆ 0.000007 │
-│ SICKLE_CELL_DISEASE               ┆ 25      ┆ 0.000005 │
-└───────────────────────────────────┴─────────┴──────────┘
-</pre>
-</div>
-</div>
+<pre>Time to retrieve sample index 1 was 0.132338285446167 seconds
 
-</div>
+SEX                 | F
+IMD                 | 4.0
+ETHNICITY           | WHITE
+birth_year          | 1997.0
 
-</div>
-
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
-
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>[&#39;diastolic_blood_pressure&#39;, &#39;bmi&#39;, &#39;eosinophil_count&#39;, &#39;basophil_count&#39;, &#39;corrected_serum_calcium_level&#39;, &#39;serum_level&#39;, &#39;calculated_LDL_cholesterol_level&#39;, &#39;aspartate_transam&#39;, &#39;blood_urea&#39;, &#39;calcium_adjusted_level&#39;, &#39;combined_total_vitamin_D2_and_D3_level&#39;, &#39;hydroxyvitamin3&#39;, &#39;hydroxyvitamin2&#39;, &#39;creatinine_ratio&#39;, &#39;brain_natriuretic_peptide_level&#39;, &#39;blood_calcium&#39;]
-[2, 3, 4, 5, 6, 8, 9, 18, 24, 26, 30, 39, 40, 57, 71, 83]
-DEPRESSION eosinophil_count bmi diastolic_blood_pressure
+Token                                                                      | Age               | Standardised value
+===================================================================================================================
+Body_mass_index_3                                                          | 5564              | 0.24              
+O_E___height_1                                                             | 5564              | -0.05             
+O_E___weight_2                                                             | 5564              | 0.17              
+Body_mass_index_3                                                          | 5687              | 0.26              
+O_E___height_1                                                             | 5687              | -0.06             
+O_E___weight_2                                                             | 5687              | 0.18              
+Basophil_count_22                                                          | 5697              | 0.14              
+Eosinophil_count_21                                                        | 5697              | 0.24              
 </pre>
 </div>
 </div>
@@ -14907,24 +14759,6 @@ DEPRESSION eosinophil_count bmi diastolic_blood_pressure
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
 <pre>INFO:root:Using Temporal Positional Encoding. This module uses the patient&#39;s age at an event within their time series.
 INFO:root:Using ExponentialTTELayer. This module predicts the time until next event as an exponential distribution
-INFO:root:ModuleDict(
-  (Token 2): Linear(in_features=384, out_features=2, bias=True)
-  (Token 3): Linear(in_features=384, out_features=2, bias=True)
-  (Token 4): Linear(in_features=384, out_features=2, bias=True)
-  (Token 5): Linear(in_features=384, out_features=2, bias=True)
-  (Token 6): Linear(in_features=384, out_features=2, bias=True)
-  (Token 8): Linear(in_features=384, out_features=2, bias=True)
-  (Token 9): Linear(in_features=384, out_features=2, bias=True)
-  (Token 18): Linear(in_features=384, out_features=2, bias=True)
-  (Token 24): Linear(in_features=384, out_features=2, bias=True)
-  (Token 26): Linear(in_features=384, out_features=2, bias=True)
-  (Token 30): Linear(in_features=384, out_features=2, bias=True)
-  (Token 39): Linear(in_features=384, out_features=2, bias=True)
-  (Token 40): Linear(in_features=384, out_features=2, bias=True)
-  (Token 57): Linear(in_features=384, out_features=2, bias=True)
-  (Token 71): Linear(in_features=384, out_features=2, bias=True)
-  (Token 83): Linear(in_features=384, out_features=2, bias=True)
-)
 </pre>
 </div>
 </div>
@@ -14933,6 +14767,93 @@ INFO:root:ModuleDict(
 
 </div>
 
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Training model with 11.238553 M parameters
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 0:   0%|          | 1001/358001 [03:43&lt;22:07:52,  4.48it/s]
+Validation epoch 0:   1%|          | 101/19166 [00:20&lt;1:02:55,  5.05it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 0:	Train loss -0.14  (2.48, -1.90, -0.99). Val loss -0.79 (1.62, -2.47, -1.51)
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 1:   0%|          | 432/358001 [01:21&lt;18:45:09,  5.30it/s]
+Exception ignored in: &lt;function WeakValueDictionary.__init__.&lt;locals&gt;.remove at 0x7f0d06931e10&gt;
+Traceback (most recent call last):
+  File &#34;/rds/bear-apps/2022a/EL8-ice/software/Python/3.10.4-GCCcore-11.3.0/lib/python3.10/weakref.py&#34;, line 106, in remove
+    def remove(wr, selfref=ref(self), _atomic_removal=_remove_dead_weakref):
+KeyboardInterrupt: 
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #800000; text-decoration-color: #800000">╭─────────────────────────────── </span><span style="color: #800000; text-decoration-color: #800000; font-weight: bold">Traceback </span><span style="color: #bf7f7f; text-decoration-color: #bf7f7f; font-weight: bold">(most recent call last)</span><span style="color: #800000; text-decoration-color: #800000"> ────────────────────────────────╮</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/tmp/ipykernel_80064/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">3944378650.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">20</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">&lt;module&gt;</span>                                                <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000; font-style: italic">[Errno 2] No such file or directory: '/tmp/ipykernel_80064/3944378650.py'</span>                        <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/bear-apps/2022a/EL8-ice/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-</span> <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">packages/torch/optim/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">optimizer.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">216</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">zero_grad</span>                                               <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">213 │   │   │   </span>update_group(g, ng) <span style="color: #0000ff; text-decoration-color: #0000ff">for</span> g, ng <span style="color: #ff00ff; text-decoration-color: #ff00ff">in</span> <span style="color: #00ffff; text-decoration-color: #00ffff">zip</span>(groups, saved_groups)]                    <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">214 │   │   </span><span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.__setstate__({<span style="color: #808000; text-decoration-color: #808000">'state'</span>: state, <span style="color: #808000; text-decoration-color: #808000">'param_groups'</span>: param_groups})                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">215 │   </span>                                                                                       <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>216 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   </span><span style="color: #0000ff; text-decoration-color: #0000ff">def</span> <span style="color: #00ff00; text-decoration-color: #00ff00">zero_grad</span>(<span style="color: #00ffff; text-decoration-color: #00ffff">self</span>, set_to_none: <span style="color: #00ffff; text-decoration-color: #00ffff">bool</span> = <span style="color: #0000ff; text-decoration-color: #0000ff">False</span>):                                        <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">217 │   │   </span><span style="color: #808000; text-decoration-color: #808000">r"""Sets the gradients of all optimized :class:`torch.Tensor` s to zero.</span>           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">218 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">219 </span><span style="color: #bfbf7f; text-decoration-color: #bfbf7f">│   │   </span><span style="color: #808000; text-decoration-color: #808000">Args:</span>                                                                              <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">╰──────────────────────────────────────────────────────────────────────────────────────────────────╯</span>
+<span style="color: #ff0000; text-decoration-color: #ff0000; font-weight: bold">KeyboardInterrupt</span>
+</pre>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h2 id="Generation">Generation<a class="anchor-link" href="#Generation">&#182;</a></h2>
+</div>
+</div>
+</div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
@@ -14946,23 +14867,21 @@ INFO:root:ModuleDict(
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Training model `TTETransformerForCausalTimeSeriesModelling: Exponential TTE`, with 10.757217 M parameters
-Epoch 0:	Train loss 0.34  (1.59, -0.85, 0.29). Val loss 0.30 (1.56, -0.94, 0.27)
-Epoch 1:	Train loss 0.28  (1.53, -0.95, 0.26). Val loss 0.28 (1.54, -0.99, 0.28)
-Epoch 2:	Train loss 0.26  (1.51, -0.98, 0.25). Val loss 0.26 (1.52, -1.01, 0.26)
-Epoch 3:	Train loss 0.25  (1.51, -1.00, 0.25). Val loss 0.27 (1.54, -1.00, 0.27)
-Epoch 4:	Train loss 0.25  (1.50, -1.01, 0.25). Val loss 0.25 (1.52, -1.02, 0.26)
-Epoch 5:	Train loss 0.24  (1.50, -1.02, 0.25). Val loss 0.25 (1.51, -1.02, 0.25)
-Epoch 6:	Train loss 0.24  (1.50, -1.02, 0.25). Val loss 0.26 (1.52, -1.03, 0.29)
-Epoch 7:	Train loss 0.24  (1.49, -1.03, 0.25). Val loss 0.25 (1.52, -1.03, 0.27)
-Epoch 8:	Train loss 0.23  (1.48, -1.04, 0.25). Val loss 0.23 (1.50, -1.06, 0.25)
-Epoch 9:	Train loss 0.23  (1.48, -1.04, 0.24). Val loss 0.24 (1.50, -1.05, 0.27)
-Epoch 10:	Train loss 0.23  (1.48, -1.05, 0.24). Val loss 0.23 (1.49, -1.05, 0.25)
-Epoch 11:	Train loss 0.22  (1.47, -1.05, 0.24). Val loss 0.23 (1.49, -1.06, 0.25)
-Epoch 12:	Train loss 0.22  (1.47, -1.05, 0.24). Val loss 0.25 (1.51, -1.04, 0.28)
-Epoch 13:	Train loss 0.22  (1.48, -1.05, 0.25). Val loss 0.23 (1.49, -1.06, 0.25)
-Epoch 14:	Train loss 0.22  (1.47, -1.05, 0.24). Val loss 0.23 (1.50, -1.06, 0.25)
-Epoch 15:	Train loss 0.22  (1.47, -1.06, 0.24). Val loss 0.23 (1.49, -1.07, 0.26)
+<pre>PROMPT:
+O_E___height_1                                    -0.04          at age 18 (6643.0 days)
+O_E___weight_2                                    0.16           at age 18 (6643.0 days)
+==========================================================================================
+GENERATION
+O_E___weight_2                                    0.09           at age 18 (6699.0 days)
+Systolic_blood_pressure_4                         -0.23          at age 19 (6942.3 days)
+Body_mass_index_3                                 -0.13          at age 21 (7743.8 days)
+Diastolic_blood_pressure_5                        -0.18          at age 21 (7745.7 days)
+O_E___height_1                                    0.01           at age 21 (7762.7 days)
+O_E___weight_2                                    -0.04          at age 21 (7781.6 days)
+Systolic_blood_pressure_4                         -0.17          at age 21 (7808.5 days)
+Basophil_count_22                                 0.22           at age 22 (8143.9 days)
+Eosinophil_count_21                               0.14           at age 22 (8147.8 days)
+Eosinophil_count_21                               -0.02          at age 22 (8149.4 days)
 </pre>
 </div>
 </div>
@@ -14977,11 +14896,45 @@ Epoch 15:	Train loss 0.22  (1.47, -1.06, 0.24). Val loss 0.23 (1.49, -1.07, 0.26
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Comparing-output-to-real-data">Comparing output to real data<a class="anchor-link" href="#Comparing-output-to-real-data">&#182;</a></h2>
+<h2 id="Comparing-generation-to-real-data">Comparing generation to real data<a class="anchor-link" href="#Comparing-generation-to-real-data">&#182;</a></h2>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Time to retrieve sample index 1 was 0.12309074401855469 seconds
+
+SEX                 | F
+IMD                 | 4.0
+ETHNICITY           | WHITE
+birth_year          | 1997.0
+
+Token                                                                      | Age               | Standardised value
+===================================================================================================================
+Mean_corpuscular_volume__MCV__11                                           | 8000              | -0.20             
+Monocyte_count_23                                                          | 8000              | 0.20              
+Neutrophil_count_19                                                        | 8000              | 0.33              
+Platelet_count_12                                                          | 8000              | 0.13              
+Red_blood_cell__RBC__count_10                                              | 8000              | -0.05             
+Serum_C_reactive_protein_level_59                                          | 8000              | 0.02              
+Serum_TSH_level_71                                                         | 8000              | 0.09              
+Serum_alanine_aminotransferase_level_45                                    | 8000              | -0.09             
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
@@ -15006,7 +14959,42 @@ Epoch 15:	Train loss 0.22  (1.47, -1.06, 0.24). Val loss 0.23 (1.49, -1.07, 0.26
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>
+Control: 	 (DEPRESSION): 
+torch.Size([1, 1])
+torch.Size([1, 1])
+	probability of type I diabetes: 0.0302%
+	probability of type II diabetes: 0.1716%
+
+Type 1: 	 (DEPRESSION,TYPE1DM): 
+torch.Size([1, 2])
+torch.Size([1, 2])
+	probability of type I diabetes: 0.0321%
+	probability of type II diabetes: 0.1864%
+
+Type 2: 	 (DEPRESSION,TYPE2DIABETES): 
+torch.Size([1, 2])
+torch.Size([1, 2])
+	probability of type I diabetes: 0.0342%
+	probability of type II diabetes: 0.1831%
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -15018,7 +15006,115 @@ Epoch 15:	Train loss 0.22  (1.47, -1.06, 0.24). Val loss 0.23 (1.49, -1.07, 0.26
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>[tensor([-2.], device=&#39;cuda:0&#39;), tensor([-1.5556], device=&#39;cuda:0&#39;), tensor([-1.1111], device=&#39;cuda:0&#39;), tensor([-0.6667], device=&#39;cuda:0&#39;), tensor([-0.2222], device=&#39;cuda:0&#39;), tensor([0.2222], device=&#39;cuda:0&#39;), tensor([0.6667], device=&#39;cuda:0&#39;), tensor([1.1111], device=&#39;cuda:0&#39;), tensor([1.5556], device=&#39;cuda:0&#39;), tensor([2.], device=&#39;cuda:0&#39;)]
+Value tensor([-2.], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 5.72%
+	Body_mass_index_3: 1.66%
+	HYPERTENSION: 0.01%
+	TYPE2DIABETES: 0.01%
+	CKDSTAGE3TO5: 0.00%
+	OSTEOARTHRITIS: 0.00%
+	TYPE1DM: 0.00%
+Value tensor([-1.5556], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 7.37%
+	Body_mass_index_3: 1.71%
+	TYPE2DIABETES: 0.01%
+	HYPERTENSION: 0.01%
+	CKDSTAGE3TO5: 0.00%
+	OSTEOARTHRITIS: 0.00%
+	TYPE1DM: 0.00%
+Value tensor([-1.1111], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 10.39%
+	Body_mass_index_3: 1.65%
+	TYPE2DIABETES: 0.01%
+	HYPERTENSION: 0.01%
+	CKDSTAGE3TO5: 0.01%
+	OSTEOARTHRITIS: 0.00%
+	TYPE1DM: 0.00%
+Value tensor([-0.6667], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 18.54%
+	Body_mass_index_3: 1.45%
+	TYPE2DIABETES: 0.01%
+	CKDSTAGE3TO5: 0.00%
+	HYPERTENSION: 0.00%
+	OSTEOARTHRITIS: 0.00%
+	TYPE1DM: 0.00%
+Value tensor([-0.2222], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 48.46%
+	Body_mass_index_3: 0.96%
+	TYPE2DIABETES: 0.00%
+	HYPERTENSION: 0.00%
+	CKDSTAGE3TO5: 0.00%
+	OSTEOARTHRITIS: 0.00%
+	TYPE1DM: 0.00%
+Value tensor([0.2222], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 69.02%
+	Body_mass_index_3: 0.91%
+	TYPE2DIABETES: 0.01%
+	HYPERTENSION: 0.00%
+	CKDSTAGE3TO5: 0.00%
+	OSTEOARTHRITIS: 0.00%
+	TYPE1DM: 0.00%
+Value tensor([0.6667], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 60.21%
+	Body_mass_index_3: 1.27%
+	TYPE2DIABETES: 0.01%
+	HYPERTENSION: 0.01%
+	CKDSTAGE3TO5: 0.01%
+	OSTEOARTHRITIS: 0.01%
+	TYPE1DM: 0.00%
+Value tensor([1.1111], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 43.97%
+	Body_mass_index_3: 1.26%
+	TYPE2DIABETES: 0.02%
+	HYPERTENSION: 0.01%
+	OSTEOARTHRITIS: 0.01%
+	CKDSTAGE3TO5: 0.01%
+	TYPE1DM: 0.00%
+Value tensor([1.5556], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 30.51%
+	Body_mass_index_3: 1.08%
+	TYPE2DIABETES: 0.03%
+	HYPERTENSION: 0.02%
+	OSTEOARTHRITIS: 0.02%
+	CKDSTAGE3TO5: 0.01%
+	TYPE1DM: 0.00%
+Value tensor([2.], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 20.37%
+	Body_mass_index_3: 0.84%
+	TYPE2DIABETES: 0.03%
+	OSTEOARTHRITIS: 0.02%
+	HYPERTENSION: 0.02%
+	CKDSTAGE3TO5: 0.01%
+	TYPE1DM: 0.00%
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -15030,7 +15126,114 @@ Epoch 15:	Train loss 0.22  (1.47, -1.06, 0.24). Val loss 0.23 (1.49, -1.07, 0.26
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Value tensor([-2.], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 1.46%
+	Body_mass_index_3: 1.36%
+	TYPE2DIABETES: 0.01%
+	CKDSTAGE3TO5: 0.01%
+	OSTEOARTHRITIS: 0.00%
+	HYPERTENSION: 0.00%
+	TYPE1DM: 0.00%
+Value tensor([-1.5556], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 1.54%
+	Body_mass_index_3: 1.18%
+	TYPE2DIABETES: 0.01%
+	CKDSTAGE3TO5: 0.01%
+	OSTEOARTHRITIS: 0.00%
+	HYPERTENSION: 0.00%
+	TYPE1DM: 0.00%
+Value tensor([-1.1111], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 1.49%
+	Body_mass_index_3: 0.89%
+	TYPE2DIABETES: 0.00%
+	CKDSTAGE3TO5: 0.00%
+	OSTEOARTHRITIS: 0.00%
+	HYPERTENSION: 0.00%
+	TYPE1DM: 0.00%
+Value tensor([-0.6667], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 1.21%
+	Body_mass_index_3: 0.52%
+	TYPE2DIABETES: 0.00%
+	CKDSTAGE3TO5: 0.00%
+	OSTEOARTHRITIS: 0.00%
+	HYPERTENSION: 0.00%
+	TYPE1DM: 0.00%
+Value tensor([-0.2222], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 0.85%
+	Body_mass_index_3: 0.25%
+	TYPE2DIABETES: 0.00%
+	CKDSTAGE3TO5: 0.00%
+	HYPERTENSION: 0.00%
+	OSTEOARTHRITIS: 0.00%
+	TYPE1DM: 0.00%
+Value tensor([0.2222], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 1.07%
+	Body_mass_index_3: 0.20%
+	TYPE2DIABETES: 0.00%
+	HYPERTENSION: 0.00%
+	OSTEOARTHRITIS: 0.00%
+	CKDSTAGE3TO5: 0.00%
+	TYPE1DM: 0.00%
+Value tensor([0.6667], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 3.45%
+	Body_mass_index_3: 0.45%
+	HYPERTENSION: 0.00%
+	OSTEOARTHRITIS: 0.00%
+	TYPE2DIABETES: 0.00%
+	CKDSTAGE3TO5: 0.00%
+	TYPE1DM: 0.00%
+Value tensor([1.1111], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 11.88%
+	Body_mass_index_3: 1.41%
+	HYPERTENSION: 0.03%
+	OSTEOARTHRITIS: 0.02%
+	TYPE2DIABETES: 0.01%
+	CKDSTAGE3TO5: 0.01%
+	TYPE1DM: 0.00%
+Value tensor([1.5556], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 22.09%
+	Body_mass_index_3: 2.50%
+	HYPERTENSION: 0.07%
+	OSTEOARTHRITIS: 0.07%
+	TYPE2DIABETES: 0.03%
+	CKDSTAGE3TO5: 0.01%
+	TYPE1DM: 0.00%
+Value tensor([2.], device=&#39;cuda:0&#39;)
+======
+	Diastolic_blood_pressure_5: 28.79%
+	Body_mass_index_3: 3.01%
+	HYPERTENSION: 0.11%
+	OSTEOARTHRITIS: 0.11%
+	TYPE2DIABETES: 0.05%
+	CKDSTAGE3TO5: 0.02%
+	TYPE1DM: 0.00%
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -15042,7 +15245,40 @@ Epoch 15:	Train loss 0.22  (1.47, -1.06, 0.24). Val loss 0.23 (1.49, -1.07, 0.26
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>
+Diagnosis [&#39;DEPRESSION&#39;]
+======
+standardised diastolic_blood_pressure ~ N(-0.1, 0.2)
+
+Diagnosis [&#39;TYPE2DIABETES&#39;]
+======
+standardised diastolic_blood_pressure ~ N(-0.1, 0.2)
+
+Diagnosis [&#39;HF&#39;]
+======
+standardised diastolic_blood_pressure ~ N(-0.1, 0.2)
+
+Diagnosis [&#39;HYPERTENSION&#39;]
+======
+standardised diastolic_blood_pressure ~ N(-0.1, 0.2)
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -15054,7 +15290,54 @@ Epoch 15:	Train loss 0.22  (1.47, -1.06, 0.24). Val loss 0.23 (1.49, -1.07, 0.26
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Values [-2.0]
+======
+standardised diastolic_blood_pressure ~ N(-0.5, 0.2)
+Values [-1.5555555820465088]
+======
+standardised diastolic_blood_pressure ~ N(-0.4, 0.2)
+Values [-1.1111111640930176]
+======
+standardised diastolic_blood_pressure ~ N(-0.4, 0.2)
+Values [-0.6666666865348816]
+======
+standardised diastolic_blood_pressure ~ N(-0.3, 0.2)
+Values [-0.2222222238779068]
+======
+standardised diastolic_blood_pressure ~ N(-0.1, 0.2)
+Values [0.2222222238779068]
+======
+standardised diastolic_blood_pressure ~ N(0.0, 0.2)
+Values [0.6666666865348816]
+======
+standardised diastolic_blood_pressure ~ N(0.1, 0.2)
+Values [1.1111111640930176]
+======
+standardised diastolic_blood_pressure ~ N(0.2, 0.2)
+Values [1.5555555820465088]
+======
+standardised diastolic_blood_pressure ~ N(0.3, 0.2)
+Values [2.0]
+======
+standardised diastolic_blood_pressure ~ N(0.3, 0.2)
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
