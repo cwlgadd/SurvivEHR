@@ -47,7 +47,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                 tokens:                 torch.tensor,
                 ages:                   torch.tensor,
                 values:                 torch.tensor,
-                static_covariates:      Optional[torch.tensor] = None
+                covariates:             Optional[torch.tensor] = None,
                 attention_mask:         Optional[torch.tensor] = None,
                 is_generation:          bool = False
                 ):
@@ -87,6 +87,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         hidden_states = self.transformer(tokens=tokens, 
                                          ages=ages, 
                                          values=values,
+                                         covariates=covariates,
                                          attention_mask=attention_mask)  # shape: (bsz, seq_len, n_embd)
 
         # survival time to event head (survival curve until next token)
@@ -115,8 +116,10 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                  tokens: torch.tensor,
                  ages: torch.tensor,
                  values: torch.tensor,
-                 # eos_token: Optional[int] = None,               # add this later
-                 max_new_tokens: int = 50):
+                 covariates: Optional[torch.tensor] = None,
+                 # eos_token: Optional[int] = None,               # add this later?
+                 max_new_tokens: int = 50,
+                 ):
         """ Generate future samples for the single-risk
         
         # TODO: havent tested for batched generation
@@ -132,10 +135,11 @@ class SurvStreamGPTForCausalModelling(nn.Module):
             (surv, value_dists), _, _ = self(tokens=tokens_window, 
                                              ages=ages_window,
                                              values=values_window, 
+                                             covariates=covariates,
                                              is_generation=True)
 
             # sample survival 
-            token_next, delta_age =  self.surv_layer.generate_sample(surv)
+            token_next, delta_age =  self.surv_layer.sample_surv(surv)
             ages_next = ages[:, [-1]] + delta_age
             
             # values
@@ -154,10 +158,6 @@ class SurvStreamGPTForCausalModelling(nn.Module):
             tokens = torch.cat((tokens, token_next), dim=1) # (B, T+1)
             ages = torch.cat((ages, ages_next), dim=1) 
             values = torch.cat((values, values_next), dim=1) 
-
-            # print(f"tokens {tokens}")
-            # print(f"ages {ages}")
-            # print(f"values {values}")
 
             # if token_next == eos_token:
             #     raise NotImplementedError

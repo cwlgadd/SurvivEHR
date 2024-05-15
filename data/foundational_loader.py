@@ -81,28 +81,36 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         
         # Train/test/validation GenerativeDatasets
         parquet_path = path_to_db + "polars/"
-        dataset_kwargs = {"max_seq_length": max_seq_length, "standardise_values": True, "meta_information": meta_information, "load": load}
-        self.train_set = FoundationalDataset(parquet_path, "train", tokenizer=self.tokenizer, **dataset_kwargs)
-        self.test_set = FoundationalDataset(parquet_path, "test", tokenizer=self.tokenizer, **dataset_kwargs)
-        self.val_set = FoundationalDataset(parquet_path, "val", tokenizer=self.tokenizer, **dataset_kwargs)
+        dataset_args = {"tokenizer": self.tokenizer, "meta_information": self.meta_information}
+        dataset_kwargs = {"max_seq_length": max_seq_length, "standardise_values": True, "load": load}
+        self.train_set = FoundationalDataset(parquet_path, "train", **dataset_args, **dataset_kwargs)
+        self.test_set = FoundationalDataset(parquet_path, "test", **dataset_args, **dataset_kwargs)
+        self.val_set = FoundationalDataset(parquet_path, "val", **dataset_args, **dataset_kwargs)
 
     def standardise(self, event, value):
-        _row = self.meta_information["measurement_tables"][self.meta_information["measurement_tables"].event==event]
-        _lqr = _row["approx_lqr"].to_numpy()[0]
-        _uqr = _row["approx_uqr"].to_numpy()[0]
-        return float(( value - _lqr ) /  (_uqr - _lqr))
+        # Standardise a single value and event
+        if event in list(self.meta_information["measurement_tables"].event):
+            _row = self.meta_information["measurement_tables"][self.meta_information["measurement_tables"].event==event]
+            _lqr = _row["approx_lqr"].to_numpy()[0]
+            _uqr = _row["approx_uqr"].to_numpy()[0]
+            return float(( value - _lqr ) /  (_uqr - _lqr)) - 0.5
+        else:
+            return value
         
     def unstandardise(self, event, value):
-        _row = self.meta_information["measurement_tables"][self.meta_information["measurement_tables"].event==event]
-        _lqr = _row["approx_lqr"].to_numpy()[0]
-        _uqr = _row["approx_uqr"].to_numpy()[0]
-        return float(( value * (_uqr - _lqr) ) + _lqr)
-        
-    def decode(self, sequence:list[int]):
-        return self.train_set.tokenizer.decode(sequence)
+        if event in list(self.meta_information["measurement_tables"].event):
+            _row = self.meta_information["measurement_tables"][self.meta_information["measurement_tables"].event==event]
+            _lqr = _row["approx_lqr"].to_numpy()[0]
+            _uqr = _row["approx_uqr"].to_numpy()[0]
+            return float(( (value + 0.5) * (_uqr - _lqr) ) + _lqr)    
+        else:
+            return value
     
     def encode(self, sequence:list[str]):
         return self.train_set.tokenizer.encode(sequence)
+
+    def decode(self, sequence:list[int]):
+        return self.train_set.tokenizer.decode(sequence)
     
     @staticmethod
     def collate_fn(data:list[dict]):     
@@ -121,7 +129,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         batch_dict["attention_mask"] = [torch.ones_like(d) for d in batch_dict["tokens"]]
         
         worker_batch = {
-            "static_covariates": pad_sequence(batch_dict["static_covariates"], padding_value=0),   # not actually padded, will only ever see fixed length sequences
+            "static_covariates": pad_sequence(batch_dict["static_covariates"], padding_value=0).T,   # not actually padded, will only ever see fixed length sequences
             "tokens": pad_sequence(batch_dict["tokens"], padding_value=0).T,
             "ages": pad_sequence(batch_dict["ages"]).T,
             "values": pad_sequence(batch_dict["values"], padding_value=torch.nan).T,
@@ -164,14 +172,33 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
 class FoundationalDataset(Dataset):
     r"""
     """
+
+    def view_sample(self, idx, max_dynamic_events=30, report_time=False):
+        """ Wrapper around __getitem__ to print a sample in a read-friendly format """
+        # Get row
+        start_time = time.time()
+        batch = self.__getitem__(idx)
+        if report_time:
+            print(f"Time to retrieve sample index {idx} was {time.time() - start_time} seconds\n")
+        # static
+        static = self._decode_covariates(batch["static_covariates"])
+        for _key in static:
+            print(f"{_key}".ljust(20) + f"| {static[_key][0]}")
+        # dynamic
+        print("\nToken".ljust(76) + "| Age".ljust(20) + "| Standardised value".ljust(20) + "\n" + "="*115)
+        for idx_event, (token, age, value) in enumerate(zip(self.tokenizer.decode(batch["tokens"].tolist()).split(" "), batch["ages"], batch["values"])):
+            print(f"{token}".ljust(75) + f"| {age}".ljust(20) + f"| {value:.2f}".ljust(20))
+            if idx_event >= max_dynamic_events - 1:
+                break
+        
     def __init__(self,
                  parquet_path: str, 
                  split: str,
                  tokenizer:TokenizerBase,
+                 meta_information:dict,
                  load: bool=False, 
                  max_seq_length:int = 256,
                  standardise_values:bool = True,
-                 meta_information:Optional[dict] = None
                 ):
         super().__init__()
         
@@ -181,9 +208,6 @@ class FoundationalDataset(Dataset):
         self.max_seq_length = max_seq_length
         self.standardise_values = standardise_values
         self.meta_information = meta_information
-        self.meta_measurement = meta_information["measurement_tables"] if meta_information is not None else None
-        if self.standardise_values is True:
-            assert self.meta_information is not None
 
         logging.info(f"Creating {self.sub_dir} dataset")
         logging.debug(f"\t Using root {self.parquet_path}")
@@ -217,12 +241,6 @@ class FoundationalDataset(Dataset):
             encoder = OneHotEncoder(handle_unknown='error')
             encoder.fit([[cat] for cat in self.meta_information["static_table"][_key]["category"]])
             self.static_1hot[_key] = encoder
-        #     print(encoder.categories_)
-        # print(self.static_1hot)
-        # print( self.static_1hot["SEX"].transform(np.array([["M"]], dtype=object)).toarray() )
-        # print( self.static_1hot["ETHNICITY"].transform(np.array([["WHITE"]], dtype=object)).toarray() )
-        # print( self.static_1hot["IMD"].transform(np.array([[4]], dtype=object)).toarray() )
-        # print( self.static_1hot["IMD"].transform(np.array([[4.0]], dtype=object)).toarray() )
         
     def __len__(self):
         """ 
@@ -288,8 +306,8 @@ class FoundationalDataset(Dataset):
                 next_value = np.nan
             else:
                 # Else we can continue to process it
-                event_meta = self.meta_measurement[self.meta_measurement.event == next_event]   
-                if next_event in self.meta_measurement.event.tolist():
+                event_meta = self.meta_information["measurement_tables"][self.meta_information["measurement_tables"].event == next_event]   
+                if next_event in self.meta_information["measurement_tables"].event.tolist():
                     lqr, uqr = event_meta.approx_lqr.to_numpy()[0], event_meta.approx_uqr.to_numpy()[0]
                 else:
                     lqr, uqr = -np.inf, np.inf
@@ -299,7 +317,7 @@ class FoundationalDataset(Dataset):
                     # If it does have a value, but this is an outlier, we set it as np.nan which is the same way we record missing values above
                     next_value = np.nan
                 else:
-                    if self.standardise_values and next_event in self.meta_measurement.event.tolist():
+                    if self.standardise_values and next_event in self.meta_information["measurement_tables"].event.tolist():
                         # Else we can optionally continue by standardising it to [0,1]
                         next_value = (next_value -lqr) / (uqr - lqr)
 
@@ -344,8 +362,9 @@ class FoundationalDataset(Dataset):
             sequence_values = sequence_values[start_pos:start_pos+self.max_seq_length]
 
         # print([f"{_event} {_value}" for _event, _value in zip(sequence_tokens, sequence_values)])
+        # print(f"{torch.tensor(encoded_tokens).shape}, {torch.tensor(static_covariates).shape}")
         
-        return {"static_covariates": torch.tensor(static_covariates),
+        return {"static_covariates": torch.tensor(static_covariates, dtype=torch.float),
                 "tokens": torch.tensor(encoded_tokens),
                 "ages": torch.tensor(sequence_ages),
                 "values": torch.tensor(sequence_values),
@@ -359,7 +378,7 @@ class FoundationalDataset(Dataset):
 
         # one-hot covariates
         for _key in self.meta_information["static_table"].keys():
-
+            # print(_key)
             # Dummy variable warning 
             #    Currently we include a third category for gender (I), which (TODO: double check this..) as an intersex gender. 
             #    If we drop this we need to be careful of dummy variables as SEX becomes binary.
@@ -373,8 +392,51 @@ class FoundationalDataset(Dataset):
         yob_standardised = (row_df["YEAR_OF_BIRTH"].year - yob_lower ) / (yob_upper - yob_lower)
         covariates.append(np.asarray(yob_standardised).reshape((1,-1)))
 
-        covariates = np.hstack(covariates)
+        covariates = np.hstack(covariates).squeeze()
         # print(covariates)
         # print(covariates.shape)
 
         return covariates
+
+    def _encode_covariates(self, 
+                           sex,
+                           deprivation,
+                           ethnicity,
+                           year_of_birth
+                           ):
+        covariates = []
+        for _key, _covariate in zip(["SEX", "IMD", "ETHNICITY"], [sex, deprivation, ethnicity]):
+            X_c = np.array([[_covariate]], dtype=object)
+            Xt_c =  self.static_1hot[_key].transform(X_c).toarray()
+            # print(self.static_1hot[_key].categories_)
+            covariates.append(Xt_c)
+            
+        yob_lower, yob_upper = 1900, 2024
+        yob_standardised = (year_of_birth - yob_lower ) / (yob_upper - yob_lower)
+        covariates.append(np.asarray(yob_standardised).reshape((1,-1)))
+
+        covariates = np.hstack(covariates).squeeze()
+        
+        return torch.tensor(covariates, dtype=torch.float)
+
+    def _decode_covariates(self,
+                           covariates:       torch.tensor         # bsz, nun_covariates
+                          ):
+
+        if len(covariates.shape) == 1:
+            covariates = covariates.unsqueeze(0)
+
+        features = {}
+        for _key in self.meta_information["static_table"].keys():
+            # print(_key)
+            num_covariates = len(self.static_1hot[_key].categories_[0])
+            covariates_key = covariates[:, :num_covariates]
+            covariates = covariates[:, num_covariates:]
+            features[_key] = self.static_1hot[_key].inverse_transform(covariates_key)[:, 0]
+
+        yob_lower, yob_upper = 1900, 2024
+        yob = ( covariates * (yob_upper - yob_lower) ) + yob_lower
+        features["birth_year"] = yob[:, 0]
+
+        return features
+            

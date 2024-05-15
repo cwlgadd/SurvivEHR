@@ -85,10 +85,11 @@ class TTETransformer(nn.Module, ModuleUtilsMixin):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
             
     def forward(self, 
-                tokens: torch.tensor, 
-                ages: torch.tensor,
-                values: Optional[torch.Tensor] = None,           # bsz, seq_len
-                attention_mask: Optional[torch.tensor] = None
+                tokens:                torch.tensor, 
+                ages:                  torch.tensor,
+                values:                Optional[torch.Tensor] = None,           # bsz, seq_len
+                covariates:            Optional[torch.Tensor] = None,           # bsz, seq_len
+                attention_mask:        Optional[torch.tensor] = None
                ):
         """
         
@@ -112,7 +113,7 @@ class TTETransformer(nn.Module, ModuleUtilsMixin):
             attention_mask = self.get_extended_attention_mask(attention_mask, tokens.shape)
             
         # Get token embeddings
-        tok_emb = self.wte(tokens=tokens, values=values)   #  shape (bsz, seq_len, embed_dim)
+        tok_emb = self.wte(tokens=tokens, values=values, covariates=covariates)   #  shape (bsz, seq_len, embed_dim)
 
         # Get positional embeddings/encodings
         pos_emb = self.wpe(tokens=tokens, ages=ages)       # positional embeddings of shape (bsz or 1, seq_len, embed_dim)

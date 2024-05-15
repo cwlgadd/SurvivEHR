@@ -38,8 +38,6 @@ class DataEmbeddingLayer(torch.nn.Module):
         self,
         covariates: torch.Tensor                     # bsz, num_covariates
     ):
-        batch_size, num_covariates = covariates.shape
-
         return self.static_proj(covariates)
     
     def _dynamic_embedding(
@@ -51,7 +49,8 @@ class DataEmbeddingLayer(torch.nn.Module):
 
             Masked values are indicated by np.nan or torch.nan elements
         """
-        assert tokens.shape == values.shape
+        if values is not None:
+            assert tokens.shape == values.shape
         batch_size, sequence_length = tokens.shape
 
         # Flatten sequence
@@ -69,10 +68,9 @@ class DataEmbeddingLayer(torch.nn.Module):
     ):
         
         embedded = self._dynamic_embedding(tokens=tokens, values=values)      # shape: (batch_size, sequence_length, embed_dim)
-
+        
         if covariates is not None:
-            static = self._static_embedding(covariates=covariates)
-            print(static.shape)
+            static = self._static_embedding(covariates=covariates).unsqueeze(1)
             embedded += static
         
         return embedded

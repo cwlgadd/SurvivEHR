@@ -36,7 +36,7 @@ class GaussianRegressionLayer(torch.nn.Module):
                     raise ValueError(f"{self.token_key(token)} duplicated in configuration")
                 self.regression_layers[self.token_key(token)] = torch.nn.Linear(in_dim, 2)
         
-        logging.info(self.regression_layers)        
+        logging.debug(f"Value regression layers {self.regression_layers}")
 
     def predict(self,
                 hidden_states: torch.tensor,                    # shape: torch.Size([bsz, seq_len, n_embd])

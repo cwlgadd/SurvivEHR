@@ -14657,7 +14657,18 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>INFO:root:Building polars dataset
+<pre>INFO:root:Loading Polars dataset from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/
+INFO:root:Using tokenizer tabular
+INFO:root:Tokenzier created based on 3584.43M tokens
+INFO:root:Creating split=train/ dataset
+INFO:root:	 Loading split=train/ hash map for parquet
+INFO:root:	 Hash map created for split=train/ with 22,912,046 samples
+INFO:root:Creating split=test/ dataset
+INFO:root:	 Loading split=test/ hash map for parquet
+INFO:root:	 Hash map created for split=test/ with 1,207,449 samples
+INFO:root:Creating split=val/ dataset
+INFO:root:	 Loading split=val/ hash map for parquet
+INFO:root:	 Hash map created for split=val/ with 1,226,576 samples
 </pre>
 </div>
 </div>
@@ -14665,215 +14676,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Using N=20000 random samples, from the available 129717
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>INFO:root:Using measurements
-INFO:root:Using test/measurement standardisation method: normalise
-INFO:root:Removing measurement and test outliers. Using three deviations from mean as cutoff
-INFO:root:Using diagnoses
-INFO:root:Dropping samples with no dynamic events
-INFO:root:Using tabular tokenizer
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>16440 training samples
-914 validation samples
-913 test samples
-90 vocab elements
-</pre>
-</div>
-</div>
-
-</div>
-
-</div>
-
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
-<div class="jp-Cell-inputWrapper">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Standardisation">Standardisation<a class="anchor-link" href="#Standardisation">&#182;</a></h2><p>This was performed automatically across measurements and tests in the dataloader. The standardisation statistics (bias and scale respectively) are given in the dictionary object.</p>
-<p>We define two mappings to simplify notation later</p>
-
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
-
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-
-
-<div class="jp-RenderedText jp-OutputArea-output " data-mime-type="text/plain">
-<pre>{&#39;creatinine_ratio&#39;: (4.613647798742136, 8.013549757225261),
- &#39;blood_urea&#39;: (6.661150210084032, 3.5151115243185727),
- &#39;bmi&#39;: (29.96208708895408, 7.104642555249171),
- &#39;eosinophil_count&#39;: (0.22112432491405676, 0.18412155821672552),
- &#39;hydroxyvitamin2&#39;: (3.3176282051282047, 2.624011268273257),
- &#39;combined_total_vitamin_D2_and_D3_level&#39;: (54.18057692307692,
-  28.489483861873047),
- &#39;diastolic_blood_pressure&#39;: (78.89241975790014, 11.729769809594963),
- &#39;corrected_serum_calcium_level&#39;: (2.3180350373559864, 0.12127745858022278),
- &#39;calculated_LDL_cholesterol_level&#39;: (2.5496743006577454, 1.0433663664568302),
- &#39;basophil_count&#39;: (0.06863472505097562, 0.10071943861842063),
- &#39;blood_calcium&#39;: (2.3682051282051284, 0.20732471093066332),
- &#39;calcium_adjusted_level&#39;: (2.3160170045781627, 0.10605442751470515),
- &#39;aspartate_transam&#39;: (26.941471048513304, 19.44413875598056),
- &#39;brain_natriuretic_peptide_level&#39;: (173.09296875, 302.17777324463435),
- &#39;hydroxyvitamin3&#39;: (51.70338733431519, 29.183941674076287),
- &#39;serum_level&#39;: (26.455094021891664, 18.800583787545264)}</pre>
-</div>
-
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>0.0053363572834371955
-20.0
-</pre>
-</div>
-</div>
-
-</div>
-
-</div>
-
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
-<div class="jp-Cell-inputWrapper">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="View-the-frequency-of-tokens-in-the-extracted-data">View the frequency of tokens in the extracted data<a class="anchor-link" href="#View-the-frequency-of-tokens-in-the-extracted-data">&#182;</a></h2>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
-
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>shape: (89, 3)
-┌───────────────────────────────────┬────────┬──────────┐
-│ EVENT                             ┆ counts ┆ freq     │
-│ ---                               ┆ ---    ┆ ---      │
-│ str                               ┆ u32    ┆ f64      │
-╞═══════════════════════════════════╪════════╪══════════╡
-│ UNK                               ┆ 0      ┆ 0.0      │
-│ diastolic_blood_pressure          ┆ 354853 ┆ 0.417141 │
-│ bmi                               ┆ 141779 ┆ 0.166666 │
-│ eosinophil_count                  ┆ 131696 ┆ 0.154813 │
-│ basophil_count                    ┆ 88056  ┆ 0.103513 │
-│ corrected_serum_calcium_level     ┆ 24429  ┆ 0.028717 │
-│ DEPRESSION                        ┆ 13328  ┆ 0.015668 │
-│ serum_level                       ┆ 12956  ┆ 0.01523  │
-│ calculated_LDL_cholesterol_level  ┆ 11295  ┆ 0.013278 │
-│ ANXIETY                           ┆ 7270   ┆ 0.008546 │
-│ HYPERTENSION                      ┆ 5272   ┆ 0.006197 │
-│ TYPE2DIABETES                     ┆ 4930   ┆ 0.005795 │
-│ OSTEOARTHRITIS                    ┆ 4072   ┆ 0.004787 │
-│ ASTHMA_PUSHASTHMA                 ┆ 3945   ┆ 0.004637 │
-│ ATOPICECZEMA                      ┆ 3545   ┆ 0.004167 │
-│ aspartate_transam                 ┆ 2875   ┆ 0.00338  │
-│ ALLERGICRHINITISCONJ              ┆ 2755   ┆ 0.003239 │
-│ ANY_DEAFNESS_HEARING_LOSS         ┆ 2729   ┆ 0.003208 │
-│ IHD_NOMI                          ┆ 1879   ┆ 0.002209 │
-│ ALLCA_NOBCC_VFINAL                ┆ 1814   ┆ 0.002132 │
-│ PREVALENT_IBS                     ┆ 1801   ┆ 0.002117 │
-│ CKDSTAGE3TO5                      ┆ 1736   ┆ 0.002041 │
-│ blood_urea                        ┆ 1722   ┆ 0.002024 │
-│ ALCOHOLMISUSE                     ┆ 1702   ┆ 0.002001 │
-│ PERIPHERAL_NEUROPATHY             ┆ 1492   ┆ 0.001754 │
-│ calcium_adjusted_level            ┆ 1353   ┆ 0.00159  │
-│ HYPOTHYROIDISM_DRAFT_V1           ┆ 1286   ┆ 0.001512 │
-│ COPD                              ┆ 1244   ┆ 0.001462 │
-│ AF                                ┆ 978    ┆ 0.00115  │
-│ combined_total_vitamin_D2_and_D3… ┆ 946    ┆ 0.001112 │
-│ HF                                ┆ 934    ┆ 0.001098 │
-│ OSTEOPOROSIS                      ┆ 899    ┆ 0.001057 │
-│ GOUT                              ┆ 870    ┆ 0.001023 │
-│ PSORIASIS                         ┆ 861    ┆ 0.001012 │
-│ SUBSTANCEMISUSE                   ┆ 857    ┆ 0.001007 │
-│ MINFARCTION                       ┆ 806    ┆ 0.000947 │
-│ STROKEUNSPECIFIED                 ┆ 740    ┆ 0.00087  │
-│ ALL_DEMENTIA                      ┆ 711    ┆ 0.000836 │
-│ TYPE1DM                           ┆ 635    ┆ 0.000746 │
-│ hydroxyvitamin3                   ┆ 596    ┆ 0.000701 │
-│ hydroxyvitamin2                   ┆ 547    ┆ 0.000643 │
-│ PAD_STRICT                        ┆ 531    ┆ 0.000624 │
-│ VALVULARDISEASES                  ┆ 517    ┆ 0.000608 │
-│ OTHER_CHRONIC_LIVER_DISEASE_OPTI… ┆ 496    ┆ 0.000583 │
-│ OSA                               ┆ 390    ┆ 0.000458 │
-│ EPILEPSY                          ┆ 385    ┆ 0.000453 │
-│ FIBROMYALGIA                      ┆ 363    ┆ 0.000427 │
-│ NAFLD                             ┆ 354    ┆ 0.000416 │
-│ POLYCYSTIC_OVARIAN_SYNDROME_PCOS  ┆ 338    ┆ 0.000397 │
-│ RHEUMATOIDARTHRITIS               ┆ 322    ┆ 0.000379 │
-│ PMRANDGCA                         ┆ 313    ┆ 0.000368 │
-│ ENDOMETRIOSIS_ADENOMYOSIS_V2      ┆ 300    ┆ 0.000353 │
-│ EATINGDISORDERS                   ┆ 292    ┆ 0.000343 │
-│ creatinine_ratio                  ┆ 289    ┆ 0.00034  │
-│ HYPERTHYROIDISM                   ┆ 289    ┆ 0.00034  │
-│ PTSDDIAGNOSIS                     ┆ 265    ┆ 0.000312 │
-│ ISCHAEMICSTROKE                   ┆ 238    ┆ 0.00028  │
-│ SCHIZOPHRENIAMM                   ┆ 230    ┆ 0.00027  │
-│ VISUAL_IMPAIRMENT                 ┆ 221    ┆ 0.00026  │
-│ BIPOLAR                           ┆ 212    ┆ 0.000249 │
-│ BRONCHIECTASIS                    ┆ 175    ┆ 0.000206 │
-│ AORTICANEURYSM                    ┆ 147    ┆ 0.000173 │
-│ ULCERATIVE_COLITIS                ┆ 136    ┆ 0.00016  │
-│ CHRONIC_LIVER_DISEASE_ALCOHOL     ┆ 128    ┆ 0.00015  │
-│ PARKINSONS                        ┆ 123    ┆ 0.000145 │
-│ CHRONICFATIGUESYNDROMEMM          ┆ 119    ┆ 0.00014  │
-│ brain_natriuretic_peptide_level   ┆ 119    ┆ 0.00014  │
-│ LEARNINGDISABILITY                ┆ 113    ┆ 0.000133 │
-│ PERNICIOUSANAEMIA                 ┆ 105    ┆ 0.000123 │
-│ MENIERESDISEASE                   ┆ 102    ┆ 0.00012  │
-│ STROKE_HAEMRGIC                   ┆ 94     ┆ 0.000111 │
-│ CROHNS_DISEASE                    ┆ 91     ┆ 0.000107 │
-│ PSORIATICARTHRITIS2021            ┆ 89     ┆ 0.000105 │
-│ ILD_SH                            ┆ 83     ┆ 0.000098 │
-│ LYMPHOMA_PREVALENCE               ┆ 82     ┆ 0.000096 │
-│ AUTISM                            ┆ 76     ┆ 0.000089 │
-│ MS                                ┆ 57     ┆ 0.000067 │
-│ LEUKAEMIA_PREVALENCE              ┆ 55     ┆ 0.000065 │
-│ SJOGRENSSYNDROME                  ┆ 41     ┆ 0.000048 │
-│ HIVAIDS                           ┆ 39     ┆ 0.000046 │
-│ blood_calcium                     ┆ 39     ┆ 0.000046 │
-│ HAEMOCHROMATOSIS                  ┆ 34     ┆ 0.00004  │
-│ SYSTEMIC_LUPUS_ERYTHEMATOSUS      ┆ 28     ┆ 0.000033 │
-│ PLASMACELL_NEOPLASM               ┆ 24     ┆ 0.000028 │
-│ ADDISON_DISEASE                   ┆ 18     ┆ 0.000021 │
-│ SYSTEMIC_SCLEROSIS                ┆ 8      ┆ 0.000009 │
-│ DOWNSSYNDROME                     ┆ 7      ┆ 0.000008 │
-│ SICKLE_CELL_DISEASE               ┆ 4      ┆ 0.000005 │
-│ CYSTICFIBROSIS                    ┆ 3      ┆ 0.000004 │
-└───────────────────────────────────┴────────┴──────────┘
+<pre>184 vocab elements
 </pre>
 </div>
 </div>
@@ -14893,9 +14696,27 @@ INFO:root:Using tabular tokenizer
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>[&#39;diastolic_blood_pressure&#39;, &#39;bmi&#39;, &#39;eosinophil_count&#39;, &#39;basophil_count&#39;, &#39;corrected_serum_calcium_level&#39;, &#39;serum_level&#39;, &#39;calculated_LDL_cholesterol_level&#39;, &#39;aspartate_transam&#39;, &#39;blood_urea&#39;, &#39;calcium_adjusted_level&#39;, &#39;combined_total_vitamin_D2_and_D3_level&#39;, &#39;hydroxyvitamin3&#39;, &#39;hydroxyvitamin2&#39;, &#39;creatinine_ratio&#39;, &#39;brain_natriuretic_peptide_level&#39;, &#39;blood_calcium&#39;]
-[2, 3, 4, 5, 6, 8, 9, 16, 23, 26, 30, 40, 41, 54, 67, 81]
-DEPRESSION eosinophil_count bmi diastolic_blood_pressure
+<pre>Time to retrieve sample index 6546 was 0.05623459815979004 seconds
+
+SEX                 | M
+IMD                 | 4.0
+ETHNICITY           | ASIAN
+birth_year          | 1988.0
+
+Token                                                                      | Age               | Standardised value
+===================================================================================================================
+Body_mass_index_3                                                          | 8805              | -0.14             
+O_E___height_1                                                             | 8805              | 0.25              
+O_E___weight_2                                                             | 8805              | 0.02              
+Diastolic_blood_pressure_5                                                 | 11070             | -0.06             
+Systolic_blood_pressure_4                                                  | 11070             | -0.22             
+Diastolic_blood_pressure_5                                                 | 11081             | -0.13             
+Systolic_blood_pressure_4                                                  | 11081             | -0.16             
+Basophil_count_22                                                          | 11085             | 0.03              
+Eosinophil_count_21                                                        | 11085             | -0.21             
+Erythrocyte_sedimentation_rate_61                                          | 11085             | -0.08             
+GFR_calculated_abbreviated_MDRD_34                                         | 11085             | 0.25              
+Haematocrit_15                                                             | 11085             | 0.08              
 </pre>
 </div>
 </div>
@@ -14929,24 +14750,6 @@ DEPRESSION eosinophil_count bmi diastolic_blood_pressure
 INFO:root:Using Single-Risk DeSurvival head. This module predicts a separate survival curve for each possible future event
 INFO:root:Internally scaling time in survival head by 1825 days
 INFO:root:In generation forwarding DeSurv on the grid between [0.0, 1825.0], with delta=1/300
-INFO:root:ModuleDict(
-  (Token 2): Linear(in_features=384, out_features=2, bias=True)
-  (Token 3): Linear(in_features=384, out_features=2, bias=True)
-  (Token 4): Linear(in_features=384, out_features=2, bias=True)
-  (Token 5): Linear(in_features=384, out_features=2, bias=True)
-  (Token 6): Linear(in_features=384, out_features=2, bias=True)
-  (Token 8): Linear(in_features=384, out_features=2, bias=True)
-  (Token 9): Linear(in_features=384, out_features=2, bias=True)
-  (Token 16): Linear(in_features=384, out_features=2, bias=True)
-  (Token 23): Linear(in_features=384, out_features=2, bias=True)
-  (Token 26): Linear(in_features=384, out_features=2, bias=True)
-  (Token 30): Linear(in_features=384, out_features=2, bias=True)
-  (Token 40): Linear(in_features=384, out_features=2, bias=True)
-  (Token 41): Linear(in_features=384, out_features=2, bias=True)
-  (Token 54): Linear(in_features=384, out_features=2, bias=True)
-  (Token 67): Linear(in_features=384, out_features=2, bias=True)
-  (Token 81): Linear(in_features=384, out_features=2, bias=True)
-)
 </pre>
 </div>
 </div>
@@ -14954,8 +14757,6 @@ INFO:root:ModuleDict(
 </div>
 
 </div>
-
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
 
@@ -14968,35 +14769,99 @@ INFO:root:ModuleDict(
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Training model `SurvStreamGPTForCausalModelling: Single-Risk`, with 10.722272 M parameters
-Epoch 0:	Train loss 1.02: (1.71, 0.34). Val loss 0.98: (1.65, 0.30)
-Epoch 1:	Train loss 0.81: (1.34, 0.28). Val loss 0.84: (1.39, 0.28)
-Epoch 2:	Train loss 0.69: (1.11, 0.27). Val loss 0.72: (1.16, 0.28)
-Epoch 3:	Train loss 0.59: (0.92, 0.26). Val loss 0.62: (0.97, 0.28)
-Epoch 4:	Train loss 0.51: (0.75, 0.26). Val loss 0.54: (0.80, 0.27)
-Epoch 5:	Train loss 0.43: (0.61, 0.25). Val loss 0.46: (0.65, 0.27)
-Epoch 6:	Train loss 0.37: (0.48, 0.25). Val loss 0.40: (0.53, 0.28)
-Epoch 7:	Train loss 0.31: (0.37, 0.24). Val loss 0.34: (0.41, 0.26)
-Epoch 8:	Train loss 0.26: (0.27, 0.24). Val loss 0.29: (0.32, 0.27)
-Epoch 9:	Train loss 0.21: (0.19, 0.24). Val loss 0.24: (0.23, 0.26)
-Epoch 10:	Train loss 0.18: (0.11, 0.24). Val loss 0.22: (0.16, 0.27)
-Epoch 11:	Train loss 0.15: (0.05, 0.24). Val loss 0.17: (0.09, 0.26)
-Epoch 12:	Train loss 0.11: (-0.02, 0.23). Val loss 0.15: (0.02, 0.28)
-Epoch 13:	Train loss 0.08: (-0.07, 0.24). Val loss 0.12: (-0.03, 0.26)
-Epoch 14:	Train loss 0.05: (-0.12, 0.23). Val loss 0.10: (-0.08, 0.28)
-Epoch 15:	Train loss 0.03: (-0.17, 0.23). Val loss 0.07: (-0.13, 0.27)
-Epoch 16:	Train loss 0.01: (-0.21, 0.23). Val loss 0.05: (-0.16, 0.27)
-Epoch 17:	Train loss -0.01: (-0.24, 0.23). Val loss 0.03: (-0.20, 0.26)
-Epoch 18:	Train loss -0.02: (-0.28, 0.23). Val loss 0.02: (-0.24, 0.28)
-Epoch 19:	Train loss -0.04: (-0.30, 0.23). Val loss 0.01: (-0.26, 0.29)
-Epoch 20:	Train loss -0.04: (-0.32, 0.24). Val loss -0.00: (-0.30, 0.29)
-Epoch 21:	Train loss -0.06: (-0.35, 0.23). Val loss -0.02: (-0.32, 0.27)
-Epoch 22:	Train loss -0.06: (-0.36, 0.24). Val loss -0.03: (-0.34, 0.29)
-Epoch 23:	Train loss -0.07: (-0.39, 0.24). Val loss -0.05: (-0.37, 0.27)
-Epoch 24:	Train loss -0.09: (-0.41, 0.24). Val loss -0.05: (-0.39, 0.29)
-Epoch 25:	Train loss -0.09: (-0.42, 0.25). Val loss -0.06: (-0.40, 0.27)
-Epoch 26:	Train loss -0.10: (-0.44, 0.24). Val loss -0.07: (-0.42, 0.28)
-Epoch 27:	Train loss -0.12: (-0.47, 0.23). Val loss -0.09: (-0.45, 0.28)
+<pre>Training model with 11.167512 M parameters
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 0:   0%|          | 1001/358001 [10:11&lt;60:32:47,  1.64it/s]
+Validation epoch 0:   1%|          | 101/19166 [00:39&lt;2:04:25,  2.55it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 0:	Train loss -2.85: (2.93, -8.63). Val loss -5.16: (2.59, -12.91)
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 1:   0%|          | 394/358001 [04:00&lt;60:37:38,  1.64it/s]
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #800000; text-decoration-color: #800000">╭─────────────────────────────── </span><span style="color: #800000; text-decoration-color: #800000; font-weight: bold">Traceback </span><span style="color: #bf7f7f; text-decoration-color: #bf7f7f; font-weight: bold">(most recent call last)</span><span style="color: #800000; text-decoration-color: #800000"> ────────────────────────────────╮</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/tmp/ipykernel_243354/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">308677829.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">19</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">&lt;module&gt;</span>                                                <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000; font-style: italic">[Errno 2] No such file or directory: '/tmp/ipykernel_243354/308677829.py'</span>                        <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/bear-apps/2022a/EL8-ice/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-</span> <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">packages/torch/nn/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">module.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">1130</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">_call_impl</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1127 │   │   # this function, and just call forward.</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1128 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #ff00ff; text-decoration-color: #ff00ff">not</span> (<span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_pre_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">o</span>  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1129 │   │   │   │   </span><span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_pre_hooks):                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>1130 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">return</span> forward_call(*<span style="color: #00ffff; text-decoration-color: #00ffff">input</span>, **kwargs)                                         <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1131 │   │   # Do not call functions when jit is used</span>                                          <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1132 │   │   </span>full_backward_hooks, non_full_backward_hooks = [], []                             <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1133 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_backward_hooks:                                <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/homes/g/gaddcz/Projects/CPRD/src/models/survival/task_heads/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">causal.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">101</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">forward</span>        <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 98 │   │   │   │   │   │   │   │   │   │   │   │   │     </span>is_generation=is_generation)         <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 99 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">100 │   │   # regression head (values of next token if applicable)</span>                             <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>101 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   </span>values_dist, loss_values = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.value_layer.predict(hidden_states,                 <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">102 │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   </span>target_tokens=tokens,          <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">103 │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   </span>target_values=values,          <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">104 │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   </span>attention_mask=attention_mas   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/homes/g/gaddcz/Projects/CPRD/src/modules/head_layers/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">value_layers.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">109</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">predict</span>         <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">106 │   │   │   │   # print(token_ll_per_patient.shape)</span>                                        <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">107 │   │   │   │   </span>                                                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">108 │   │   │   │   # average across batch</span>                                                     <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>109 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   │   │   </span>loss += -token_ll_per_patient.mean()                                       <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">110 │   │   │   </span>                                                                               <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">111 │   │   │   # loss /= len(self.measurement_tokens)</span>                                         <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">112 </span>                                                                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">╰──────────────────────────────────────────────────────────────────────────────────────────────────╯</span>
+<span style="color: #ff0000; text-decoration-color: #ff0000; font-weight: bold">KeyboardInterrupt</span>
+</pre>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 1:   0%|          | 1001/358001 [02:54&lt;17:16:02,  5.74it/s]
 </pre>
 </div>
 </div>
@@ -15011,11 +14876,116 @@ Epoch 27:	Train loss -0.12: (-0.47, 0.23). Val loss -0.09: (-0.45, 0.28)
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Comparing-output-to-real-data">Comparing output to real data<a class="anchor-link" href="#Comparing-output-to-real-data">&#182;</a></h2>
+<h2 id="Generation">Generation<a class="anchor-link" href="#Generation">&#182;</a></h2>
 </div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Baseline covariates: 
+{&#39;sex&#39;: &#39;F&#39;, &#39;deprivation&#39;: 4.0, &#39;ethnicity&#39;: &#39;WHITE&#39;, &#39;year_of_birth&#39;: 1997}
+==========================================================================================
+PROMPT:
+O_E___height_1                                    -0.04          at age 18 (6643.0 days)
+O_E___weight_2                                    0.16           at age 18 (6643.0 days)
+==========================================================================================
+GENERATION
+Free_T4_level_76                                  -0.11          at age 22 (7912.6 days)
+TSH_level_74                                      0.05           at age 22 (7961.4 days)
+Non_HDL_cholesterol_level_108                     0.19           at age 24 (8761.0 days)
+Serum_urea_level_29                               -0.17          at age 24 (8846.4 days)
+25_Hydroxyvitamin_D2_level_92                     0.24           at age 27 (9694.8 days)
+COPD                                              nan            at age 27 (9823.0 days)
+Diastolic_blood_pressure_5                        0.05           at age 30 (10848.4 days)
+Plasma_urea_level_30                              -0.13          at age 32 (11672.4 days)
+Diastolic_blood_pressure_5                        0.12           at age 34 (12514.7 days)
+ADDISON_DISEASE                                   nan            at age 37 (13643.9 days)
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h2 id="Comparing-generation-to-real-data">Comparing generation to real data<a class="anchor-link" href="#Comparing-generation-to-real-data">&#182;</a></h2>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Time to retrieve sample index 1 was 0.10941839218139648 seconds
+
+SEX                 | F
+IMD                 | 4.0
+ETHNICITY           | WHITE
+birth_year          | 1997.0
+
+Token                                                                      | Age               | Standardised value
+===================================================================================================================
+Total_white_cell_count_18                                                  | 1771              | 0.06              
+Basophil_count_22                                                          | 3248              | -0.01             
+Eosinophil_count_21                                                        | 3248              | nan               
+Erythrocyte_sedimentation_rate_61                                          | 3248              | 0.12              
+Haematocrit_15                                                             | 3248              | 0.01              
+Haemoglobin_estimation_9                                                   | 3248              | nan               
+Lymphocyte_count_20                                                        | 3248              | 0.18              
+Mean_corpusc_Hb_conc__MCHC__14                                             | 3248              | nan               
+Mean_corpusc_haemoglobin_MCH__13                                           | 3248              | -0.31             
+Mean_corpuscular_volume__MCV__11                                           | 3248              | -0.12             
+Monocyte_count_23                                                          | 3248              | -0.01             
+Neutrophil_count_19                                                        | 3248              | -0.04             
+Platelet_count_12                                                          | 3248              | 0.15              
+Red_blood_cell__RBC__count_10                                              | 3248              | 0.07              
+Total_white_cell_count_18                                                  | 3248              | 0.06              
+Serum_creatinine_31                                                        | 5127              | -0.13             
+Serum_potassium_26                                                         | 5127              | 0.08              
+Serum_sodium_24                                                            | 5127              | 0.06              
+Serum_urea_level_29                                                        | 5127              | -0.20             
+Basophil_count_22                                                          | 5403              | 0.18              
+Eosinophil_count_21                                                        | 5403              | 0.03              
+Erythrocyte_sedimentation_rate_61                                          | 5403              | nan               
+Haematocrit_15                                                             | 5403              | -0.08             
+Haemoglobin_estimation_9                                                   | 5403              | nan               
+Lymphocyte_count_20                                                        | 5403              | 0.04              
+Mean_corpusc_Hb_conc__MCHC__14                                             | 5403              | nan               
+Mean_corpusc_haemoglobin_MCH__13                                           | 5403              | -0.20             
+Mean_corpuscular_volume__MCV__11                                           | 5403              | -0.17             
+Monocyte_count_23                                                          | 5403              | -0.03             
+Neutrophil_count_19                                                        | 5403              | 0.18              
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
@@ -15035,8 +15005,7 @@ Epoch 27:	Train loss -0.12: (-0.47, 0.23). Val loss -0.09: (-0.45, 0.28)
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Diabetes:-How-related-conditions-are-impacted-by-each-other">Diabetes: How related conditions are impacted by each other<a class="anchor-link" href="#Diabetes:-How-related-conditions-are-impacted-by-each-other">&#182;</a></h2><p>Probability of type II diabetes before and after a type I diagnosis</p>
-
+<h2 id="Diagnoses:-How-related-conditions-are-impacted-by-each-other">Diagnoses: How related conditions are impacted by each other<a class="anchor-link" href="#Diagnoses:-How-related-conditions-are-impacted-by-each-other">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -15060,7 +15029,7 @@ Epoch 27:	Train loss -0.12: (-0.47, 0.23). Val loss -0.09: (-0.45, 0.28)
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Values:-How-increasing-diastolic_blood_pressure-affects-likelihood-of-diagnoses">Values: How increasing diastolic_blood_pressure affects likelihood of diagnoses<a class="anchor-link" href="#Values:-How-increasing-diastolic_blood_pressure-affects-likelihood-of-diagnoses">&#182;</a></h2>
+<h2 id="Values:-How-increasing-DBP-affects-diagnosis-risk">Values: How increasing DBP affects diagnosis risk<a class="anchor-link" href="#Values:-How-increasing-DBP-affects-diagnosis-risk">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -15072,11 +15041,31 @@ Epoch 27:	Train loss -0.12: (-0.47, 0.23). Val loss -0.09: (-0.45, 0.28)
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Values:-How-varying-diagnosis-affects-value-of-diastolic_blood_pressure">Values: How varying diagnosis affects value of diastolic_blood_pressure<a class="anchor-link" href="#Values:-How-varying-diagnosis-affects-value-of-diastolic_blood_pressure">&#182;</a></h2>
+<h2 id="Values:-How-varying-diagnosis-affects-value-of-DBP">Values: How varying diagnosis affects value of DBP<a class="anchor-link" href="#Values:-How-varying-diagnosis-affects-value-of-DBP">&#182;</a></h2>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>DEPRESSION                    leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.2)
+TYPE2DIABETES                 leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.2)
+HF_V3                         leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.2)
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -15096,10 +15085,24 @@ Epoch 27:	Train loss -0.12: (-0.47, 0.23). Val loss -0.09: (-0.45, 0.28)
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h2 id="Baseline,-impact-of-gender">Baseline, impact of gender<a class="anchor-link" href="#Baseline,-impact-of-gender">&#182;</a></h2>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <h1 id="Appendix:-model-architectures">Appendix: model architectures<a class="anchor-link" href="#Appendix:-model-architectures">&#182;</a></h1>
 </div>
 </div>
 </div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
+
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">

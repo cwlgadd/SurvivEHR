@@ -126,39 +126,50 @@ class ODESurvSingleLayer(nn.Module):
         return surv_CDF, surv_losses
 
 
-    def generate_sample(self, surv):
+    def sample_surv(self, surv):
 
         assert surv[0].shape[0] == 1, "TODO: not implemented for batches"
-        
-        # debug
-        # print(surv[0].shape)
-        # import matplotlib.pyplot as plt
-        # plt.close()
-        # for _s in surv:
-        #     plt.plot(self.t_eval / 365, _s[0, :])
-        # plt.savefig("test.png")
-        
-        # Randomly sample between 0 and the maximum CDF across all events
-        rsample = np.random.uniform(0, np.max([_s[0, -1] for _s in surv]))
-        # rsample = np.max([_s[0, -1] for _s in surv])
-        logging.debug(f"single-risk generation inverse tranform random sample: {rsample}")
-        
-        # Get all of the events which have their max cdf (within considered time region) < rsample
-        probs = torch.FloatTensor([0 if rsample > _s[0, -1] else 1 for _s in surv])
-        probs /= torch.sum(probs)
-        # print(probs)
-        # print(np.where(probs>0))
 
-        # Sample which token occurs next, out of possible tokens. Add one as we excluded the PAD token
-        token_next = torch.multinomial(probs, num_samples=1).reshape(-1, 1).to(self.device) + 1  # (B, 1)
+        # Sample which event occurs next by sampling with probability proportional to the AUC
+        AUCs = [np.sum(_s[0, :]) for _s in surv]          
+        weights = torch.tensor(AUCs, dtype=torch.float)
+        next_index = torch.multinomial(weights, 1) 
+        logging.debug(f"Sampled token {next_index + 1} using area under curve")
 
-        # age
-        time_index = np.sum(surv[token_next][0, :] <= rsample) - 1
+        # And then sample at what time this event occurs
+        try:
+            rsample = np.random.uniform(0, surv[next_index][0,-1])                    # Randomly sample between 0 and the maximum cumulative prob
+        except:
+            print(next_index)
+            raise NotImplementedError
+        logging.debug(f"competing-risk generation inverse tranform random sample: {rsample}~U(0,{surv[next_index][0,-1]})")
+        time_index = np.sum(surv[next_index] <= rsample) - 1
         delta_age = self.t_eval[time_index]
 
-        # print(f"sampled token {token_next} ({token_next.shape}) to occur in {delta_age} days")
+        next_token_index = next_index.reshape(-1, 1).to(self.device) + 1   # add one as the survival curves do not include the PAD token, which has token index 0
         
-        return token_next, delta_age
+        return next_token_index, delta_age
+        # # Randomly sample between 0 and the maximum CDF across all events
+        # rsample = np.random.uniform(0, np.max([_s[0, -1] for _s in surv]))
+        # # rsample = np.max([_s[0, -1] for _s in surv])
+        # logging.debug(f"single-risk generation inverse tranform random sample: {rsample}")
+        
+        # # Get all of the events which have their max cdf (within considered time region) < rsample
+        # probs = torch.FloatTensor([0 if rsample > _s[0, -1] else 1 for _s in surv])
+        # probs /= torch.sum(probs)
+        # # print(probs)
+        # # print(np.where(probs>0))
+
+        # # Sample which token occurs next, out of possible tokens. Add one as we excluded the PAD token
+        # token_next = torch.multinomial(probs, num_samples=1).reshape(-1, 1).to(self.device) + 1  # (B, 1)
+
+        # # age
+        # time_index = np.sum(surv[token_next][0, :] <= rsample) - 1
+        # delta_age = self.t_eval[time_index]
+
+        # # print(f"sampled token {token_next} ({token_next.shape}) to occur in {delta_age} days")
+        
+        # return token_next, delta_age
 
 
 class ODESurvCompetingRiskLayer(nn.Module):
@@ -177,7 +188,7 @@ class ODESurvCompetingRiskLayer(nn.Module):
         self.t_eval = np.linspace(0, self._time_scale, 300)    # the time grid which we generate over
         self.device = device
 
-        logging.info(f"Using Single-Risk DeSurvival head. This module predicts a separate survival curve for each possible future event")
+        logging.info(f"Using Competing-Risk DeSurv head.")
         logging.info(f"Internally scaling time in survival head by {self._time_scale} days")
         logging.info(f"In generation forwarding DeSurv on the grid between [{self.t_eval.min()}, {self.t_eval.max()}], with delta=1/{len(self.t_eval)}")
 
@@ -227,10 +238,6 @@ class ODESurvCompetingRiskLayer(nn.Module):
             tte_deltas = tte_deltas[tte_obs_mask == 1]
             k = k.flatten()[tte_obs_mask == 1]
 
-            # print(f"{k.shape}, {k}")
-            # print(f"{in_hidden_state.shape}, {in_hidden_state}")
-            # print(f"{tte_deltas.shape}, {tte_deltas}")
-
             # At this point we have a competing-risk for each type of event, where tte_deltas are the times to each next
             #  event. Censored events (such as GP visit with no diagnosis/measurement/test. I.e. k=0 (but not padding),
             #  though informative, is not in the currently considered dataset. TODO
@@ -270,36 +277,28 @@ class ODESurvCompetingRiskLayer(nn.Module):
 
         return surv_CDF, surv_loss
 
-    def generate_sample(self, surv):
+    def sample_surv(self, surv):
+        """ Generate samples from survival curves using inverse sampling
+        """
 
         assert surv[0].shape[0] == 1, "TODO: not implemented for batches"
-        
-        # debug
-        # print(surv[0].shape)
-        # import matplotlib.pyplot as plt
-        # plt.close()
-        # for _s in surv:
-        #     plt.plot(self.t_eval / 365, _s[0, :])
-        # plt.savefig("test.png")
-        
-        # Randomly sample between 0 and the maximum CDF across all events
-        rsample = np.random.uniform(0, np.max([_s[0, -1] for _s in surv]))
-        # rsample = np.max([_s[0, -1] for _s in surv])
-        logging.debug(f"single-risk generation inverse tranform random sample: {rsample}")
-        
-        # Get all of the events which have their max cdf (within considered time region) < rsample
-        probs = torch.FloatTensor([0 if rsample > _s[0, -1] else 1 for _s in surv])
-        probs /= torch.sum(probs)
-        # print(probs)
-        # print(np.where(probs>0))
 
-        # Sample which token occurs next, out of possible tokens. Add one as we excluded the PAD token
-        token_next = torch.multinomial(probs, num_samples=1).reshape(-1, 1).to(self.device) + 1  # (B, 1)
+        # Sample which event occurs next by sampling with probability proportional to the AUC
+        AUCs = [np.sum(_s[0, :]) for _s in surv]          
+        weights = torch.tensor(AUCs, dtype=torch.float)
+        next_index = torch.multinomial(weights, 1) 
+        logging.debug(f"Sampled token {next_index + 1} using area under curve")
 
-        # age
-        time_index = np.sum(surv[token_next][0, :] <= rsample) - 1
+        # And then sample at what time this event occurs
+        try:
+            rsample = np.random.uniform(0, surv[next_index][0,-1])                    # Randomly sample between 0 and the maximum cumulative prob
+        except:
+            print(next_index)
+            raise NotImplementedError
+        logging.debug(f"competing-risk generation inverse tranform random sample: {rsample}~U(0,{surv[next_index][0,-1]})")
+        time_index = np.sum(surv[next_index] <= rsample) - 1
         delta_age = self.t_eval[time_index]
 
-        # print(f"sampled token {token_next} ({token_next.shape}) to occur in {delta_age} days")
+        next_token_index = next_index.reshape(-1, 1).to(self.device) + 1   # add one as the survival curves do not include the PAD token, which has token index 0
         
-        return token_next, delta_age
+        return next_token_index, delta_age
