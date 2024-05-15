@@ -14594,6 +14594,31 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Added path &#39;/rds/homes/g/gaddcz/Projects/CPRD/virtual-env-icelake/lib/python3.10/site-packages&#39; at start of search paths.
+env: SQLITE_TMPDIR=/rds/projects/g/gokhalkm-optimal/DataforCharles
+env: TMPDIR=/rds/projects/g/gokhalkm-optimal/DataforCharles
+/rds/projects/g/gokhalkm-optimal/DataforCharles
+/rds/projects/g/gokhalkm-optimal/DataforCharles
+
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
 <pre>cuda
 /rds/homes/g/gaddcz/Projects/CPRD/examples/modelling/tteGPT
 </pre>
@@ -14626,8 +14651,6 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
-
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
 
 <div class="jp-Cell-outputWrapper">
@@ -14639,33 +14662,26 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>INFO:root:Loading Polars dataset from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/archive/Version2/polars/
+<pre>INFO:root:Loading Polars dataset from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/
 INFO:root:Using tokenizer tabular
-INFO:root:Tokenzier created based on 72.02M tokens
-INFO:root:Creating dataset
-Calculating chunk index splits : 27it [00:24,  1.10it/s]
-INFO:root:Creating dataset
-Calculating chunk index splits : 2it [00:01,  1.29it/s]
-INFO:root:Creating dataset
-Calculating chunk index splits : 2it [00:00,  2.32it/s]</pre>
+INFO:root:Tokenzier created based on 3584.43M tokens
+INFO:root:Creating split=train/ dataset
+INFO:root:	 Loading split=train/ hash map for parquet
+INFO:root:	 Hash map created for split=train/ with 22,912,046 samples
+INFO:root:Creating split=test/ dataset
+INFO:root:	 Loading split=test/ hash map for parquet
+INFO:root:	 Hash map created for split=test/ with 1,207,449 samples
+INFO:root:Creating split=val/ dataset
+INFO:root:	 Loading split=val/ hash map for parquet
+INFO:root:	 Hash map created for split=val/ with 1,226,576 samples
+</pre>
 </div>
 </div>
 
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>466683 training patients
-17022 validation patients
-29120 test patients
-184 vocab elements
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>
+<pre>184 vocab elements
 </pre>
 </div>
 </div>
@@ -14674,6 +14690,16 @@ Calculating chunk index splits : 2it [00:00,  2.32it/s]</pre>
 
 </div>
 
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h2 id="View-a-single-patient">View a single patient<a class="anchor-link" href="#View-a-single-patient">&#182;</a></h2>
+</div>
+</div>
+</div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
 
 <div class="jp-Cell-outputWrapper">
@@ -14685,196 +14711,27 @@ Calculating chunk index splits : 2it [00:00,  2.32it/s]</pre>
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>shape: (183, 3)
-┌───────────────────────────────────┬─────────┬───────────┐
-│ EVENT                             ┆ COUNT   ┆ FREQUENCY │
-│ ---                               ┆ ---     ┆ ---       │
-│ str                               ┆ u32     ┆ f64       │
-╞═══════════════════════════════════╪═════════╪═══════════╡
-│ UNK                               ┆ 0       ┆ 0.0       │
-│ Plasma_N-terminal_pro_B-type_nat… ┆ 21      ┆ 2.9157e-7 │
-│ CYSTICFIBROSIS                    ┆ 119     ┆ 0.000002  │
-│ SICKLE_CELL_DISEASE_V2            ┆ 132     ┆ 0.000002  │
-│ SYSTEMIC_SCLEROSIS                ┆ 184     ┆ 0.000003  │
-│ ADDISON_DISEASE                   ┆ 225     ┆ 0.000003  │
-│ DOWNSSYNDROME                     ┆ 363     ┆ 0.000005  │
-│ PLASMACELL_NEOPLASM               ┆ 388     ┆ 0.000005  │
-│ Plasma_cholesterol_HDL_ratio_96   ┆ 452     ┆ 0.000006  │
-│ HAEMOCHROMATOSIS_V2               ┆ 480     ┆ 0.000007  │
-│ SJOGRENSSYNDROME                  ┆ 500     ┆ 0.000007  │
-│ SYSTEMIC_LUPUS_ERYTHEMATOSUS      ┆ 564     ┆ 0.000008  │
-│ N_terminal_pro-brain_natriuretic… ┆ 668     ┆ 0.000009  │
-│ Blood_calcium_level_38            ┆ 872     ┆ 0.000012  │
-│ HIVAIDS                           ┆ 925     ┆ 0.000013  │
-│ MS                                ┆ 1056    ┆ 0.000015  │
-│ LEUKAEMIA_PREVALENCE              ┆ 1156    ┆ 0.000016  │
-│ PSORIATICARTHRITIS2021            ┆ 1168    ┆ 0.000016  │
-│ Plasma_B_natriuretic_peptide_lev… ┆ 1179    ┆ 0.000016  │
-│ Plasma_pro-brain_natriuretic_pep… ┆ 1269    ┆ 0.000018  │
-│ ILD_SH                            ┆ 1287    ┆ 0.000018  │
-│ Brain_natriuretic_peptide_level_… ┆ 1390    ┆ 0.000019  │
-│ CHRONIC_LIVER_DISEASE_ALCOHOL     ┆ 1500    ┆ 0.000021  │
-│ PERNICIOUSANAEMIA                 ┆ 1527    ┆ 0.000021  │
-│ MENIERESDISEASE                   ┆ 1590    ┆ 0.000022  │
-│ CHRONICFATIGUESYNDROMEMM          ┆ 1617    ┆ 0.000022  │
-│ CROHNS_DISEASE                    ┆ 1637    ┆ 0.000023  │
-│ LYMPHOMA_PREVALENCE               ┆ 1702    ┆ 0.000024  │
-│ STROKE_HAEMRGIC                   ┆ 1716    ┆ 0.000024  │
-│ PARKINSONS                        ┆ 1861    ┆ 0.000026  │
-│ BIPOLAR                           ┆ 2027    ┆ 0.000028  │
-│ AORTICANEURYSM                    ┆ 2411    ┆ 0.000033  │
-│ ULCERATIVE_COLITIS                ┆ 2430    ┆ 0.000034  │
-│ SCHIZOPHRENIAMM                   ┆ 2533    ┆ 0.000035  │
-│ BRONCHIECTASIS                    ┆ 2535    ┆ 0.000035  │
-│ PTSDDIAGNOSIS                     ┆ 2562    ┆ 0.000036  │
-│ Calcium_adjusted_level_41         ┆ 2645    ┆ 0.000037  │
-│ TYPE1DM                           ┆ 2848    ┆ 0.00004   │
-│ LEARNINGDISABILITY_V2             ┆ 2890    ┆ 0.00004   │
-│ AUTISM                            ┆ 2962    ┆ 0.000041  │
-│ VISUAL_IMPAIRMENT                 ┆ 3113    ┆ 0.000043  │
-│ FIBROMYALGIA                      ┆ 3441    ┆ 0.000048  │
-│ ISCHAEMICSTROKE                   ┆ 3445    ┆ 0.000048  │
-│ NAFLD                             ┆ 3779    ┆ 0.000052  │
-│ EATINGDISORDERS                   ┆ 3968    ┆ 0.000055  │
-│ ENDOMETRIOSIS_ADENOMYOSIS         ┆ 4115    ┆ 0.000057  │
-│ ENDOMETRIOSIS_ADENOMYOSIS_V2      ┆ 4115    ┆ 0.000057  │
-│ Urine_microalbumin_creatinine_ra… ┆ 4147    ┆ 0.000058  │
-│ HYPERTHYROIDISM_V2                ┆ 4447    ┆ 0.000062  │
-│ RHEUMATOIDARTHRITIS               ┆ 4550    ┆ 0.000063  │
-│ PMRANDGCA                         ┆ 4597    ┆ 0.000064  │
-│ Serum_pro-brain_natriuretic_pept… ┆ 4763    ┆ 0.000066  │
-│ OSA                               ┆ 4768    ┆ 0.000066  │
-│ Plasma_ferritin_level_62          ┆ 4988    ┆ 0.000069  │
-│ OTHER_CHRONIC_LIVER_DISEASE_OPTI… ┆ 5805    ┆ 0.000081  │
-│ Total_25-hydroxyvitamin_D_level_… ┆ 5806    ┆ 0.000081  │
-│ POLYCYSTIC_OVARIAN_SYNDROME_PCOS… ┆ 5936    ┆ 0.000082  │
-│ PAD_STRICT                        ┆ 6100    ┆ 0.000085  │
-│ Serum_vitamin_D2_level_89         ┆ 6294    ┆ 0.000087  │
-│ Albumin___creatinine_ratio_37     ┆ 6543    ┆ 0.000091  │
-│ INR_-_international_normalised_r… ┆ 7106    ┆ 0.000099  │
-│ EPILEPSY                          ┆ 7472    ┆ 0.000104  │
-│ Serum_N-terminal_pro_B-type_natr… ┆ 8340    ┆ 0.000116  │
-│ VALVULARDISEASES                  ┆ 8390    ┆ 0.000116  │
-│ STROKEUNSPECIFIED                 ┆ 8708    ┆ 0.000121  │
-│ SUBSTANCEMISUSE                   ┆ 9329    ┆ 0.00013   │
-│ 25-Hydroxyvitamin_D3_level_90     ┆ 9914    ┆ 0.000138  │
-│ 25-Hydroxyvitamin_D2_level_92     ┆ 10006   ┆ 0.000139  │
-│ Plasma_free_T4_level_77           ┆ 10543   ┆ 0.000146  │
-│ MINFARCTION                       ┆ 10584   ┆ 0.000147  │
-│ ALL_DEMENTIA                      ┆ 11045   ┆ 0.000153  │
-│ HF                                ┆ 12414   ┆ 0.000172  │
-│ Combined_total_vitamin_D2_and_D3… ┆ 13219   ┆ 0.000184  │
-│ GOUT                              ┆ 13486   ┆ 0.000187  │
-│ OSTEOPOROSIS                      ┆ 13934   ┆ 0.000193  │
-│ TSH_level_74                      ┆ 14449   ┆ 0.000201  │
-│ PSORIASIS                         ┆ 15376   ┆ 0.000213  │
-│ COPD                              ┆ 15706   ┆ 0.000218  │
-│ AF                                ┆ 15736   ┆ 0.000218  │
-│ PERIPHERAL_NEUROPATHY             ┆ 17226   ┆ 0.000239  │
-│ HYPOTHYROIDISM_DRAFT_V1           ┆ 19124   ┆ 0.000266  │
-│ Blood_urea_28                     ┆ 20404   ┆ 0.000283  │
-│ Serum_total_25-hydroxy_vitamin_D… ┆ 21175   ┆ 0.000294  │
-│ CKDSTAGE3TO5                      ┆ 22769   ┆ 0.000316  │
-│ Serum_T4_level_78                 ┆ 22976   ┆ 0.000319  │
-│ IHD_NOMI                          ┆ 24182   ┆ 0.000336  │
-│ Plasma_calcium_level_40           ┆ 24921   ┆ 0.000346  │
-│ PREVALENT_IBS_V2                  ┆ 26056   ┆ 0.000362  │
-│ TYPE2DIABETES                     ┆ 27227   ┆ 0.000378  │
-│ ALCOHOLMISUSE                     ┆ 29298   ┆ 0.000407  │
-│ ALLCA_NOBCC_VFINAL                ┆ 31883   ┆ 0.000443  │
-│ Serum_25-Hydroxy_vitamin_D3_leve… ┆ 33208   ┆ 0.000461  │
-│ Free_T4_level_76                  ┆ 34015   ┆ 0.000472  │
-│ DEATH                             ┆ 34558   ┆ 0.00048   │
-│ AST_-_aspartate_transam._SGOT__4… ┆ 38598   ┆ 0.000536  │
-│ Plasma_corrected_calcium_level_4… ┆ 40689   ┆ 0.000565  │
-│ Plasma_urea_level_30              ┆ 41531   ┆ 0.000577  │
-│ Serum_vitamin_D_86                ┆ 43157   ┆ 0.000599  │
-│ Total_bilirubin_55                ┆ 44092   ┆ 0.000612  │
-│ Plasma_LDL_cholesterol_level_104  ┆ 47234   ┆ 0.000656  │
-│ Plasma_triglyceride_level_106     ┆ 50066   ┆ 0.000695  │
-│ ANY_DEAFNESS_HEARING_LOSS_V2      ┆ 50345   ┆ 0.000699  │
-│ OSTEOARTHRITIS                    ┆ 58106   ┆ 0.000807  │
-│ Non_HDL_cholesterol_level_108     ┆ 59769   ┆ 0.00083   │
-│ Plasma_TSH_level_73               ┆ 63630   ┆ 0.000883  │
-│ Plasma_gamma-glutamyl_transferas… ┆ 64719   ┆ 0.000899  │
-│ ALLERGICRHINITISCONJ              ┆ 64910   ┆ 0.000901  │
-│ ANXIETY                           ┆ 73765   ┆ 0.001024  │
-│ Plasma_HDL_cholesterol_level_101  ┆ 73994   ┆ 0.001027  │
-│ HYPERTENSION                      ┆ 76536   ┆ 0.001063  │
-│ ASTHMA_PUSHASTHMA                 ┆ 79439   ┆ 0.001103  │
-│ Plasma_total_cholesterol_level_9… ┆ 79588   ┆ 0.001105  │
-│ DEPRESSION                        ┆ 85941   ┆ 0.001193  │
-│ Haemoglobin_A1c_level_8           ┆ 89448   ┆ 0.001242  │
-│ ATOPICECZEMA                      ┆ 92164   ┆ 0.00128   │
-│ TSH_-_thyroid_stim._hormone_72    ┆ 95239   ┆ 0.001322  │
-│ Total_alkaline_phosphatase_48     ┆ 100147  ┆ 0.00139   │
-│ Haematocrit_-_PCV_16              ┆ 113430  ┆ 0.001575  │
-│ Plasma_total_bilirubin_level_54   ┆ 116309  ┆ 0.001615  │
-│ Plasma_alkaline_phosphatase_leve… ┆ 119574  ┆ 0.00166   │
-│ Plasma_alanine_aminotransferase_… ┆ 120168  ┆ 0.001668  │
-│ Calculated_LDL_cholesterol_level… ┆ 125255  ┆ 0.001739  │
-│ Plasma_albumin_level_52           ┆ 126565  ┆ 0.001757  │
-│ Plasma_potassium_level_27         ┆ 144588  ┆ 0.002008  │
-│ Plasma_sodium_level_25            ┆ 144702  ┆ 0.002009  │
-│ Plasma_creatinine_level_32        ┆ 148644  ┆ 0.002064  │
-│ AST_serum_level_47                ┆ 160863  ┆ 0.002233  │
-│ Current_smoker_83                 ┆ 170096  ┆ 0.002362  │
-│ Serum_total_cholesterol_level_98  ┆ 173116  ┆ 0.002404  │
-│ Serum_non_high_density_lipoprote… ┆ 184358  ┆ 0.00256   │
-│ Plasma_C_reactive_protein_60      ┆ 191875  ┆ 0.002664  │
-│ HbA1c_level__DCCT_aligned__7      ┆ 255392  ┆ 0.003546  │
-│ eGFR_using_creatinine__CKD-EPI__… ┆ 258032  ┆ 0.003583  │
-│ Urine_albumin_creatinine_ratio_3… ┆ 280722  ┆ 0.003898  │
-│ Serum_folate_80                   ┆ 287336  ┆ 0.003989  │
-│ Total_cholesterol_HDL_ratio_95    ┆ 330517  ┆ 0.004589  │
-│ Serum_C_reactive_protein_level_5… ┆ 333929  ┆ 0.004636  │
-│ Serum_vitamin_B12_79              ┆ 339815  ┆ 0.004718  │
-│ Corrected_serum_calcium_level_42  ┆ 341071  ┆ 0.004736  │
-│ Serum_ferritin_63                 ┆ 404189  ┆ 0.005612  │
-│ Serum_free_T4_level_75            ┆ 405894  ┆ 0.005636  │
-│ Serum_bilirubin_level_53          ┆ 437688  ┆ 0.006077  │
-│ Serum_cholesterol_HDL_ratio_94    ┆ 467651  ┆ 0.006493  │
-│ Serum_gamma-glutamyl_transferase… ┆ 485765  ┆ 0.006745  │
-│ International_normalised_ratio_8… ┆ 529460  ┆ 0.007351  │
-│ Serum_LDL_cholesterol_level_102   ┆ 571744  ┆ 0.007938  │
-│ Ex_smoker_84                      ┆ 580799  ┆ 0.008064  │
-│ Erythrocyte_sedimentation_rate_6… ┆ 593460  ┆ 0.00824   │
-│ Serum_calcium_39                  ┆ 612846  ┆ 0.008509  │
-│ Haemoglobin_A1c_level_-_IFCC_sta… ┆ 658933  ┆ 0.009149  │
-│ Serum_triglycerides_105           ┆ 849745  ┆ 0.011798  │
-│ Serum_HDL_cholesterol_level_100   ┆ 957754  ┆ 0.013298  │
-│ Red_blood_cell_distribution_widt… ┆ 958975  ┆ 0.013315  │
-│ Serum_alanine_aminotransferase_l… ┆ 998453  ┆ 0.013863  │
-│ Serum_TSH_level_71                ┆ 1021942 ┆ 0.014189  │
-│ Serum_cholesterol_97              ┆ 1034167 ┆ 0.014359  │
-│ Mean_corpusc._Hb._conc.__MCHC__1… ┆ 1109719 ┆ 0.015408  │
-│ Never_smoked_tobacco_85           ┆ 1153480 ┆ 0.016015  │
-│ Serum_total_bilirubin_level_56    ┆ 1163389 ┆ 0.016153  │
-│ O_E_-_height_1                    ┆ 1234637 ┆ 0.017142  │
-│ Haematocrit_15                    ┆ 1359953 ┆ 0.018882  │
-│ GFR_calculated_abbreviated_MDRD_… ┆ 1556063 ┆ 0.021605  │
-│ Serum_alkaline_phosphatase_50     ┆ 1623702 ┆ 0.022544  │
-│ Serum_albumin_51                  ┆ 1650999 ┆ 0.022923  │
-│ Serum_urea_level_29               ┆ 1700216 ┆ 0.023606  │
-│ Basophil_count_22                 ┆ 1742926 ┆ 0.024199  │
-│ Mean_corpusc._haemoglobin_MCH__1… ┆ 1776245 ┆ 0.024662  │
-│ Monocyte_count_23                 ┆ 1859334 ┆ 0.025816  │
-│ Eosinophil_count_21               ┆ 1867184 ┆ 0.025925  │
-│ Red_blood_cell__RBC__count_10     ┆ 1872097 ┆ 0.025993  │
-│ Lymphocyte_count_20               ┆ 1884479 ┆ 0.026165  │
-│ Neutrophil_count_19               ┆ 1895139 ┆ 0.026313  │
-│ Mean_corpuscular_volume__MCV__11  ┆ 1927082 ┆ 0.026756  │
-│ Platelet_count_12                 ┆ 1956536 ┆ 0.027165  │
-│ Total_white_cell_count_18         ┆ 1956888 ┆ 0.02717   │
-│ Body_mass_index_3                 ┆ 1962373 ┆ 0.027246  │
-│ Serum_potassium_26                ┆ 1989176 ┆ 0.027618  │
-│ Haemoglobin_estimation_9          ┆ 2001865 ┆ 0.027795  │
-│ Serum_sodium_24                   ┆ 2026168 ┆ 0.028132  │
-│ Serum_creatinine_31               ┆ 2084410 ┆ 0.028941  │
-│ O_E_-_weight_2                    ┆ 2233648 ┆ 0.031013  │
-│ Diastolic_blood_pressure_5        ┆ 5064060 ┆ 0.070311  │
-│ Systolic_blood_pressure_4         ┆ 5069808 ┆ 0.070391  │
-└───────────────────────────────────┴─────────┴───────────┘
+<pre>Time to retrieve sample index 1 was 0.12956857681274414 seconds
+
+SEX                 | F
+IMD                 | 4.0
+ETHNICITY           | WHITE
+birth_year          | 1997.0
+
+Token                                                                      | Age               | Standardised value
+===================================================================================================================
+O_E___weight_2                                                             | 5687              | 0.18              
+Basophil_count_22                                                          | 5697              | 0.14              
+Eosinophil_count_21                                                        | 5697              | 0.24              
+Haematocrit_15                                                             | 5697              | -0.04             
+Haemoglobin_estimation_9                                                   | 5697              | nan               
+Lymphocyte_count_20                                                        | 5697              | 0.15              
+Mean_corpusc_Hb_conc__MCHC__14                                             | 5697              | nan               
+Mean_corpusc_haemoglobin_MCH__13                                           | 5697              | -0.20             
+Mean_corpuscular_volume__MCV__11                                           | 5697              | -0.09             
+Monocyte_count_23                                                          | 5697              | 0.05              
+Neutrophil_count_19                                                        | 5697              | -0.04             
+Platelet_count_12                                                          | 5697              | 0.11              
 </pre>
 </div>
 </div>
@@ -14906,8 +14763,6 @@ Calculating chunk index splits : 2it [00:00,  2.32it/s]</pre>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
 <pre>INFO:root:Using Temporal Positional Encoding. This module uses the patient&#39;s age at an event within their time series.
 INFO:root:Using ExponentialTTELayer. This module predicts the time until next event as an exponential distribution
-INFO:root:Using Temporal Positional Encoding. This module uses the patient&#39;s age at an event within their time series.
-INFO:root:Using GeometricTTELayer. This module predicts the time until next event as a geometric distribution, supported on the set {0,1,...}
 </pre>
 </div>
 </div>
@@ -14915,8 +14770,6 @@ INFO:root:Using GeometricTTELayer. This module predicts the time until next even
 </div>
 
 </div>
-
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
 
@@ -14929,7 +14782,7 @@ INFO:root:Using GeometricTTELayer. This module predicts the time until next even
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Training model `TPPTransformerForCausalSequenceModelling: Exponential TTE`, with 10.853185 M parameters
+<pre>Training model with 11.155393 M parameters
 </pre>
 </div>
 </div>
@@ -14937,8 +14790,8 @@ INFO:root:Using GeometricTTELayer. This module predicts the time until next even
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 0:   1%|          | 51/7292 [01:05&lt;2:36:02,  1.29s/it]
-Validation epoch 0:   0%|          | 21/7292 [00:19&lt;1:51:36,  1.09it/s]
+<pre>Training epoch 0:   1%|          | 1001/179001 [05:36&lt;16:37:15,  2.97it/s]
+Validation epoch 0:   1%|          | 101/9583 [00:41&lt;1:05:25,  2.42it/s]
 </pre>
 </div>
 </div>
@@ -14946,7 +14799,7 @@ Validation epoch 0:   0%|          | 21/7292 [00:19&lt;1:51:36,  1.09it/s]
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 0:	Train loss 0.30  (2.00, -1.41). Val loss -0.07 (1.58, -1.71)
+<pre>Epoch 0:	Train loss -0.68: (1.17, -2.53). Val loss -1.03: (1.01, -3.08)
 </pre>
 </div>
 </div>
@@ -14954,161 +14807,153 @@ Validation epoch 0:   0%|          | 21/7292 [00:19&lt;1:51:36,  1.09it/s]
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 1:   1%|          | 51/7292 [01:06&lt;2:38:27,  1.31s/it]
-Validation epoch 1:   0%|          | 21/7292 [00:19&lt;1:51:16,  1.09it/s]
+<pre>Training epoch 1:   0%|          | 213/179001 [01:14&lt;17:24:37,  2.85it/s]
+Exception ignored in: &lt;function WeakValueDictionary.__init__.&lt;locals&gt;.remove at 0x7f1717d69f30&gt;
+Traceback (most recent call last):
+  File &#34;/rds/bear-apps/2022a/EL8-ice/software/Python/3.10.4-GCCcore-11.3.0/lib/python3.10/weakref.py&#34;, line 106, in remove
+KeyboardInterrupt: 
 </pre>
 </div>
 </div>
 
 <div class="jp-OutputArea-child">
 
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 1:	Train loss -0.05  (1.63, -1.73). Val loss -0.17 (1.44, -1.78)
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #800000; text-decoration-color: #800000">╭─────────────────────────────── </span><span style="color: #800000; text-decoration-color: #800000; font-weight: bold">Traceback </span><span style="color: #bf7f7f; text-decoration-color: #bf7f7f; font-weight: bold">(most recent call last)</span><span style="color: #800000; text-decoration-color: #800000"> ────────────────────────────────╮</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/tmp/ipykernel_80067/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">235104803.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">19</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">&lt;module&gt;</span>                                                 <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000; font-style: italic">[Errno 2] No such file or directory: '/tmp/ipykernel_80067/235104803.py'</span>                         <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/bear-apps/2022a/EL8-ice/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-</span> <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">packages/torch/nn/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">module.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">1130</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">_call_impl</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1127 │   │   # this function, and just call forward.</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1128 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #ff00ff; text-decoration-color: #ff00ff">not</span> (<span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_pre_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">o</span>  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1129 │   │   │   │   </span><span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_pre_hooks):                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>1130 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">return</span> forward_call(*<span style="color: #00ffff; text-decoration-color: #00ffff">input</span>, **kwargs)                                         <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1131 │   │   # Do not call functions when jit is used</span>                                          <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1132 │   │   </span>full_backward_hooks, non_full_backward_hooks = [], []                             <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1133 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_backward_hooks:                                <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/homes/g/gaddcz/Projects/CPRD/src/models/TTE/task_heads/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">causal.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">102</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">forward</span>             <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 99 </span><span style="color: #bfbf7f; text-decoration-color: #bfbf7f">│   │     </span><span style="color: #808000; text-decoration-color: #808000">e.g. see https://github.com/huggingface/transformers/blob/main/src/transformer</span>   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">100 </span><span style="color: #bfbf7f; text-decoration-color: #bfbf7f">│   │   </span><span style="color: #808000; text-decoration-color: #808000">"""</span>                                                                                <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">101 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>102 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   </span>hidden_states = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.transformer(tokens=tokens,                                    <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">103 │   │   │   │   │   │   │   │   │   │    </span>ages=ages,                                        <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">104 │   │   │   │   │   │   │   │   │   │    </span>attention_mask=attention_mask)  <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"># shape: (bsz, </span>   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">105 </span>                                                                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/bear-apps/2022a/EL8-ice/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-</span> <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">packages/torch/nn/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">module.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">1130</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">_call_impl</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1127 │   │   # this function, and just call forward.</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1128 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #ff00ff; text-decoration-color: #ff00ff">not</span> (<span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_pre_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">o</span>  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1129 │   │   │   │   </span><span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_pre_hooks):                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>1130 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">return</span> forward_call(*<span style="color: #00ffff; text-decoration-color: #00ffff">input</span>, **kwargs)                                         <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1131 │   │   # Do not call functions when jit is used</span>                                          <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1132 │   │   </span>full_backward_hooks, non_full_backward_hooks = [], []                             <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1133 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_backward_hooks:                                <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/homes/g/gaddcz/Projects/CPRD/src/models/TTE/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">base.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">128</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">forward</span>                          <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">125 │   │   │   </span>x = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.drop(x)                                                               <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">126 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">127 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">for</span> block <span style="color: #ff00ff; text-decoration-color: #ff00ff">in</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.blocks:                                                          <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>128 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   │   </span>x = block(x, attention_mask=attention_mask)                                    <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">129 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">130 │   │   </span>x = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.ln_f(x)                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">131 </span>                                                                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/bear-apps/2022a/EL8-ice/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-</span> <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">packages/torch/nn/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">module.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">1130</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">_call_impl</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1127 │   │   # this function, and just call forward.</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1128 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #ff00ff; text-decoration-color: #ff00ff">not</span> (<span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_pre_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">o</span>  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1129 │   │   │   │   </span><span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_pre_hooks):                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>1130 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">return</span> forward_call(*<span style="color: #00ffff; text-decoration-color: #00ffff">input</span>, **kwargs)                                         <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1131 │   │   # Do not call functions when jit is used</span>                                          <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1132 │   │   </span>full_backward_hooks, non_full_backward_hooks = [], []                             <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1133 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_backward_hooks:                                <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/homes/g/gaddcz/Projects/CPRD/src/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">block.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">38</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">forward</span>                             <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">35 </span><span style="color: #bfbf7f; text-decoration-color: #bfbf7f">│   │   </span><span style="color: #808000; text-decoration-color: #808000">"""</span>                                                                                 <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">36 │   │   </span>residual = hidden_states                                                            <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">37 │   │   </span>hidden_states = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.ln_1(hidden_states)                                            <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>38 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   </span>attn_outputs = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.attn(                                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">39 │   │   │   </span>hidden_states,                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">40 │   │   │   </span>layer_past=layer_past,                                                          <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">41 │   │   │   </span>attention_mask=attention_mask,                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/bear-apps/2022a/EL8-ice/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-</span> <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">packages/torch/nn/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">module.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">1130</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">_call_impl</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1127 │   │   # this function, and just call forward.</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1128 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #ff00ff; text-decoration-color: #ff00ff">not</span> (<span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_pre_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">o</span>  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1129 │   │   │   │   </span><span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_pre_hooks):                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>1130 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">return</span> forward_call(*<span style="color: #00ffff; text-decoration-color: #00ffff">input</span>, **kwargs)                                         <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1131 │   │   # Do not call functions when jit is used</span>                                          <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1132 │   │   </span>full_backward_hooks, non_full_backward_hooks = [], []                             <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1133 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_backward_hooks:                                <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/homes/g/gaddcz/Projects/CPRD/src/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">self_attention.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">148</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">forward</span>                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">145 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">else</span>:                                                                              <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">146 │   │   │   </span>present = <span style="color: #0000ff; text-decoration-color: #0000ff">None</span>                                                                 <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">147 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>148 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   </span>attn_output, attn_weights = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._attn(query, key, value, attention_mask, head_m   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">149 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">150 │   │   </span>attn_output = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._merge_heads(attn_output, <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.num_heads, <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.head_dim)        <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">151 │   │   </span>attn_output = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.out_proj(attn_output)                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/homes/g/gaddcz/Projects/CPRD/src/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">self_attention.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">96</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">_attn</span>                      <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 93 │   │   </span>mask_value = torch.finfo(attn_weights.dtype).min                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 94 │   │   # Need to be a tensor, otherwise we get error: `RuntimeError: expected scalar ty</span>   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 95 │   │   # Need to be on the same device, otherwise `RuntimeError: ..., x and y to be on </span>   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span> 96 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   </span>mask_value = torch.tensor(mask_value, dtype=attn_weights.dtype).to(attn_weights.   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 97 │   │   </span>attn_weights = torch.where(causal_mask, attn_weights, mask_value)                  <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 98 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 99 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> attention_mask <span style="color: #ff00ff; text-decoration-color: #ff00ff">is</span> <span style="color: #ff00ff; text-decoration-color: #ff00ff">not</span> <span style="color: #0000ff; text-decoration-color: #0000ff">None</span>:                                                     <span style="color: #800000; text-decoration-color: #800000">│</span>
+<span style="color: #800000; text-decoration-color: #800000">╰──────────────────────────────────────────────────────────────────────────────────────────────────╯</span>
+<span style="color: #ff0000; text-decoration-color: #ff0000; font-weight: bold">KeyboardInterrupt</span>
 </pre>
-</div>
+
 </div>
 
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 2:   1%|          | 51/7292 [01:06&lt;2:37:19,  1.30s/it]
-Validation epoch 2:   0%|          | 21/7292 [00:19&lt;1:51:00,  1.09it/s]
-</pre>
-</div>
 </div>
 
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 2:	Train loss -0.14  (1.55, -1.83). Val loss -0.28 (1.37, -1.94)
-</pre>
-</div>
 </div>
 
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 3:   1%|          | 51/7292 [01:07&lt;2:40:10,  1.33s/it]
-Validation epoch 3:   0%|          | 21/7292 [00:19&lt;1:51:37,  1.09it/s]
-</pre>
-</div>
 </div>
 
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 3:	Train loss -0.24  (1.46, -1.95). Val loss -0.33 (1.37, -2.04)
-</pre>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h2 id="Generation">Generation<a class="anchor-link" href="#Generation">&#182;</a></h2>
 </div>
 </div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 4:   1%|          | 51/7292 [01:06&lt;2:38:08,  1.31s/it]
-Validation epoch 4:   0%|          | 21/7292 [00:19&lt;1:50:44,  1.09it/s]
-</pre>
 </div>
-</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
-<div class="jp-OutputArea-child">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
 
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 4:	Train loss -0.31  (1.43, -2.06). Val loss -0.41 (1.33, -2.14)
-</pre>
-</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
 
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 5:   1%|          | 51/7292 [01:06&lt;2:38:09,  1.31s/it]
-Validation epoch 5:   0%|          | 21/7292 [00:19&lt;1:52:24,  1.08it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 5:	Train loss -0.32  (1.40, -2.04). Val loss -0.43 (1.30, -2.15)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 6:   1%|          | 51/7292 [01:06&lt;2:36:43,  1.30s/it]
-Validation epoch 6:   0%|          | 21/7292 [00:19&lt;1:52:31,  1.08it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 6:	Train loss -0.40  (1.34, -2.15). Val loss -0.52 (1.25, -2.29)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 7:   1%|          | 51/7292 [01:06&lt;2:36:34,  1.30s/it]
-Validation epoch 7:   0%|          | 21/7292 [00:19&lt;1:51:28,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 7:	Train loss -0.45  (1.31, -2.20). Val loss -0.53 (1.22, -2.28)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 8:   1%|          | 51/7292 [01:06&lt;2:36:18,  1.30s/it]
-Validation epoch 8:   0%|          | 21/7292 [00:19&lt;1:50:54,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 8:	Train loss -0.46  (1.30, -2.21). Val loss -0.57 (1.22, -2.35)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 9:   1%|          | 51/7292 [01:08&lt;2:41:17,  1.34s/it]
-Validation epoch 9:   0%|          | 21/7292 [00:19&lt;1:50:27,  1.10it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 9:	Train loss -0.54  (1.26, -2.33). Val loss -0.59 (1.20, -2.38)
-</pre>
-</div>
-</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
 
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 10:   1%|          | 51/7292 [01:06&lt;2:38:19,  1.31s/it]
-Validation epoch 10:   0%|          | 21/7292 [00:19&lt;1:50:42,  1.09it/s]
+<pre>WARNING:root:Using XXX requires value embeddings, but this head ``CURRENTLY`` has no way of sampling value of next event. Setting generated values to nan until this is implemented
 </pre>
 </div>
 </div>
@@ -15116,593 +14961,21 @@ Validation epoch 10:   0%|          | 21/7292 [00:19&lt;1:50:42,  1.09it/s]
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 10:	Train loss -0.52  (1.25, -2.29). Val loss -0.62 (1.19, -2.42)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 11:   1%|          | 51/7292 [01:07&lt;2:39:10,  1.32s/it]
-Validation epoch 11:   0%|          | 21/7292 [00:19&lt;1:50:16,  1.10it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 11:	Train loss -0.59  (1.27, -2.45). Val loss -0.63 (1.20, -2.46)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 12:   1%|          | 51/7292 [01:07&lt;2:39:03,  1.32s/it]
-Validation epoch 12:   0%|          | 21/7292 [00:19&lt;1:50:25,  1.10it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 12:	Train loss -0.63  (1.23, -2.49). Val loss -0.69 (1.17, -2.55)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 13:   1%|          | 51/7292 [01:06&lt;2:36:21,  1.30s/it]
-Validation epoch 13:   0%|          | 21/7292 [00:19&lt;1:50:23,  1.10it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 13:	Train loss -0.64  (1.22, -2.51). Val loss -0.71 (1.16, -2.57)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 14:   1%|          | 51/7292 [01:08&lt;2:42:39,  1.35s/it]
-Validation epoch 14:   0%|          | 21/7292 [00:19&lt;1:50:52,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 14:	Train loss -0.65  (1.22, -2.51). Val loss -0.71 (1.17, -2.58)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 15:   1%|          | 51/7292 [01:07&lt;2:38:55,  1.32s/it]
-Validation epoch 15:   0%|          | 21/7292 [00:19&lt;1:50:50,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 15:	Train loss -0.61  (1.23, -2.44). Val loss -0.68 (1.17, -2.52)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 16:   1%|          | 51/7292 [01:06&lt;2:37:53,  1.31s/it]
-Validation epoch 16:   0%|          | 21/7292 [00:19&lt;1:50:09,  1.10it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 16:	Train loss -0.61  (1.25, -2.47). Val loss -0.74 (1.17, -2.64)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 17:   1%|          | 51/7292 [01:06&lt;2:36:54,  1.30s/it]
-Validation epoch 17:   0%|          | 21/7292 [00:19&lt;1:50:28,  1.10it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 17:	Train loss -0.72  (1.22, -2.66). Val loss -0.77 (1.15, -2.69)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 18:   1%|          | 51/7292 [01:06&lt;2:37:06,  1.30s/it]
-Validation epoch 18:   0%|          | 21/7292 [00:19&lt;1:50:59,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 18:	Train loss -0.71  (1.21, -2.63). Val loss -0.75 (1.18, -2.67)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 19:   1%|          | 51/7292 [01:07&lt;2:39:28,  1.32s/it]
-Validation epoch 19:   0%|          | 21/7292 [00:19&lt;1:50:37,  1.10it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 19:	Train loss -0.70  (1.22, -2.62). Val loss -0.74 (1.17, -2.64)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 20:   1%|          | 51/7292 [01:06&lt;2:38:03,  1.31s/it]
-Validation epoch 20:   0%|          | 21/7292 [00:19&lt;1:50:49,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 20:	Train loss -0.70  (1.24, -2.64). Val loss -0.77 (1.16, -2.70)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 21:   1%|          | 51/7292 [01:06&lt;2:37:12,  1.30s/it]
-Validation epoch 21:   0%|          | 21/7292 [00:19&lt;1:51:24,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 21:	Train loss -0.77  (1.21, -2.75). Val loss -0.80 (1.13, -2.73)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 22:   1%|          | 51/7292 [01:06&lt;2:36:40,  1.30s/it]
-Validation epoch 22:   0%|          | 21/7292 [00:19&lt;1:52:48,  1.07it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 22:	Train loss -0.74  (1.21, -2.68). Val loss -0.83 (1.14, -2.79)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 23:   1%|          | 51/7292 [01:06&lt;2:37:24,  1.30s/it]
-Validation epoch 23:   0%|          | 21/7292 [00:19&lt;1:51:04,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 23:	Train loss -0.76  (1.20, -2.72). Val loss -0.84 (1.14, -2.81)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 24:   1%|          | 51/7292 [01:06&lt;2:36:59,  1.30s/it]
-Validation epoch 24:   0%|          | 21/7292 [00:19&lt;1:51:11,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 24:	Train loss -0.75  (1.20, -2.70). Val loss -0.82 (1.14, -2.77)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 25:   1%|          | 51/7292 [01:06&lt;2:38:29,  1.31s/it]
-Validation epoch 25:   0%|          | 21/7292 [00:19&lt;1:52:42,  1.08it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 25:	Train loss -0.76  (1.19, -2.71). Val loss -0.80 (1.13, -2.73)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 26:   1%|          | 51/7292 [01:06&lt;2:37:06,  1.30s/it]
-Validation epoch 26:   0%|          | 21/7292 [00:19&lt;1:51:26,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 26:	Train loss -0.77  (1.17, -2.71). Val loss -0.88 (1.12, -2.87)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 27:   1%|          | 51/7292 [01:07&lt;2:39:36,  1.32s/it]
-Validation epoch 27:   0%|          | 21/7292 [00:19&lt;1:51:43,  1.08it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 27:	Train loss -0.80  (1.17, -2.77). Val loss -0.86 (1.14, -2.85)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 28:   1%|          | 51/7292 [01:07&lt;2:40:53,  1.33s/it]
-Validation epoch 28:   0%|          | 21/7292 [00:19&lt;1:50:27,  1.10it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 28:	Train loss -0.76  (1.18, -2.71). Val loss -0.80 (1.15, -2.75)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 29:   1%|          | 51/7292 [01:06&lt;2:36:53,  1.30s/it]
-Validation epoch 29:   0%|          | 21/7292 [00:19&lt;1:50:44,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 29:	Train loss -0.79  (1.18, -2.77). Val loss -0.82 (1.13, -2.76)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 30:   1%|          | 51/7292 [01:06&lt;2:37:31,  1.31s/it]
-Validation epoch 30:   0%|          | 21/7292 [00:19&lt;1:52:17,  1.08it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 30:	Train loss -0.76  (1.18, -2.71). Val loss -0.86 (1.13, -2.85)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 31:   1%|          | 51/7292 [01:05&lt;2:35:55,  1.29s/it]
-Validation epoch 31:   0%|          | 21/7292 [00:19&lt;1:51:48,  1.08it/s]
-WARNING:root:Using XXX requires value embeddings, but this head ``CURRENTLY`` has no way of sampling value of next event. Setting generated values to nan until this is implemented
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 31:	Train loss -0.78  (1.18, -2.74). Val loss -0.85 (1.14, -2.84)
-	 DEPRESSION at age 20 (7300.0 days)
-	 O_E_-_weight_2 at age 20 (7436.4 days)
-	 Body_mass_index_3 at age 21 (7553.7 days)
-	 Systolic_blood_pressure_4 at age 21 (7809.9 days)
-	 Never_smoked_tobacco_85 at age 25 (9232.9 days)
-	 Diastolic_blood_pressure_5 at age 26 (9552.1 days)
-	 Systolic_blood_pressure_4 at age 26 (9562.7 days)
-	 Diastolic_blood_pressure_5 at age 27 (9818.7 days)
-	 Systolic_blood_pressure_4 at age 27 (9821.5 days)
-	 Never_smoked_tobacco_85 at age 28 (10175.3 days)
-	 Diastolic_blood_pressure_5 at age 28 (10286.7 days)
-Training model `TPPTransformerForCausalSequenceModelling: Geometric TTE`, with 10.853185 M parameters
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 0:   1%|          | 51/7292 [01:06&lt;2:37:57,  1.31s/it]
-Validation epoch 0:   0%|          | 21/7292 [00:19&lt;1:51:11,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 0:	Train loss 4.02  (3.19, 4.84). Val loss 3.03 (2.16, 3.90)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 1:   1%|          | 51/7292 [01:06&lt;2:36:59,  1.30s/it]
-Validation epoch 1:   0%|          | 21/7292 [00:19&lt;1:51:39,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 1:	Train loss 3.05  (2.09, 4.02). Val loss 2.81 (1.96, 3.66)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 2:   1%|          | 51/7292 [01:05&lt;2:35:56,  1.29s/it]
-Validation epoch 2:   0%|          | 21/7292 [00:19&lt;1:51:10,  1.09it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 2:	Train loss 2.73  (1.90, 3.55). Val loss 2.50 (1.65, 3.35)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 3:   1%|          | 51/7292 [01:04&lt;2:32:04,  1.26s/it]
-Validation epoch 3:   0%|          | 21/7292 [00:18&lt;1:44:52,  1.16it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 3:	Train loss 2.60  (1.75, 3.45). Val loss 2.30 (1.59, 3.01)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 4:   1%|          | 51/7292 [01:03&lt;2:29:40,  1.24s/it]
-Validation epoch 4:   0%|          | 21/7292 [00:18&lt;1:46:07,  1.14it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 4:	Train loss 2.71  (1.72, 3.70). Val loss 3.16 (1.82, 4.50)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 5:   1%|          | 51/7292 [01:03&lt;2:31:04,  1.25s/it]
-Validation epoch 5:   0%|          | 21/7292 [00:18&lt;1:45:10,  1.15it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 5:	Train loss 2.67  (1.72, 3.62). Val loss 2.33 (1.53, 3.12)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 6:   1%|          | 51/7292 [01:03&lt;2:29:40,  1.24s/it]
-Validation epoch 6:   0%|          | 21/7292 [00:18&lt;1:45:11,  1.15it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 6:	Train loss 2.50  (1.64, 3.35). Val loss 2.23 (1.53, 2.94)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 7:   1%|          | 51/7292 [01:04&lt;2:31:27,  1.25s/it]
-Validation epoch 7:   0%|          | 21/7292 [00:18&lt;1:46:22,  1.14it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 7:	Train loss 2.36  (1.62, 3.10). Val loss 2.26 (1.49, 3.04)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 8:   1%|          | 51/7292 [01:03&lt;2:30:31,  1.25s/it]
-Validation epoch 8:   0%|          | 21/7292 [00:18&lt;1:46:22,  1.14it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 8:	Train loss 2.64  (1.62, 3.66). Val loss 2.28 (1.52, 3.04)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 9:   1%|          | 51/7292 [01:03&lt;2:29:35,  1.24s/it]
-Validation epoch 9:   0%|          | 21/7292 [00:18&lt;1:45:14,  1.15it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 9:	Train loss 2.59  (1.64, 3.55). Val loss 2.48 (1.54, 3.43)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 10:   1%|          | 51/7292 [01:03&lt;2:30:45,  1.25s/it]
-Validation epoch 10:   0%|          | 21/7292 [00:18&lt;1:46:17,  1.14it/s]
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 10:	Train loss 2.55  (1.60, 3.50). Val loss 2.36 (1.48, 3.23)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 11:   1%|          | 51/7292 [01:03&lt;2:30:44,  1.25s/it]
-Validation epoch 11:   0%|          | 21/7292 [00:18&lt;1:45:53,  1.14it/s]
-WARNING:root:Using XXX requires value embeddings, but this head ``CURRENTLY`` has no way of sampling value of next event. Setting generated values to nan until this is implemented
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 11:	Train loss 2.45  (1.59, 3.32). Val loss 2.24 (1.50, 2.97)
-	 DEPRESSION at age 20 (7300.0 days)
-	 Haemoglobin_estimation_9 at age 31 (11228.0 days)
-	 Body_mass_index_3 at age 35 (12917.0 days)
-	 Systolic_blood_pressure_4 at age 36 (13002.0 days)
-	 International_normalised_ratio_82 at age 36 (13320.0 days)
-	 Serum_alkaline_phosphatase_50 at age 37 (13328.0 days)
-	 Serum_bilirubin_level_53 at age 37 (13328.0 days)
-	 Total_white_cell_count_18 at age 37 (13331.0 days)
-	 International_normalised_ratio_82 at age 37 (13331.0 days)
-	 International_normalised_ratio_82 at age 37 (13337.0 days)
-	 Diastolic_blood_pressure_5 at age 37 (13360.0 days)
+<pre>PROMPT:
+O_E___height_1                                    at age 18 (6643.0 days)
+O_E___weight_2                                    at age 18 (6643.0 days)
+===========================================================================
+GENERATION
+Diastolic_blood_pressure_5                        at age 21 (7525.1 days)
+Systolic_blood_pressure_4                         at age 21 (7535.9 days)
+ALLERGICRHINITISCONJ                              at age 23 (8357.9 days)
+AST___aspartate_transam_SGOT__46                  at age 23 (8358.6 days)
+Total_bilirubin_55                                at age 23 (8358.9 days)
+Eosinophil_count_21                               at age 23 (8473.7 days)
+Erythrocyte_sedimentation_rate_61                 at age 23 (8474.0 days)
+GFR_calculated_abbreviated_MDRD_34                at age 23 (8481.2 days)
+Haemoglobin_estimation_9                          at age 23 (8484.2 days)
+Lymphocyte_count_20                               at age 23 (8489.5 days)
 </pre>
 </div>
 </div>
@@ -15717,7 +14990,7 @@ WARNING:root:Using XXX requires value embeddings, but this head ``CURRENTLY`` ha
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Comparing-output-to-real-data">Comparing output to real data<a class="anchor-link" href="#Comparing-output-to-real-data">&#182;</a></h2>
+<h2 id="Comparing-generation-to-real-data">Comparing generation to real data<a class="anchor-link" href="#Comparing-generation-to-real-data">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -15732,16 +15005,25 @@ WARNING:root:Using XXX requires value embeddings, but this head ``CURRENTLY`` ha
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>O_E_-_weight_2, at age 1 (227.0 days)
-ALLERGICRHINITISCONJ, at age 3 (1048.0 days)
-O_E_-_weight_2, at age 4 (1546.0 days)
-O_E_-_weight_2, at age 7 (2537.0 days)
-O_E_-_weight_2, at age 7 (2537.0 days)
-Basophil_count_22, at age 13 (4779.0 days)
-Serum_alkaline_phosphatase_50, at age 13 (4779.0 days)
-Serum_folate_80, at age 13 (4779.0 days)
-Serum_folate_80, at age 13 (4779.0 days)
-Serum_25-Hydroxy_vitamin_D3_level_88, at age 13 (4779.0 days)
+<pre>Time to retrieve sample index 1 was 0.11035799980163574 seconds
+
+SEX                 | F
+IMD                 | 4.0
+ETHNICITY           | WHITE
+birth_year          | 1997.0
+
+Token                                                                      | Age               | Standardised value
+===================================================================================================================
+Haemoglobin_estimation_9                                                   | 5697              | nan               
+Lymphocyte_count_20                                                        | 5697              | 0.15              
+Mean_corpusc_Hb_conc__MCHC__14                                             | 5697              | nan               
+Mean_corpusc_haemoglobin_MCH__13                                           | 5697              | -0.20             
+Mean_corpuscular_volume__MCV__11                                           | 5697              | -0.09             
+Monocyte_count_23                                                          | 5697              | 0.05              
+Neutrophil_count_19                                                        | 5697              | -0.04             
+Platelet_count_12                                                          | 5697              | 0.11              
+Red_blood_cell__RBC__count_10                                              | 5697              | -0.00             
+Serum_TSH_level_71                                                         | 5697              | 0.15              
 </pre>
 </div>
 </div>
@@ -15785,37 +15067,17 @@ Serum_25-Hydroxy_vitamin_D3_level_88, at age 13 (4779.0 days)
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
 <pre>
-
-TPPTransformerForCausalSequenceModelling: Exponential TTE
---------------------------------------
-
 Control: 	 (DEPRESSION): 
-	probability of type I diabetes: 0.0188%
-	probability of type II diabetes: 0.0533%
+	probability of type I diabetes: 0.0300%
+	probability of type II diabetes: 0.1138%
 
 Type 1: 	 (DEPRESSION,TYPE1DM): 
-	probability of type I diabetes: 0.0232%
-	probability of type II diabetes: 0.0623%
+	probability of type I diabetes: 0.0374%
+	probability of type II diabetes: 0.1200%
 
 Type 2: 	 (DEPRESSION,TYPE2DIABETES): 
-	probability of type I diabetes: 0.0246%
-	probability of type II diabetes: 0.0589%
-
-
-TPPTransformerForCausalSequenceModelling: Geometric TTE
---------------------------------------
-
-Control: 	 (DEPRESSION): 
-	probability of type I diabetes: 0.0271%
-	probability of type II diabetes: 0.0910%
-
-Type 1: 	 (DEPRESSION,TYPE1DM): 
 	probability of type I diabetes: 0.0392%
-	probability of type II diabetes: 0.1192%
-
-Type 2: 	 (DEPRESSION,TYPE2DIABETES): 
-	probability of type I diabetes: 0.0298%
-	probability of type II diabetes: 0.1736%
+	probability of type II diabetes: 0.1236%
 </pre>
 </div>
 </div>
@@ -15846,643 +15108,320 @@ Type 2: 	 (DEPRESSION,TYPE2DIABETES):
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
 <pre>
-
-TPPTransformerForCausalSequenceModelling: Exponential TTE
---------------------------------------
-
 Age 4
 ======
 Top 10
-	O_E_-_height_1: 36.94%
-	O_E_-_weight_2: 9.43%
-	Never_smoked_tobacco_85: 8.84%
-	Diastolic_blood_pressure_5: 8.11%
-	Body_mass_index_3: 4.51%
-	ASTHMA_PUSHASTHMA: 3.80%
-	ATOPICECZEMA: 3.76%
-	Basophil_count_22: 3.75%
-	ALLERGICRHINITISCONJ: 3.18%
-	Systolic_blood_pressure_4: 1.95%
+	Body_mass_index_3: 22.87%
+	O_E___height_1: 13.15%
+	Diastolic_blood_pressure_5: 11.87%
+	Basophil_count_22: 7.23%
+	O_E___weight_2: 6.41%
+	ALLERGICRHINITISCONJ: 4.36%
+	ATOPICECZEMA: 3.61%
+	ASTHMA_PUSHASTHMA: 2.79%
+	ANXIETY: 2.65%
+	DEPRESSION: 2.45%
 Bottom 30
-	PAD: 0.00%
-	Blood_calcium_level_38: 0.00%
-	UNK: 0.00%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.00%
-	N_terminal_pro-brain_natriuretic_peptide_level_67: 0.00%
+	Plasma_sodium_level_25: 0.00%
 	SICKLE_CELL_DISEASE_V2: 0.00%
-	Plasma_cholesterol_HDL_ratio_96: 0.00%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.00%
-	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	Brain_natriuretic_peptide_level_66: 0.00%
-	Plasma_calcium_level_40: 0.00%
-	ADDISON_DISEASE: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	Plasma_urea_level_30: 0.00%
-	Urine_microalbumin_creatinine_ratio_36: 0.00%
-	Serum_N-terminal_pro_B-type_natriuretic_peptide_conc_68: 0.00%
-	PLASMACELL_NEOPLASM: 0.00%
-	DOWNSSYNDROME: 0.00%
-	Calcium_adjusted_level_41: 0.00%
-	Plasma_corrected_calcium_level_43: 0.00%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.00%
-	AST_-_aspartate_transam._SGOT__46: 0.00%
-	Calculated_LDL_cholesterol_level_103: 0.00%
-	SYSTEMIC_SCLEROSIS: 0.00%
-	Plasma_triglyceride_level_106: 0.00%
-	Plasma_gamma-glutamyl_transferase_level_58: 0.00%
-	AORTICANEURYSM: 0.00%
-	HAEMOCHROMATOSIS_V2: 0.00%
-	Plasma_LDL_cholesterol_level_104: 0.00%
+	PAD: 0.00%
 	Plasma_alkaline_phosphatase_level_49: 0.00%
+	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
+	UNK: 0.00%
+	Plasma_calcium_level_40: 0.00%
+	Plasma_B_natriuretic_peptide_level_69: 0.00%
+	Albumin___creatinine_ratio_37: 0.00%
+	Serum_pro_brain_natriuretic_peptide_level_65: 0.00%
+	Plasma_total_bilirubin_level_54: 0.00%
+	DOWNSSYNDROME: 0.00%
+	CYSTICFIBROSIS: 0.01%
+	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
+	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
+	Plasma_pro_brain_natriuretic_peptide_level_64: 0.01%
+	Plasma_LDL_cholesterol_level_104: 0.01%
+	PLASMACELL_NEOPLASM_V2: 0.01%
+	Monocyte_count_23: 0.01%
+	Plasma_cholesterol_HDL_ratio_96: 0.01%
+	ADDISONS_DISEASE: 0.01%
+	HAEMOCHROMATOSIS_V2: 0.01%
+	SYSTEMIC_SCLEROSIS: 0.01%
+	Plasma_ferritin_level_62: 0.01%
+	ADDISON_DISEASE: 0.01%
+	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
+	Plasma_corrected_calcium_level_43: 0.01%
+	Brain_natriuretic_peptide_level_66: 0.01%
+	SJOGRENSSYNDROME: 0.01%
+	ILD_SH: 0.01%
 
 Age 8
 ======
 Top 10
-	O_E_-_height_1: 37.83%
-	Never_smoked_tobacco_85: 9.11%
-	O_E_-_weight_2: 7.91%
-	Diastolic_blood_pressure_5: 7.44%
-	Body_mass_index_3: 5.42%
-	Basophil_count_22: 3.87%
-	ASTHMA_PUSHASTHMA: 3.75%
-	ATOPICECZEMA: 3.34%
-	ALLERGICRHINITISCONJ: 3.21%
-	Systolic_blood_pressure_4: 2.47%
+	Body_mass_index_3: 25.28%
+	Diastolic_blood_pressure_5: 14.98%
+	O_E___height_1: 10.14%
+	Basophil_count_22: 8.05%
+	O_E___weight_2: 4.94%
+	ALLERGICRHINITISCONJ: 3.74%
+	ATOPICECZEMA: 2.74%
+	ANXIETY: 2.73%
+	DEPRESSION: 2.61%
+	ASTHMA_PUSHASTHMA: 2.43%
 Bottom 30
-	PAD: 0.00%
-	Blood_calcium_level_38: 0.00%
-	UNK: 0.00%
-	N_terminal_pro-brain_natriuretic_peptide_level_67: 0.00%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.00%
+	Plasma_sodium_level_25: 0.00%
 	SICKLE_CELL_DISEASE_V2: 0.00%
-	Plasma_cholesterol_HDL_ratio_96: 0.00%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.00%
-	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	Plasma_calcium_level_40: 0.00%
-	Brain_natriuretic_peptide_level_66: 0.00%
-	ADDISON_DISEASE: 0.00%
-	Serum_N-terminal_pro_B-type_natriuretic_peptide_conc_68: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	Urine_microalbumin_creatinine_ratio_36: 0.00%
-	Plasma_urea_level_30: 0.00%
-	PLASMACELL_NEOPLASM: 0.00%
-	DOWNSSYNDROME: 0.00%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.00%
-	Plasma_corrected_calcium_level_43: 0.00%
-	Plasma_gamma-glutamyl_transferase_level_58: 0.00%
-	Calcium_adjusted_level_41: 0.00%
-	Calculated_LDL_cholesterol_level_103: 0.00%
-	SYSTEMIC_SCLEROSIS: 0.00%
-	AST_-_aspartate_transam._SGOT__46: 0.00%
-	Plasma_triglyceride_level_106: 0.00%
-	Plasma_LDL_cholesterol_level_104: 0.00%
-	AORTICANEURYSM: 0.00%
+	PAD: 0.00%
 	Plasma_alkaline_phosphatase_level_49: 0.00%
-	HAEMOCHROMATOSIS_V2: 0.00%
-
-Age 20
-======
-Top 10
-	O_E_-_height_1: 37.68%
-	Diastolic_blood_pressure_5: 14.88%
-	Never_smoked_tobacco_85: 9.18%
-	O_E_-_weight_2: 5.05%
-	Basophil_count_22: 4.66%
-	Body_mass_index_3: 3.50%
-	DEPRESSION: 3.41%
-	Current_smoker_83: 2.64%
-	ANXIETY: 2.27%
-	Systolic_blood_pressure_4: 1.78%
-Bottom 30
-	PAD: 0.00%
-	Blood_calcium_level_38: 0.00%
+	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
 	UNK: 0.00%
-	SICKLE_CELL_DISEASE_V2: 0.00%
-	N_terminal_pro-brain_natriuretic_peptide_level_67: 0.00%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.00%
-	Plasma_cholesterol_HDL_ratio_96: 0.00%
 	Plasma_calcium_level_40: 0.00%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	Serum_N-terminal_pro_B-type_natriuretic_peptide_conc_68: 0.00%
+	Serum_pro_brain_natriuretic_peptide_level_65: 0.00%
 	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	Brain_natriuretic_peptide_level_66: 0.00%
-	Plasma_urea_level_30: 0.00%
-	ADDISON_DISEASE: 0.00%
-	PLASMACELL_NEOPLASM: 0.00%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.00%
-	DOWNSSYNDROME: 0.00%
-	SYSTEMIC_SCLEROSIS: 0.00%
-	Calcium_adjusted_level_41: 0.00%
-	Plasma_gamma-glutamyl_transferase_level_58: 0.00%
-	Plasma_corrected_calcium_level_43: 0.00%
-	Plasma_LDL_cholesterol_level_104: 0.00%
-	Urine_microalbumin_creatinine_ratio_36: 0.00%
-	Calculated_LDL_cholesterol_level_103: 0.00%
-	Plasma_triglyceride_level_106: 0.00%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.00%
-	AST_serum_level_47: 0.00%
-	AST_-_aspartate_transam._SGOT__46: 0.00%
-	ILD_SH: 0.00%
-
-Age 30
-======
-Top 10
-	O_E_-_height_1: 35.38%
-	Diastolic_blood_pressure_5: 16.70%
-	Never_smoked_tobacco_85: 7.88%
-	Basophil_count_22: 6.44%
-	O_E_-_weight_2: 3.87%
-	DEPRESSION: 3.65%
-	ANXIETY: 2.86%
-	Body_mass_index_3: 2.26%
-	Current_smoker_83: 1.96%
-	Systolic_blood_pressure_4: 1.75%
-Bottom 30
-	PAD: 0.00%
-	Blood_calcium_level_38: 0.00%
-	SICKLE_CELL_DISEASE_V2: 0.00%
-	UNK: 0.00%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.00%
-	N_terminal_pro-brain_natriuretic_peptide_level_67: 0.00%
-	Plasma_cholesterol_HDL_ratio_96: 0.00%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.00%
-	Plasma_calcium_level_40: 0.00%
 	CYSTICFIBROSIS: 0.00%
-	Brain_natriuretic_peptide_level_66: 0.00%
-	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	Serum_N-terminal_pro_B-type_natriuretic_peptide_conc_68: 0.00%
-	ADDISON_DISEASE: 0.00%
-	PLASMACELL_NEOPLASM: 0.00%
-	Plasma_urea_level_30: 0.00%
-	DOWNSSYNDROME: 0.00%
-	Plasma_gamma-glutamyl_transferase_level_58: 0.00%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.00%
-	SYSTEMIC_SCLEROSIS: 0.00%
-	Plasma_triglyceride_level_106: 0.00%
-	Calcium_adjusted_level_41: 0.00%
-	Plasma_corrected_calcium_level_43: 0.00%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.00%
-	Plasma_LDL_cholesterol_level_104: 0.00%
-	Urine_microalbumin_creatinine_ratio_36: 0.00%
-	Calculated_LDL_cholesterol_level_103: 0.00%
-	AST_serum_level_47: 0.00%
-	ILD_SH: 0.00%
-	HAEMOCHROMATOSIS_V2: 0.00%
-
-Age 60
-======
-Top 10
-	O_E_-_height_1: 33.79%
-	Diastolic_blood_pressure_5: 16.93%
-	Never_smoked_tobacco_85: 8.47%
-	Basophil_count_22: 5.16%
-	O_E_-_weight_2: 5.01%
-	Body_mass_index_3: 4.38%
-	Systolic_blood_pressure_4: 2.22%
-	DEPRESSION: 2.12%
-	ASTHMA_PUSHASTHMA: 1.90%
-	Current_smoker_83: 1.81%
-Bottom 30
-	PAD: 0.00%
-	Blood_calcium_level_38: 0.00%
-	UNK: 0.00%
-	SICKLE_CELL_DISEASE_V2: 0.00%
-	N_terminal_pro-brain_natriuretic_peptide_level_67: 0.00%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.00%
-	Plasma_cholesterol_HDL_ratio_96: 0.00%
-	Plasma_calcium_level_40: 0.00%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	Brain_natriuretic_peptide_level_66: 0.00%
-	Serum_N-terminal_pro_B-type_natriuretic_peptide_conc_68: 0.00%
-	ADDISON_DISEASE: 0.00%
-	Plasma_urea_level_30: 0.00%
-	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	DOWNSSYNDROME: 0.00%
-	Calcium_adjusted_level_41: 0.00%
-	PLASMACELL_NEOPLASM: 0.00%
-	Plasma_gamma-glutamyl_transferase_level_58: 0.00%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.00%
-	SYSTEMIC_SCLEROSIS: 0.00%
-	Plasma_corrected_calcium_level_43: 0.00%
-	Plasma_triglyceride_level_106: 0.00%
-	Calculated_LDL_cholesterol_level_103: 0.00%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.00%
-	AST_serum_level_47: 0.00%
-	Plasma_LDL_cholesterol_level_104: 0.00%
-	Urine_microalbumin_creatinine_ratio_36: 0.00%
-	Monocyte_count_23: 0.00%
-	Combined_total_vitamin_D2_and_D3_level_93: 0.00%
-
-Age 80
-======
-Top 10
-	O_E_-_height_1: 28.14%
-	Diastolic_blood_pressure_5: 19.85%
-	Basophil_count_22: 6.72%
-	Never_smoked_tobacco_85: 5.67%
-	O_E_-_weight_2: 3.75%
-	DEPRESSION: 2.26%
-	Systolic_blood_pressure_4: 2.16%
-	Body_mass_index_3: 1.86%
-	ASTHMA_PUSHASTHMA: 1.50%
-	Serum_alkaline_phosphatase_50: 1.48%
-Bottom 30
-	PAD: 0.00%
-	Blood_calcium_level_38: 0.00%
-	UNK: 0.00%
-	SICKLE_CELL_DISEASE_V2: 0.00%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.00%
-	N_terminal_pro-brain_natriuretic_peptide_level_67: 0.00%
-	Plasma_cholesterol_HDL_ratio_96: 0.00%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	ADDISON_DISEASE: 0.00%
-	Serum_N-terminal_pro_B-type_natriuretic_peptide_conc_68: 0.00%
-	Brain_natriuretic_peptide_level_66: 0.00%
-	Calculated_LDL_cholesterol_level_103: 0.00%
-	PLASMACELL_NEOPLASM: 0.00%
-	Plasma_calcium_level_40: 0.00%
-	Plasma_gamma-glutamyl_transferase_level_58: 0.00%
-	Calcium_adjusted_level_41: 0.00%
-	SYSTEMIC_SCLEROSIS: 0.00%
-	DOWNSSYNDROME: 0.00%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.00%
-	Plasma_urea_level_30: 0.00%
-	Combined_total_vitamin_D2_and_D3_level_93: 0.00%
+	Albumin___creatinine_ratio_37: 0.01%
+	DOWNSSYNDROME: 0.01%
 	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
+	Plasma_pro_brain_natriuretic_peptide_level_64: 0.01%
+	Plasma_LDL_cholesterol_level_104: 0.01%
+	Plasma_total_bilirubin_level_54: 0.01%
+	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
+	PLASMACELL_NEOPLASM_V2: 0.01%
+	ADDISONS_DISEASE: 0.01%
+	Plasma_ferritin_level_62: 0.01%
+	SYSTEMIC_SCLEROSIS: 0.01%
+	Plasma_cholesterol_HDL_ratio_96: 0.01%
 	HAEMOCHROMATOSIS_V2: 0.01%
 	Plasma_corrected_calcium_level_43: 0.01%
+	ADDISON_DISEASE: 0.01%
 	Monocyte_count_23: 0.01%
-	Serum_vitamin_D2_level_89: 0.01%
+	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
 	SJOGRENSSYNDROME: 0.01%
-	Plasma_LDL_cholesterol_level_104: 0.01%
-
-Age 90
-======
-Top 10
-	O_E_-_height_1: 27.33%
-	Diastolic_blood_pressure_5: 19.38%
-	Never_smoked_tobacco_85: 11.13%
-	O_E_-_weight_2: 8.12%
-	Basophil_count_22: 5.91%
-	Body_mass_index_3: 3.57%
-	ASTHMA_PUSHASTHMA: 1.95%
-	DEPRESSION: 1.81%
-	ATOPICECZEMA: 1.56%
-	Current_smoker_83: 1.37%
-Bottom 30
-	PAD: 0.00%
-	Blood_calcium_level_38: 0.00%
-	UNK: 0.00%
-	N_terminal_pro-brain_natriuretic_peptide_level_67: 0.00%
-	SICKLE_CELL_DISEASE_V2: 0.00%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.00%
-	Plasma_cholesterol_HDL_ratio_96: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.00%
-	Plasma_calcium_level_40: 0.00%
-	Serum_N-terminal_pro_B-type_natriuretic_peptide_conc_68: 0.00%
-	Brain_natriuretic_peptide_level_66: 0.00%
-	ADDISON_DISEASE: 0.00%
-	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	PLASMACELL_NEOPLASM: 0.00%
-	DOWNSSYNDROME: 0.00%
-	Calcium_adjusted_level_41: 0.00%
-	Plasma_urea_level_30: 0.00%
-	SYSTEMIC_SCLEROSIS: 0.00%
-	Combined_total_vitamin_D2_and_D3_level_93: 0.00%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.00%
-	Plasma_corrected_calcium_level_43: 0.00%
-	Serum_vitamin_D2_level_89: 0.00%
-	Calculated_LDL_cholesterol_level_103: 0.00%
-	Plasma_gamma-glutamyl_transferase_level_58: 0.00%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.00%
-	Monocyte_count_23: 0.00%
-	AST_-_aspartate_transam._SGOT__46: 0.00%
-	SJOGRENSSYNDROME: 0.00%
-	HAEMOCHROMATOSIS_V2: 0.00%
-
-
-TPPTransformerForCausalSequenceModelling: Geometric TTE
---------------------------------------
-
-Age 4
-======
-Top 10
-	O_E_-_height_1: 28.78%
-	Never_smoked_tobacco_85: 6.85%
-	Diastolic_blood_pressure_5: 5.64%
-	Body_mass_index_3: 4.47%
-	ATOPICECZEMA: 4.17%
-	Basophil_count_22: 3.46%
-	ASTHMA_PUSHASTHMA: 3.25%
-	O_E_-_weight_2: 3.06%
-	ANXIETY: 2.24%
-	ALLERGICRHINITISCONJ: 2.23%
-Bottom 30
-	Plasma_cholesterol_HDL_ratio_96: 0.00%
-	Serum_non_high_density_lipoprotein_cholesterol_level_107: 0.00%
-	Serum_alanine_aminotransferase_level_44: 0.01%
-	UNK: 0.01%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	Plasma_B_natriuretic_peptide_level_69: 0.01%
+	ILD_SH: 0.01%
 	Brain_natriuretic_peptide_level_66: 0.01%
-	Total_bilirubin_55: 0.01%
-	PLASMACELL_NEOPLASM: 0.01%
-	CYSTICFIBROSIS: 0.01%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
-	Calcium_adjusted_level_41: 0.01%
-	PSORIATICARTHRITIS2021: 0.01%
-	SICKLE_CELL_DISEASE_V2: 0.01%
-	PAD: 0.01%
-	SJOGRENSSYNDROME: 0.02%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.02%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.02%
-	Urine_albumin_creatinine_ratio_35: 0.02%
-	Plasma_ferritin_level_62: 0.02%
-	Serum_cholesterol_HDL_ratio_94: 0.02%
-	MENIERESDISEASE: 0.02%
-	Total_cholesterol_HDL_ratio_95: 0.02%
-	PARKINSONS: 0.02%
-	CROHNS_DISEASE: 0.02%
-	LYMPHOMA_PREVALENCE: 0.02%
-	N_terminal_pro-brain_natriuretic_peptide_level_67: 0.02%
-	AST_serum_level_47: 0.02%
-	MS: 0.02%
-
-Age 8
-======
-Top 10
-	O_E_-_height_1: 32.41%
-	Never_smoked_tobacco_85: 6.46%
-	Diastolic_blood_pressure_5: 4.79%
-	Body_mass_index_3: 3.43%
-	ATOPICECZEMA: 3.38%
-	Basophil_count_22: 3.05%
-	O_E_-_weight_2: 3.00%
-	ASTHMA_PUSHASTHMA: 2.70%
-	Serum_ferritin_63: 2.64%
-	Serum_potassium_26: 2.31%
-Bottom 30
-	Serum_non_high_density_lipoprotein_cholesterol_level_107: 0.00%
-	Plasma_cholesterol_HDL_ratio_96: 0.00%
-	Serum_alanine_aminotransferase_level_44: 0.01%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	UNK: 0.01%
-	Total_cholesterol_HDL_ratio_95: 0.01%
-	Plasma_B_natriuretic_peptide_level_69: 0.01%
-	Brain_natriuretic_peptide_level_66: 0.01%
-	Serum_cholesterol_HDL_ratio_94: 0.01%
-	Total_bilirubin_55: 0.01%
-	PSORIATICARTHRITIS2021: 0.01%
-	CYSTICFIBROSIS: 0.01%
-	Urine_albumin_creatinine_ratio_35: 0.01%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
-	Calcium_adjusted_level_41: 0.01%
-	PLASMACELL_NEOPLASM: 0.01%
-	SICKLE_CELL_DISEASE_V2: 0.02%
-	SJOGRENSSYNDROME: 0.02%
-	PAD: 0.02%
-	PARKINSONS: 0.02%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.02%
-	Plasma_total_cholesterol_level_99: 0.02%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.02%
-	AST_serum_level_47: 0.02%
-	MS: 0.02%
-	CROHNS_DISEASE: 0.02%
-	MENIERESDISEASE: 0.02%
-	Plasma_ferritin_level_62: 0.02%
-	LYMPHOMA_PREVALENCE: 0.02%
 
 Age 20
 ======
 Top 10
-	O_E_-_height_1: 20.56%
-	Never_smoked_tobacco_85: 7.22%
-	Serum_potassium_26: 6.25%
-	Diastolic_blood_pressure_5: 5.77%
-	Eosinophil_count_21: 4.97%
-	Red_blood_cell__RBC__count_10: 3.52%
-	Basophil_count_22: 3.17%
-	O_E_-_weight_2: 2.14%
-	Serum_albumin_51: 2.11%
-	ATOPICECZEMA: 2.06%
+	Body_mass_index_3: 26.87%
+	Diastolic_blood_pressure_5: 15.54%
+	O_E___height_1: 8.46%
+	Basophil_count_22: 7.87%
+	ALLERGICRHINITISCONJ: 3.72%
+	O_E___weight_2: 3.69%
+	ANXIETY: 3.42%
+	DEPRESSION: 3.03%
+	ATOPICECZEMA: 2.84%
+	ASTHMA_PUSHASTHMA: 2.04%
 Bottom 30
-	Serum_non_high_density_lipoprotein_cholesterol_level_107: 0.00%
-	Plasma_cholesterol_HDL_ratio_96: 0.01%
-	Serum_alanine_aminotransferase_level_44: 0.01%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	UNK: 0.01%
-	Brain_natriuretic_peptide_level_66: 0.01%
+	Plasma_sodium_level_25: 0.00%
+	SICKLE_CELL_DISEASE_V2: 0.00%
+	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
+	Plasma_alkaline_phosphatase_level_49: 0.00%
+	PAD: 0.00%
+	UNK: 0.00%
+	Plasma_calcium_level_40: 0.00%
+	Plasma_B_natriuretic_peptide_level_69: 0.00%
+	Albumin___creatinine_ratio_37: 0.00%
+	Plasma_pro_brain_natriuretic_peptide_level_64: 0.00%
+	DOWNSSYNDROME: 0.01%
 	CYSTICFIBROSIS: 0.01%
 	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
-	Plasma_B_natriuretic_peptide_level_69: 0.01%
-	Serum_cholesterol_HDL_ratio_94: 0.02%
-	SJOGRENSSYNDROME: 0.02%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.02%
-	PLASMACELL_NEOPLASM: 0.02%
-	Urine_albumin_creatinine_ratio_35: 0.02%
-	PSORIATICARTHRITIS2021: 0.02%
-	PARKINSONS: 0.02%
-	CROHNS_DISEASE: 0.02%
-	Total_bilirubin_55: 0.02%
-	Total_cholesterol_HDL_ratio_95: 0.02%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.02%
-	Calcium_adjusted_level_41: 0.02%
-	LYMPHOMA_PREVALENCE: 0.02%
-	PAD: 0.02%
-	Total_alkaline_phosphatase_48: 0.02%
-	HIVAIDS: 0.02%
-	N_terminal_pro-brain_natriuretic_peptide_level_67: 0.02%
-	Plasma_ferritin_level_62: 0.02%
-	MS: 0.02%
-	Haemoglobin_estimation_9: 0.02%
+	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
+	Serum_pro_brain_natriuretic_peptide_level_65: 0.01%
+	Plasma_LDL_cholesterol_level_104: 0.01%
+	Plasma_total_bilirubin_level_54: 0.01%
+	PLASMACELL_NEOPLASM_V2: 0.01%
+	ADDISONS_DISEASE: 0.01%
+	SYSTEMIC_SCLEROSIS: 0.01%
+	Plasma_cholesterol_HDL_ratio_96: 0.01%
+	HAEMOCHROMATOSIS_V2: 0.01%
+	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
+	Plasma_ferritin_level_62: 0.01%
+	ADDISON_DISEASE: 0.01%
+	Monocyte_count_23: 0.01%
+	SJOGRENSSYNDROME: 0.01%
+	Plasma_corrected_calcium_level_43: 0.01%
+	ILD_SH: 0.01%
+	Brain_natriuretic_peptide_level_66: 0.01%
 
 Age 30
 ======
 Top 10
-	O_E_-_height_1: 18.73%
-	Never_smoked_tobacco_85: 13.83%
-	Diastolic_blood_pressure_5: 11.75%
-	Body_mass_index_3: 4.19%
-	Serum_potassium_26: 3.39%
-	Basophil_count_22: 3.16%
-	O_E_-_weight_2: 2.95%
-	ATOPICECZEMA: 2.24%
-	Eosinophil_count_21: 1.98%
-	ASTHMA_PUSHASTHMA: 1.77%
+	Body_mass_index_3: 25.33%
+	Diastolic_blood_pressure_5: 15.88%
+	Basophil_count_22: 8.89%
+	O_E___height_1: 8.80%
+	ANXIETY: 3.62%
+	ALLERGICRHINITISCONJ: 3.30%
+	O_E___weight_2: 3.25%
+	DEPRESSION: 3.14%
+	ATOPICECZEMA: 2.32%
+	ASTHMA_PUSHASTHMA: 1.75%
 Bottom 30
-	Serum_non_high_density_lipoprotein_cholesterol_level_107: 0.00%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.01%
-	Plasma_cholesterol_HDL_ratio_96: 0.01%
-	UNK: 0.01%
-	Plasma_B_natriuretic_peptide_level_69: 0.01%
+	Plasma_sodium_level_25: 0.00%
+	SICKLE_CELL_DISEASE_V2: 0.00%
+	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
+	PAD: 0.00%
+	UNK: 0.00%
+	Plasma_alkaline_phosphatase_level_49: 0.00%
+	Plasma_B_natriuretic_peptide_level_69: 0.00%
+	Plasma_calcium_level_40: 0.00%
+	Serum_pro_brain_natriuretic_peptide_level_65: 0.00%
+	DOWNSSYNDROME: 0.00%
+	Albumin___creatinine_ratio_37: 0.00%
+	Plasma_pro_brain_natriuretic_peptide_level_64: 0.01%
 	CYSTICFIBROSIS: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.01%
-	PAD: 0.01%
-	SJOGRENSSYNDROME: 0.01%
-	PLASMACELL_NEOPLASM: 0.01%
-	Serum_alanine_aminotransferase_level_44: 0.01%
-	Brain_natriuretic_peptide_level_66: 0.01%
 	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
-	Haemoglobin_estimation_9: 0.02%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.02%
-	Calcium_adjusted_level_41: 0.02%
-	MENIERESDISEASE: 0.02%
-	PARKINSONS: 0.02%
-	PSORIATICARTHRITIS2021: 0.02%
-	HIVAIDS: 0.02%
-	HAEMOCHROMATOSIS_V2: 0.02%
-	Serum_cholesterol_HDL_ratio_94: 0.02%
-	MS: 0.02%
-	LYMPHOMA_PREVALENCE: 0.02%
-	CROHNS_DISEASE: 0.02%
-	N_terminal_pro-brain_natriuretic_peptide_level_67: 0.02%
-	Urine_albumin_creatinine_ratio_35: 0.02%
-	SICKLE_CELL_DISEASE_V2: 0.02%
-	Total_bilirubin_55: 0.02%
+	PLASMACELL_NEOPLASM_V2: 0.01%
+	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
+	SYSTEMIC_SCLEROSIS: 0.01%
+	ADDISONS_DISEASE: 0.01%
+	Plasma_total_bilirubin_level_54: 0.01%
+	Plasma_LDL_cholesterol_level_104: 0.01%
+	Plasma_ferritin_level_62: 0.01%
+	Plasma_cholesterol_HDL_ratio_96: 0.01%
+	HAEMOCHROMATOSIS_V2: 0.01%
+	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
+	Monocyte_count_23: 0.01%
+	ADDISON_DISEASE: 0.01%
+	Plasma_corrected_calcium_level_43: 0.01%
+	SJOGRENSSYNDROME: 0.01%
+	ILD_SH: 0.01%
+	Serum_non_high_density_lipoprotein_cholesterol_level_107: 0.01%
 
 Age 60
 ======
 Top 10
-	O_E_-_height_1: 15.13%
-	Serum_potassium_26: 8.41%
-	Diastolic_blood_pressure_5: 7.80%
-	Eosinophil_count_21: 6.44%
-	Serum_alkaline_phosphatase_50: 4.19%
-	Never_smoked_tobacco_85: 3.03%
-	Basophil_count_22: 2.55%
-	Body_mass_index_3: 2.15%
-	Neutrophil_count_19: 1.98%
-	Total_white_cell_count_18: 1.94%
+	Body_mass_index_3: 25.32%
+	Diastolic_blood_pressure_5: 17.80%
+	Basophil_count_22: 8.37%
+	O_E___height_1: 8.27%
+	O_E___weight_2: 3.88%
+	ALLERGICRHINITISCONJ: 2.75%
+	ATOPICECZEMA: 2.50%
+	ANXIETY: 2.46%
+	DEPRESSION: 2.14%
+	ASTHMA_PUSHASTHMA: 1.95%
 Bottom 30
-	Serum_non_high_density_lipoprotein_cholesterol_level_107: 0.00%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.01%
-	Plasma_cholesterol_HDL_ratio_96: 0.01%
-	CYSTICFIBROSIS: 0.01%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.01%
+	Plasma_sodium_level_25: 0.00%
+	PAD: 0.00%
+	SICKLE_CELL_DISEASE_V2: 0.00%
+	Plasma_alkaline_phosphatase_level_49: 0.00%
+	UNK: 0.00%
+	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
+	Plasma_calcium_level_40: 0.00%
+	Plasma_B_natriuretic_peptide_level_69: 0.00%
+	Serum_pro_brain_natriuretic_peptide_level_65: 0.00%
+	DOWNSSYNDROME: 0.00%
+	CYSTICFIBROSIS: 0.00%
+	Plasma_pro_brain_natriuretic_peptide_level_64: 0.00%
+	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
+	Monocyte_count_23: 0.01%
+	Albumin___creatinine_ratio_37: 0.01%
 	SYSTEMIC_SCLEROSIS: 0.01%
-	UNK: 0.01%
-	PAD: 0.01%
-	PSORIATICARTHRITIS2021: 0.01%
+	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
+	Plasma_ferritin_level_62: 0.01%
+	PLASMACELL_NEOPLASM_V2: 0.01%
+	ADDISONS_DISEASE: 0.01%
+	Plasma_total_bilirubin_level_54: 0.01%
+	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
+	Plasma_LDL_cholesterol_level_104: 0.01%
+	ADDISON_DISEASE: 0.01%
+	HAEMOCHROMATOSIS_V2: 0.01%
+	Plasma_corrected_calcium_level_43: 0.01%
+	Plasma_cholesterol_HDL_ratio_96: 0.01%
+	SJOGRENSSYNDROME: 0.01%
 	Brain_natriuretic_peptide_level_66: 0.01%
-	Haemoglobin_estimation_9: 0.01%
-	HIVAIDS: 0.01%
-	Mean_corpusc._Hb._conc.__MCHC__14: 0.01%
-	Serum_alanine_aminotransferase_level_44: 0.02%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.02%
-	CROHNS_DISEASE: 0.02%
-	Haemoglobin_A1c_level_8: 0.02%
-	MENIERESDISEASE: 0.02%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.02%
-	Plasma_B_natriuretic_peptide_level_69: 0.02%
-	MS: 0.02%
-	Calcium_adjusted_level_41: 0.02%
-	PARKINSONS: 0.02%
-	RHEUMATOIDARTHRITIS: 0.02%
-	PLASMACELL_NEOPLASM: 0.02%
-	LYMPHOMA_PREVALENCE: 0.02%
-	HAEMOCHROMATOSIS_V2: 0.02%
-	LEUKAEMIA_PREVALENCE: 0.02%
-	ILD_SH: 0.02%
-	Lymphocyte_count_20: 0.02%
+	ILD_SH: 0.01%
 
 Age 80
 ======
 Top 10
-	O_E_-_height_1: 22.68%
-	Diastolic_blood_pressure_5: 9.30%
-	Never_smoked_tobacco_85: 6.49%
-	Serum_potassium_26: 4.88%
-	Basophil_count_22: 3.31%
-	ATOPICECZEMA: 2.85%
-	Body_mass_index_3: 2.73%
-	O_E_-_weight_2: 2.16%
-	Eosinophil_count_21: 2.00%
-	ASTHMA_PUSHASTHMA: 1.96%
+	Body_mass_index_3: 24.90%
+	Diastolic_blood_pressure_5: 17.59%
+	Basophil_count_22: 9.44%
+	O_E___height_1: 6.88%
+	O_E___weight_2: 4.25%
+	ALLERGICRHINITISCONJ: 3.02%
+	ATOPICECZEMA: 2.73%
+	ANXIETY: 2.58%
+	DEPRESSION: 2.33%
+	ASTHMA_PUSHASTHMA: 1.93%
 Bottom 30
-	Serum_non_high_density_lipoprotein_cholesterol_level_107: 0.01%
-	Serum_alanine_aminotransferase_level_44: 0.01%
-	Plasma_cholesterol_HDL_ratio_96: 0.01%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.01%
-	UNK: 0.01%
+	Plasma_sodium_level_25: 0.00%
+	PAD: 0.00%
+	SICKLE_CELL_DISEASE_V2: 0.00%
+	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
+	UNK: 0.00%
+	Plasma_alkaline_phosphatase_level_49: 0.00%
+	Plasma_B_natriuretic_peptide_level_69: 0.00%
+	Plasma_calcium_level_40: 0.00%
+	CYSTICFIBROSIS: 0.00%
+	Serum_pro_brain_natriuretic_peptide_level_65: 0.00%
+	Plasma_pro_brain_natriuretic_peptide_level_64: 0.00%
+	DOWNSSYNDROME: 0.00%
+	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
+	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
+	Albumin___creatinine_ratio_37: 0.01%
+	ADDISONS_DISEASE: 0.01%
 	SYSTEMIC_SCLEROSIS: 0.01%
-	Brain_natriuretic_peptide_level_66: 0.01%
-	Plasma_B_natriuretic_peptide_level_69: 0.01%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.01%
-	Haemoglobin_estimation_9: 0.01%
-	CYSTICFIBROSIS: 0.01%
-	PSORIATICARTHRITIS2021: 0.01%
-	PLASMACELL_NEOPLASM: 0.02%
-	PAD: 0.02%
-	HIVAIDS: 0.02%
-	Urine_albumin_creatinine_ratio_35: 0.02%
-	MENIERESDISEASE: 0.02%
-	Calcium_adjusted_level_41: 0.02%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.02%
-	SJOGRENSSYNDROME: 0.02%
-	Total_bilirubin_55: 0.02%
-	Total_cholesterol_HDL_ratio_95: 0.02%
-	LYMPHOMA_PREVALENCE: 0.02%
-	Serum_cholesterol_HDL_ratio_94: 0.02%
-	PARKINSONS: 0.02%
-	CROHNS_DISEASE: 0.02%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.02%
-	MS: 0.02%
-	Total_alkaline_phosphatase_48: 0.02%
-	N_terminal_pro-brain_natriuretic_peptide_level_67: 0.02%
+	PLASMACELL_NEOPLASM_V2: 0.01%
+	HAEMOCHROMATOSIS_V2: 0.01%
+	Monocyte_count_23: 0.01%
+	Plasma_ferritin_level_62: 0.01%
+	Plasma_total_bilirubin_level_54: 0.01%
+	Plasma_LDL_cholesterol_level_104: 0.01%
+	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
+	ADDISON_DISEASE: 0.01%
+	Plasma_cholesterol_HDL_ratio_96: 0.01%
+	Plasma_corrected_calcium_level_43: 0.01%
+	SJOGRENSSYNDROME: 0.01%
+	ILD_SH: 0.01%
+	Serum_total_cholesterol_level_98: 0.01%
 
 Age 90
 ======
 Top 10
-	O_E_-_height_1: 24.25%
-	Diastolic_blood_pressure_5: 8.82%
-	Never_smoked_tobacco_85: 5.29%
-	Serum_potassium_26: 3.45%
-	Basophil_count_22: 3.02%
-	Body_mass_index_3: 2.78%
-	ATOPICECZEMA: 2.21%
-	ASTHMA_PUSHASTHMA: 1.80%
-	Serum_alkaline_phosphatase_50: 1.78%
-	Eosinophil_count_21: 1.69%
+	Body_mass_index_3: 20.98%
+	Diastolic_blood_pressure_5: 15.64%
+	O_E___height_1: 10.44%
+	Basophil_count_22: 7.52%
+	O_E___weight_2: 5.14%
+	ATOPICECZEMA: 3.23%
+	ALLERGICRHINITISCONJ: 3.14%
+	DEPRESSION: 2.65%
+	ASTHMA_PUSHASTHMA: 2.41%
+	ANXIETY: 2.32%
 Bottom 30
-	Serum_non_high_density_lipoprotein_cholesterol_level_107: 0.01%
-	Plasma_cholesterol_HDL_ratio_96: 0.01%
-	Plasma_N-terminal_pro_B-type_natriuretic_peptide_conc_70: 0.01%
-	Serum_alanine_aminotransferase_level_44: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
+	Plasma_sodium_level_25: 0.00%
+	Plasma_alkaline_phosphatase_level_49: 0.00%
+	SICKLE_CELL_DISEASE_V2: 0.00%
+	PAD: 0.00%
+	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
+	UNK: 0.00%
+	Plasma_B_natriuretic_peptide_level_69: 0.00%
+	Plasma_calcium_level_40: 0.00%
+	Plasma_pro_brain_natriuretic_peptide_level_64: 0.01%
+	DOWNSSYNDROME: 0.01%
 	CYSTICFIBROSIS: 0.01%
-	UNK: 0.01%
-	Brain_natriuretic_peptide_level_66: 0.02%
-	Serum_cholesterol_HDL_ratio_94: 0.02%
-	Haemoglobin_estimation_9: 0.02%
-	PSORIATICARTHRITIS2021: 0.02%
-	Plasma_B_natriuretic_peptide_level_69: 0.02%
-	Plasma_pro-brain_natriuretic_peptide_level_64: 0.02%
-	MENIERESDISEASE: 0.02%
-	PAD: 0.02%
-	Calcium_adjusted_level_41: 0.02%
-	Total_bilirubin_55: 0.02%
-	CROHNS_DISEASE: 0.02%
-	SJOGRENSSYNDROME: 0.02%
-	PLASMACELL_NEOPLASM: 0.02%
-	PARKINSONS: 0.02%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.02%
-	HIVAIDS: 0.02%
-	Serum_pro-brain_natriuretic_peptide_level_65: 0.02%
-	N_terminal_pro-brain_natriuretic_peptide_level_67: 0.02%
-	MS: 0.03%
-	LYMPHOMA_PREVALENCE: 0.03%
-	Urine_albumin_creatinine_ratio_35: 0.03%
-	SICKLE_CELL_DISEASE_V2: 0.03%
-	ILD_SH: 0.03%
+	Albumin___creatinine_ratio_37: 0.01%
+	Serum_pro_brain_natriuretic_peptide_level_65: 0.01%
+	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
+	Monocyte_count_23: 0.01%
+	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
+	SYSTEMIC_SCLEROSIS: 0.01%
+	PLASMACELL_NEOPLASM_V2: 0.01%
+	ADDISONS_DISEASE: 0.01%
+	Plasma_ferritin_level_62: 0.01%
+	HAEMOCHROMATOSIS_V2: 0.01%
+	Plasma_cholesterol_HDL_ratio_96: 0.01%
+	Plasma_LDL_cholesterol_level_104: 0.01%
+	Plasma_total_bilirubin_level_54: 0.01%
+	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
+	ADDISON_DISEASE: 0.01%
+	Plasma_corrected_calcium_level_43: 0.01%
+	SJOGRENSSYNDROME: 0.01%
+	Brain_natriuretic_peptide_level_66: 0.01%
+	Combined_total_vitamin_D2_and_D3_level_93: 0.01%
 </pre>
 </div>
 </div>
@@ -16501,6 +15440,157 @@ Bottom 30
 </div>
 </div>
 </div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output " data-mime-type="text/plain">
+<pre>TTETransformerForCausalSequenceModelling(
+  (transformer): TTETransformer(
+    (wpe): TemporalPositionalEncoding()
+    (wte): DataEmbeddingLayer(
+      (static_proj): Linear(in_features=16, out_features=384, bias=True)
+      (dynamic_embedding_layer): SplitDynamicEmbeddingLayer(
+        (cat_event_embed_layer): Embedding(184, 384, padding_idx=0)
+        (cat_event_proj): Linear(in_features=384, out_features=384, bias=True)
+        (num_value_embed_layer): EmbeddingBag(184, 384, mode=sum, padding_idx=0)
+        (num_value_proj): Linear(in_features=384, out_features=384, bias=True)
+      )
+    )
+    (drop): Dropout(p=0.0, inplace=False)
+    (blocks): ModuleList(
+      (0): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (1): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (2): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (3): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (4): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+      (5): Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (attn): MultiHeadedSelfAttention(
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
+        )
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+        (mlp): MLP(
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
+          (acti): ReLU()
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
+        )
+      )
+    )
+    (ln_f): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+  )
+  (lm_head): Linear(in_features=384, out_features=184, bias=False)
+  (tte_layer): ExponentialTTELayer(
+    (proj): Linear(in_features=384, out_features=1, bias=True)
+  )
+)</pre>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">

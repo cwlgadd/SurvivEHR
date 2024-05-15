@@ -131,8 +131,9 @@ class TTETransformerForCausalSequenceModelling(nn.Module):
         
             if using age at event in the positional encoder, we are sampling at an interval of one year.
         """
-        
-        logging.warning(f"Using XXX requires value embeddings, " +
+
+        # This may be fixed now with new DataEmbeddingLayer, TODO: check
+        logging.warning(f"Using {TTETransformer} requires value embeddings, " +
                         f"but this head ``CURRENTLY`` has no way of sampling value of next event. " +
                         f"Setting generated values to nan until this is implemented")
         
