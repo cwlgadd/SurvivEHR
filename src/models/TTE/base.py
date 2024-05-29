@@ -8,7 +8,10 @@ from torch.nn import functional as F
 from transformers.modeling_utils import ModuleUtilsMixin               
 from CPRD.src.modules.positions.positional_encoding import TemporalPositionalEncoding
 from CPRD.src.modules.data_embeddings.data_embedding_layer import DataEmbeddingLayer
-from CPRD.src.modules.block import Block
+from CPRD.src.modules.transformers.nanoGPT.block import Block as NanoBlock
+from CPRD.src.modules.transformers.neoGPT.block import Block as NeoBlock
+# from CPRD.src.modules.transformers.hybridGPT.block import Block as HybridBlock
+
 
 import logging
 from typing import Optional
@@ -56,11 +59,13 @@ class TTETransformer(nn.Module, ModuleUtilsMixin):
     
     TODO: ModuleUtilsMixin can be inherited from PreTrainedModel instead later
     """
-    def __init__(self, config, vocab_size):
+    def __init__(self, cfg, vocab_size):
         super().__init__()
-        self.config = config
-        self.config.is_decoder = True             # For transformers module internals
-        self.embed_dim = config.n_embd    
+        self.cfg = cfg
+        self.config = cfg
+        self.config.is_decoder = True
+        # self.config.is_decoder = True             # For transformers module internals
+        self.embed_dim = cfg.transformer.n_embd    
         layer_norm_epsilon = 1e-5
 
         # Data and positional encodings
@@ -69,8 +74,18 @@ class TTETransformer(nn.Module, ModuleUtilsMixin):
         # self.wte = nn.Embedding(vocab_size, self.embed_dim)
 
         # Define transformer
-        self.drop = torch.nn.Dropout(p=config.dropout) if config.dropout is not None else None      # embed dropout
-        self.blocks = nn.ModuleList([Block(config) for _ in range(config.n_layer)])
+        match cfg.transformer.block_type.lower():
+            # Removing padding token from vocab size as this is not considered an event in either case
+            case "neo":
+                Block = NeoBlock
+            case "nano": 
+                Block = NanoBlock
+            case "hybrid": 
+                Block = HybridBlock
+            case _:
+                raise ValueError(f"Transformer block must be either 'Neo' or 'Nano'")
+        self.drop = torch.nn.Dropout(p=cfg.transformer.dropout) if cfg.transformer.dropout is not None else None      # embed dropout
+        self.blocks = nn.ModuleList([Block(cfg) for _ in range(cfg.transformer.n_layer)])
         self.ln_f = nn.LayerNorm(self.embed_dim, eps=layer_norm_epsilon)
 
         # init all weights  
@@ -107,11 +122,12 @@ class TTETransformer(nn.Module, ModuleUtilsMixin):
         return:
         """
         bsz, seq_len = tokens.size()
-        assert seq_len <= self.config.block_size, f"Cannot forward sequence of length {seq_len}, block size is only {self.config.block_size}"
+        assert seq_len <= self.cfg.transformer.block_size, f"Cannot forward sequence of length {seq_len}, block size is only {self.cfg.transformer.block_size}"
 
         if attention_mask is not None:
             attention_mask = self.get_extended_attention_mask(attention_mask, tokens.shape)
-            
+            # attention_mask = self.create_extended_attention_mask_for_decoder(tokens.shape, attention_mask)
+                                             
         # Get token embeddings
         tok_emb = self.wte(tokens=tokens, values=values, covariates=covariates)   #  shape (bsz, seq_len, embed_dim)
 
@@ -126,7 +142,7 @@ class TTETransformer(nn.Module, ModuleUtilsMixin):
             
         for block in self.blocks:
             x = block(x, attention_mask=attention_mask)
-
+            
         x = self.ln_f(x)
         
         return x

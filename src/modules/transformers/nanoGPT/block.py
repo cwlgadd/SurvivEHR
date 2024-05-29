@@ -1,0 +1,98 @@
+# architecture from: https://github.com/karpathy/nanoGPT/blob/master/model.py, which emulates GPT2
+import torch
+from torch import nn
+from typing import Optional
+import logging 
+from CPRD.src.modules.transformers.nanoGPT.self_attention import MultiHeadedSelfAttention
+
+class LayerNorm(nn.Module):
+    """ LayerNorm but with an optional bias. PyTorch doesn't support simply bias=False """
+
+    def __init__(self, ndim, bias):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(ndim))
+        self.bias = nn.Parameter(torch.zeros(ndim)) if bias else None
+
+    def forward(self, input):
+        return torch.nn.functional.layer_norm(input, self.weight.shape, self.weight, self.bias, 1e-5)
+        
+class MLP(nn.Module):
+    def __init__(self, cfg):
+        """
+        intermediate_size: default to 4 * hidden_size
+        """
+        super().__init__()
+        hidden_size = cfg.transformer.n_embd * 4
+        
+        self.c_fc    = nn.Linear(cfg.transformer.n_embd, hidden_size, bias=cfg.transformer.bias)
+        self.acti    = nn.ReLU()   # GELU
+        self.c_proj  = nn.Linear(hidden_size, cfg.transformer.n_embd, bias=cfg.transformer.bias)
+        self.dropout = nn.Dropout(float(cfg.transformer.dropout))
+
+    def forward(self, x):
+        x = self.c_fc(x)
+        x = self.acti(x)
+        x = self.c_proj(x)
+        x = self.dropout(x)
+        return x
+
+class Block(nn.Module):
+    """
+    architecture from: https://github.com/karpathy/nanoGPT/blob/master/model.py
+    """
+    def __init__(self, cfg):
+        """
+        """
+        super().__init__()
+        self.ln_1 = LayerNorm(cfg.transformer.n_embd, bias=cfg.transformer.layer_norm_bias)
+        self.attn = MultiHeadedSelfAttention(cfg)
+        self.ln_2 = LayerNorm(cfg.transformer.n_embd, bias=cfg.transformer.layer_norm_bias)
+        self.mlp = MLP(cfg)
+
+
+    def forward(self,
+                x,
+                attention_mask=None
+               ):
+            
+        x = x + self.attn(self.ln_1(x), attention_mask=attention_mask)
+        x = x + self.mlp(self.ln_2(x))
+        return x
+        
+    # def forward(self,
+    #             hidden_states,
+    #             layer_past=None,
+    #             attention_mask=None,
+    #             head_mask=None,
+    #             use_cache=False,
+    #             output_attentions=False,
+    #            ):
+    #     """
+    #     """
+    #     residual = hidden_states
+    #     hidden_states = self.ln_1(hidden_states)
+    #     attn_outputs = self.attn(
+    #         hidden_states,
+    #         layer_past=layer_past,
+    #         attention_mask=attention_mask,
+    #         head_mask=head_mask,
+    #         use_cache=use_cache,
+    #         output_attentions=output_attentions,
+    #     )
+    #     attn_output = attn_outputs[0]  # output_attn: a, present, (attentions)
+    #     outputs = attn_outputs[1:]
+    #     # residual connection
+    #     hidden_states = attn_output + residual
+
+    #     residual = hidden_states
+    #     hidden_states = self.ln_2(hidden_states)
+    #     feed_forward_hidden_states = self.mlp(hidden_states)
+    #     # residual connection
+    #     hidden_states = residual + feed_forward_hidden_states
+
+    #     if use_cache:
+    #         outputs = (hidden_states,) + outputs
+    #     else:
+    #         outputs = (hidden_states,) + outputs[1:]     # hidden_states, present, (attentions, cross_attentions)
+
+    #     return hidden_states  

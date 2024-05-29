@@ -14711,7 +14711,7 @@ INFO:root:	 Hash map created for split=val/ with 1,226,576 samples
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Time to retrieve sample index 1 was 0.12956857681274414 seconds
+<pre>Time to retrieve sample index 1 was 0.10879707336425781 seconds
 
 SEX                 | F
 IMD                 | 4.0
@@ -14720,18 +14720,18 @@ birth_year          | 1997.0
 
 Token                                                                      | Age               | Standardised value
 ===================================================================================================================
+O_E___weight_2                                                             | 5523              | 0.11              
+Systolic_blood_pressure_4                                                  | 5523              | -0.11             
+Body_mass_index_3                                                          | 5564              | 0.24              
+O_E___height_1                                                             | 5564              | -0.05             
+O_E___weight_2                                                             | 5564              | 0.17              
+Body_mass_index_3                                                          | 5687              | 0.26              
+O_E___height_1                                                             | 5687              | -0.06             
 O_E___weight_2                                                             | 5687              | 0.18              
 Basophil_count_22                                                          | 5697              | 0.14              
 Eosinophil_count_21                                                        | 5697              | 0.24              
 Haematocrit_15                                                             | 5697              | -0.04             
 Haemoglobin_estimation_9                                                   | 5697              | nan               
-Lymphocyte_count_20                                                        | 5697              | 0.15              
-Mean_corpusc_Hb_conc__MCHC__14                                             | 5697              | nan               
-Mean_corpusc_haemoglobin_MCH__13                                           | 5697              | -0.20             
-Mean_corpuscular_volume__MCV__11                                           | 5697              | -0.09             
-Monocyte_count_23                                                          | 5697              | 0.05              
-Neutrophil_count_19                                                        | 5697              | -0.04             
-Platelet_count_12                                                          | 5697              | 0.11              
 </pre>
 </div>
 </div>
@@ -14790,8 +14790,8 @@ INFO:root:Using ExponentialTTELayer. This module predicts the time until next ev
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 0:   1%|          | 1001/179001 [05:36&lt;16:37:15,  2.97it/s]
-Validation epoch 0:   1%|          | 101/9583 [00:41&lt;1:05:25,  2.42it/s]
+<pre>Training epoch 0:   0%|          | 1001/358001 [02:58&lt;17:41:52,  5.60it/s]
+Validation epoch 0:   1%|          | 101/19166 [00:19&lt;1:01:42,  5.15it/s]
 </pre>
 </div>
 </div>
@@ -14799,7 +14799,7 @@ Validation epoch 0:   1%|          | 101/9583 [00:41&lt;1:05:25,  2.42it/s]
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Epoch 0:	Train loss -0.68: (1.17, -2.53). Val loss -1.03: (1.01, -3.08)
+<pre>Epoch 0:	Train loss -0.61: (1.22, -2.44). Val loss -0.96: (1.05, -2.98)
 </pre>
 </div>
 </div>
@@ -14807,123 +14807,25 @@ Validation epoch 0:   1%|          | 101/9583 [00:41&lt;1:05:25,  2.42it/s]
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>Training epoch 1:   0%|          | 213/179001 [01:14&lt;17:24:37,  2.85it/s]
-Exception ignored in: &lt;function WeakValueDictionary.__init__.&lt;locals&gt;.remove at 0x7f1717d69f30&gt;
-Traceback (most recent call last):
-  File &#34;/rds/bear-apps/2022a/EL8-ice/software/Python/3.10.4-GCCcore-11.3.0/lib/python3.10/weakref.py&#34;, line 106, in remove
-KeyboardInterrupt: 
+<pre>Training epoch 1:   0%|          | 1001/358001 [02:49&lt;16:48:05,  5.90it/s]
+Validation epoch 1:   1%|          | 101/19166 [00:19&lt;1:02:12,  5.11it/s]
 </pre>
 </div>
 </div>
 
 <div class="jp-OutputArea-child">
 
-
-<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #800000; text-decoration-color: #800000">╭─────────────────────────────── </span><span style="color: #800000; text-decoration-color: #800000; font-weight: bold">Traceback </span><span style="color: #bf7f7f; text-decoration-color: #bf7f7f; font-weight: bold">(most recent call last)</span><span style="color: #800000; text-decoration-color: #800000"> ────────────────────────────────╮</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/tmp/ipykernel_80067/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">235104803.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">19</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">&lt;module&gt;</span>                                                 <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000; font-style: italic">[Errno 2] No such file or directory: '/tmp/ipykernel_80067/235104803.py'</span>                         <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/bear-apps/2022a/EL8-ice/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-</span> <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">packages/torch/nn/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">module.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">1130</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">_call_impl</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1127 │   │   # this function, and just call forward.</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1128 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #ff00ff; text-decoration-color: #ff00ff">not</span> (<span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_pre_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">o</span>  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1129 │   │   │   │   </span><span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_pre_hooks):                   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>1130 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">return</span> forward_call(*<span style="color: #00ffff; text-decoration-color: #00ffff">input</span>, **kwargs)                                         <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1131 │   │   # Do not call functions when jit is used</span>                                          <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1132 │   │   </span>full_backward_hooks, non_full_backward_hooks = [], []                             <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1133 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_backward_hooks:                                <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/homes/g/gaddcz/Projects/CPRD/src/models/TTE/task_heads/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">causal.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">102</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">forward</span>             <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 99 </span><span style="color: #bfbf7f; text-decoration-color: #bfbf7f">│   │     </span><span style="color: #808000; text-decoration-color: #808000">e.g. see https://github.com/huggingface/transformers/blob/main/src/transformer</span>   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">100 </span><span style="color: #bfbf7f; text-decoration-color: #bfbf7f">│   │   </span><span style="color: #808000; text-decoration-color: #808000">"""</span>                                                                                <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">101 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>102 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   </span>hidden_states = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.transformer(tokens=tokens,                                    <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">103 │   │   │   │   │   │   │   │   │   │    </span>ages=ages,                                        <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">104 │   │   │   │   │   │   │   │   │   │    </span>attention_mask=attention_mask)  <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"># shape: (bsz, </span>   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">105 </span>                                                                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/bear-apps/2022a/EL8-ice/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-</span> <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">packages/torch/nn/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">module.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">1130</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">_call_impl</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1127 │   │   # this function, and just call forward.</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1128 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #ff00ff; text-decoration-color: #ff00ff">not</span> (<span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_pre_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">o</span>  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1129 │   │   │   │   </span><span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_pre_hooks):                   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>1130 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">return</span> forward_call(*<span style="color: #00ffff; text-decoration-color: #00ffff">input</span>, **kwargs)                                         <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1131 │   │   # Do not call functions when jit is used</span>                                          <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1132 │   │   </span>full_backward_hooks, non_full_backward_hooks = [], []                             <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1133 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_backward_hooks:                                <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/homes/g/gaddcz/Projects/CPRD/src/models/TTE/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">base.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">128</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">forward</span>                          <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">125 │   │   │   </span>x = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.drop(x)                                                               <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">126 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">127 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">for</span> block <span style="color: #ff00ff; text-decoration-color: #ff00ff">in</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.blocks:                                                          <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>128 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   │   </span>x = block(x, attention_mask=attention_mask)                                    <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">129 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">130 │   │   </span>x = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.ln_f(x)                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">131 </span>                                                                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/bear-apps/2022a/EL8-ice/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-</span> <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">packages/torch/nn/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">module.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">1130</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">_call_impl</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1127 │   │   # this function, and just call forward.</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1128 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #ff00ff; text-decoration-color: #ff00ff">not</span> (<span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_pre_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">o</span>  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1129 │   │   │   │   </span><span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_pre_hooks):                   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>1130 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">return</span> forward_call(*<span style="color: #00ffff; text-decoration-color: #00ffff">input</span>, **kwargs)                                         <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1131 │   │   # Do not call functions when jit is used</span>                                          <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1132 │   │   </span>full_backward_hooks, non_full_backward_hooks = [], []                             <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1133 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_backward_hooks:                                <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/homes/g/gaddcz/Projects/CPRD/src/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">block.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">38</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">forward</span>                             <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">35 </span><span style="color: #bfbf7f; text-decoration-color: #bfbf7f">│   │   </span><span style="color: #808000; text-decoration-color: #808000">"""</span>                                                                                 <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">36 │   │   </span>residual = hidden_states                                                            <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">37 │   │   </span>hidden_states = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.ln_1(hidden_states)                                            <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>38 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   </span>attn_outputs = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.attn(                                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">39 │   │   │   </span>hidden_states,                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">40 │   │   │   </span>layer_past=layer_past,                                                          <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">41 │   │   │   </span>attention_mask=attention_mask,                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/bear-apps/2022a/EL8-ice/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-</span> <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">packages/torch/nn/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">module.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">1130</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">_call_impl</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1127 │   │   # this function, and just call forward.</span>                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1128 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #ff00ff; text-decoration-color: #ff00ff">not</span> (<span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._forward_pre_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">o</span>  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1129 │   │   │   │   </span><span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_forward_pre_hooks):                   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>1130 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">return</span> forward_call(*<span style="color: #00ffff; text-decoration-color: #00ffff">input</span>, **kwargs)                                         <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1131 │   │   # Do not call functions when jit is used</span>                                          <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1132 │   │   </span>full_backward_hooks, non_full_backward_hooks = [], []                             <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">1133 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._backward_hooks <span style="color: #ff00ff; text-decoration-color: #ff00ff">or</span> _global_backward_hooks:                                <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/homes/g/gaddcz/Projects/CPRD/src/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">self_attention.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">148</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">forward</span>                   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">145 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">else</span>:                                                                              <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">146 │   │   │   </span>present = <span style="color: #0000ff; text-decoration-color: #0000ff">None</span>                                                                 <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">147 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span>148 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   </span>attn_output, attn_weights = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._attn(query, key, value, attention_mask, head_m   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">149 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">150 │   │   </span>attn_output = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>._merge_heads(attn_output, <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.num_heads, <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.head_dim)        <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">151 │   │   </span>attn_output = <span style="color: #00ffff; text-decoration-color: #00ffff">self</span>.out_proj(attn_output)                                           <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #bfbf7f; text-decoration-color: #bfbf7f">/rds/homes/g/gaddcz/Projects/CPRD/src/modules/</span><span style="color: #808000; text-decoration-color: #808000; font-weight: bold">self_attention.py</span>:<span style="color: #0000ff; text-decoration-color: #0000ff">96</span> in <span style="color: #00ff00; text-decoration-color: #00ff00">_attn</span>                      <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>                                                                                                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 93 │   │   </span>mask_value = torch.finfo(attn_weights.dtype).min                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 94 │   │   # Need to be a tensor, otherwise we get error: `RuntimeError: expected scalar ty</span>   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 95 │   │   # Need to be on the same device, otherwise `RuntimeError: ..., x and y to be on </span>   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span> <span style="color: #800000; text-decoration-color: #800000">❱ </span> 96 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">│   │   </span>mask_value = torch.tensor(mask_value, dtype=attn_weights.dtype).to(attn_weights.   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 97 │   │   </span>attn_weights = torch.where(causal_mask, attn_weights, mask_value)                  <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 98 │   │   </span>                                                                                   <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">│</span>   <span style="color: #7f7f7f; text-decoration-color: #7f7f7f"> 99 │   │   </span><span style="color: #0000ff; text-decoration-color: #0000ff">if</span> attention_mask <span style="color: #ff00ff; text-decoration-color: #ff00ff">is</span> <span style="color: #ff00ff; text-decoration-color: #ff00ff">not</span> <span style="color: #0000ff; text-decoration-color: #0000ff">None</span>:                                                     <span style="color: #800000; text-decoration-color: #800000">│</span>
-<span style="color: #800000; text-decoration-color: #800000">╰──────────────────────────────────────────────────────────────────────────────────────────────────╯</span>
-<span style="color: #ff0000; text-decoration-color: #ff0000; font-weight: bold">KeyboardInterrupt</span>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Epoch 1:	Train loss -1.07: (1.00, -3.14). Val loss -1.14: (1.03, -3.31)
 </pre>
-
+</div>
 </div>
 
+<div class="jp-OutputArea-child">
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>Training epoch 2:   0%|          | 835/358001 [02:18&lt;15:41:16,  6.32it/s] </pre>
+</div>
 </div>
 
 </div>
@@ -14942,47 +14844,7 @@ KeyboardInterrupt:
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
-
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>WARNING:root:Using XXX requires value embeddings, but this head ``CURRENTLY`` has no way of sampling value of next event. Setting generated values to nan until this is implemented
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>PROMPT:
-O_E___height_1                                    at age 18 (6643.0 days)
-O_E___weight_2                                    at age 18 (6643.0 days)
-===========================================================================
-GENERATION
-Diastolic_blood_pressure_5                        at age 21 (7525.1 days)
-Systolic_blood_pressure_4                         at age 21 (7535.9 days)
-ALLERGICRHINITISCONJ                              at age 23 (8357.9 days)
-AST___aspartate_transam_SGOT__46                  at age 23 (8358.6 days)
-Total_bilirubin_55                                at age 23 (8358.9 days)
-Eosinophil_count_21                               at age 23 (8473.7 days)
-Erythrocyte_sedimentation_rate_61                 at age 23 (8474.0 days)
-GFR_calculated_abbreviated_MDRD_34                at age 23 (8481.2 days)
-Haemoglobin_estimation_9                          at age 23 (8484.2 days)
-Lymphocyte_count_20                               at age 23 (8489.5 days)
-</pre>
-</div>
-</div>
-
-</div>
-
-</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -14994,43 +14856,7 @@ Lymphocyte_count_20                               at age 23 (8489.5 days)
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
-
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Time to retrieve sample index 1 was 0.11035799980163574 seconds
-
-SEX                 | F
-IMD                 | 4.0
-ETHNICITY           | WHITE
-birth_year          | 1997.0
-
-Token                                                                      | Age               | Standardised value
-===================================================================================================================
-Haemoglobin_estimation_9                                                   | 5697              | nan               
-Lymphocyte_count_20                                                        | 5697              | 0.15              
-Mean_corpusc_Hb_conc__MCHC__14                                             | 5697              | nan               
-Mean_corpusc_haemoglobin_MCH__13                                           | 5697              | -0.20             
-Mean_corpuscular_volume__MCV__11                                           | 5697              | -0.09             
-Monocyte_count_23                                                          | 5697              | 0.05              
-Neutrophil_count_19                                                        | 5697              | -0.04             
-Platelet_count_12                                                          | 5697              | 0.11              
-Red_blood_cell__RBC__count_10                                              | 5697              | -0.00             
-Serum_TSH_level_71                                                         | 5697              | 0.15              
-</pre>
-</div>
-</div>
-
-</div>
-
-</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
@@ -15055,36 +14881,7 @@ Serum_TSH_level_71                                                         | 569
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
-
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>
-Control: 	 (DEPRESSION): 
-	probability of type I diabetes: 0.0300%
-	probability of type II diabetes: 0.1138%
-
-Type 1: 	 (DEPRESSION,TYPE1DM): 
-	probability of type I diabetes: 0.0374%
-	probability of type II diabetes: 0.1200%
-
-Type 2: 	 (DEPRESSION,TYPE2DIABETES): 
-	probability of type I diabetes: 0.0392%
-	probability of type II diabetes: 0.1236%
-</pre>
-</div>
-</div>
-
-</div>
-
-</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -15096,339 +14893,7 @@ Type 2: 	 (DEPRESSION,TYPE2DIABETES):
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
-
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>
-Age 4
-======
-Top 10
-	Body_mass_index_3: 22.87%
-	O_E___height_1: 13.15%
-	Diastolic_blood_pressure_5: 11.87%
-	Basophil_count_22: 7.23%
-	O_E___weight_2: 6.41%
-	ALLERGICRHINITISCONJ: 4.36%
-	ATOPICECZEMA: 3.61%
-	ASTHMA_PUSHASTHMA: 2.79%
-	ANXIETY: 2.65%
-	DEPRESSION: 2.45%
-Bottom 30
-	Plasma_sodium_level_25: 0.00%
-	SICKLE_CELL_DISEASE_V2: 0.00%
-	PAD: 0.00%
-	Plasma_alkaline_phosphatase_level_49: 0.00%
-	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
-	UNK: 0.00%
-	Plasma_calcium_level_40: 0.00%
-	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	Albumin___creatinine_ratio_37: 0.00%
-	Serum_pro_brain_natriuretic_peptide_level_65: 0.00%
-	Plasma_total_bilirubin_level_54: 0.00%
-	DOWNSSYNDROME: 0.00%
-	CYSTICFIBROSIS: 0.01%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
-	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
-	Plasma_pro_brain_natriuretic_peptide_level_64: 0.01%
-	Plasma_LDL_cholesterol_level_104: 0.01%
-	PLASMACELL_NEOPLASM_V2: 0.01%
-	Monocyte_count_23: 0.01%
-	Plasma_cholesterol_HDL_ratio_96: 0.01%
-	ADDISONS_DISEASE: 0.01%
-	HAEMOCHROMATOSIS_V2: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	Plasma_ferritin_level_62: 0.01%
-	ADDISON_DISEASE: 0.01%
-	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
-	Plasma_corrected_calcium_level_43: 0.01%
-	Brain_natriuretic_peptide_level_66: 0.01%
-	SJOGRENSSYNDROME: 0.01%
-	ILD_SH: 0.01%
-
-Age 8
-======
-Top 10
-	Body_mass_index_3: 25.28%
-	Diastolic_blood_pressure_5: 14.98%
-	O_E___height_1: 10.14%
-	Basophil_count_22: 8.05%
-	O_E___weight_2: 4.94%
-	ALLERGICRHINITISCONJ: 3.74%
-	ATOPICECZEMA: 2.74%
-	ANXIETY: 2.73%
-	DEPRESSION: 2.61%
-	ASTHMA_PUSHASTHMA: 2.43%
-Bottom 30
-	Plasma_sodium_level_25: 0.00%
-	SICKLE_CELL_DISEASE_V2: 0.00%
-	PAD: 0.00%
-	Plasma_alkaline_phosphatase_level_49: 0.00%
-	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
-	UNK: 0.00%
-	Plasma_calcium_level_40: 0.00%
-	Serum_pro_brain_natriuretic_peptide_level_65: 0.00%
-	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	Albumin___creatinine_ratio_37: 0.01%
-	DOWNSSYNDROME: 0.01%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
-	Plasma_pro_brain_natriuretic_peptide_level_64: 0.01%
-	Plasma_LDL_cholesterol_level_104: 0.01%
-	Plasma_total_bilirubin_level_54: 0.01%
-	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
-	PLASMACELL_NEOPLASM_V2: 0.01%
-	ADDISONS_DISEASE: 0.01%
-	Plasma_ferritin_level_62: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	Plasma_cholesterol_HDL_ratio_96: 0.01%
-	HAEMOCHROMATOSIS_V2: 0.01%
-	Plasma_corrected_calcium_level_43: 0.01%
-	ADDISON_DISEASE: 0.01%
-	Monocyte_count_23: 0.01%
-	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
-	SJOGRENSSYNDROME: 0.01%
-	ILD_SH: 0.01%
-	Brain_natriuretic_peptide_level_66: 0.01%
-
-Age 20
-======
-Top 10
-	Body_mass_index_3: 26.87%
-	Diastolic_blood_pressure_5: 15.54%
-	O_E___height_1: 8.46%
-	Basophil_count_22: 7.87%
-	ALLERGICRHINITISCONJ: 3.72%
-	O_E___weight_2: 3.69%
-	ANXIETY: 3.42%
-	DEPRESSION: 3.03%
-	ATOPICECZEMA: 2.84%
-	ASTHMA_PUSHASTHMA: 2.04%
-Bottom 30
-	Plasma_sodium_level_25: 0.00%
-	SICKLE_CELL_DISEASE_V2: 0.00%
-	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
-	Plasma_alkaline_phosphatase_level_49: 0.00%
-	PAD: 0.00%
-	UNK: 0.00%
-	Plasma_calcium_level_40: 0.00%
-	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	Albumin___creatinine_ratio_37: 0.00%
-	Plasma_pro_brain_natriuretic_peptide_level_64: 0.00%
-	DOWNSSYNDROME: 0.01%
-	CYSTICFIBROSIS: 0.01%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
-	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
-	Serum_pro_brain_natriuretic_peptide_level_65: 0.01%
-	Plasma_LDL_cholesterol_level_104: 0.01%
-	Plasma_total_bilirubin_level_54: 0.01%
-	PLASMACELL_NEOPLASM_V2: 0.01%
-	ADDISONS_DISEASE: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	Plasma_cholesterol_HDL_ratio_96: 0.01%
-	HAEMOCHROMATOSIS_V2: 0.01%
-	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
-	Plasma_ferritin_level_62: 0.01%
-	ADDISON_DISEASE: 0.01%
-	Monocyte_count_23: 0.01%
-	SJOGRENSSYNDROME: 0.01%
-	Plasma_corrected_calcium_level_43: 0.01%
-	ILD_SH: 0.01%
-	Brain_natriuretic_peptide_level_66: 0.01%
-
-Age 30
-======
-Top 10
-	Body_mass_index_3: 25.33%
-	Diastolic_blood_pressure_5: 15.88%
-	Basophil_count_22: 8.89%
-	O_E___height_1: 8.80%
-	ANXIETY: 3.62%
-	ALLERGICRHINITISCONJ: 3.30%
-	O_E___weight_2: 3.25%
-	DEPRESSION: 3.14%
-	ATOPICECZEMA: 2.32%
-	ASTHMA_PUSHASTHMA: 1.75%
-Bottom 30
-	Plasma_sodium_level_25: 0.00%
-	SICKLE_CELL_DISEASE_V2: 0.00%
-	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
-	PAD: 0.00%
-	UNK: 0.00%
-	Plasma_alkaline_phosphatase_level_49: 0.00%
-	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	Plasma_calcium_level_40: 0.00%
-	Serum_pro_brain_natriuretic_peptide_level_65: 0.00%
-	DOWNSSYNDROME: 0.00%
-	Albumin___creatinine_ratio_37: 0.00%
-	Plasma_pro_brain_natriuretic_peptide_level_64: 0.01%
-	CYSTICFIBROSIS: 0.01%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
-	PLASMACELL_NEOPLASM_V2: 0.01%
-	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	ADDISONS_DISEASE: 0.01%
-	Plasma_total_bilirubin_level_54: 0.01%
-	Plasma_LDL_cholesterol_level_104: 0.01%
-	Plasma_ferritin_level_62: 0.01%
-	Plasma_cholesterol_HDL_ratio_96: 0.01%
-	HAEMOCHROMATOSIS_V2: 0.01%
-	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
-	Monocyte_count_23: 0.01%
-	ADDISON_DISEASE: 0.01%
-	Plasma_corrected_calcium_level_43: 0.01%
-	SJOGRENSSYNDROME: 0.01%
-	ILD_SH: 0.01%
-	Serum_non_high_density_lipoprotein_cholesterol_level_107: 0.01%
-
-Age 60
-======
-Top 10
-	Body_mass_index_3: 25.32%
-	Diastolic_blood_pressure_5: 17.80%
-	Basophil_count_22: 8.37%
-	O_E___height_1: 8.27%
-	O_E___weight_2: 3.88%
-	ALLERGICRHINITISCONJ: 2.75%
-	ATOPICECZEMA: 2.50%
-	ANXIETY: 2.46%
-	DEPRESSION: 2.14%
-	ASTHMA_PUSHASTHMA: 1.95%
-Bottom 30
-	Plasma_sodium_level_25: 0.00%
-	PAD: 0.00%
-	SICKLE_CELL_DISEASE_V2: 0.00%
-	Plasma_alkaline_phosphatase_level_49: 0.00%
-	UNK: 0.00%
-	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
-	Plasma_calcium_level_40: 0.00%
-	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	Serum_pro_brain_natriuretic_peptide_level_65: 0.00%
-	DOWNSSYNDROME: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	Plasma_pro_brain_natriuretic_peptide_level_64: 0.00%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
-	Monocyte_count_23: 0.01%
-	Albumin___creatinine_ratio_37: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
-	Plasma_ferritin_level_62: 0.01%
-	PLASMACELL_NEOPLASM_V2: 0.01%
-	ADDISONS_DISEASE: 0.01%
-	Plasma_total_bilirubin_level_54: 0.01%
-	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
-	Plasma_LDL_cholesterol_level_104: 0.01%
-	ADDISON_DISEASE: 0.01%
-	HAEMOCHROMATOSIS_V2: 0.01%
-	Plasma_corrected_calcium_level_43: 0.01%
-	Plasma_cholesterol_HDL_ratio_96: 0.01%
-	SJOGRENSSYNDROME: 0.01%
-	Brain_natriuretic_peptide_level_66: 0.01%
-	ILD_SH: 0.01%
-
-Age 80
-======
-Top 10
-	Body_mass_index_3: 24.90%
-	Diastolic_blood_pressure_5: 17.59%
-	Basophil_count_22: 9.44%
-	O_E___height_1: 6.88%
-	O_E___weight_2: 4.25%
-	ALLERGICRHINITISCONJ: 3.02%
-	ATOPICECZEMA: 2.73%
-	ANXIETY: 2.58%
-	DEPRESSION: 2.33%
-	ASTHMA_PUSHASTHMA: 1.93%
-Bottom 30
-	Plasma_sodium_level_25: 0.00%
-	PAD: 0.00%
-	SICKLE_CELL_DISEASE_V2: 0.00%
-	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
-	UNK: 0.00%
-	Plasma_alkaline_phosphatase_level_49: 0.00%
-	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	Plasma_calcium_level_40: 0.00%
-	CYSTICFIBROSIS: 0.00%
-	Serum_pro_brain_natriuretic_peptide_level_65: 0.00%
-	Plasma_pro_brain_natriuretic_peptide_level_64: 0.00%
-	DOWNSSYNDROME: 0.00%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
-	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
-	Albumin___creatinine_ratio_37: 0.01%
-	ADDISONS_DISEASE: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	PLASMACELL_NEOPLASM_V2: 0.01%
-	HAEMOCHROMATOSIS_V2: 0.01%
-	Monocyte_count_23: 0.01%
-	Plasma_ferritin_level_62: 0.01%
-	Plasma_total_bilirubin_level_54: 0.01%
-	Plasma_LDL_cholesterol_level_104: 0.01%
-	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
-	ADDISON_DISEASE: 0.01%
-	Plasma_cholesterol_HDL_ratio_96: 0.01%
-	Plasma_corrected_calcium_level_43: 0.01%
-	SJOGRENSSYNDROME: 0.01%
-	ILD_SH: 0.01%
-	Serum_total_cholesterol_level_98: 0.01%
-
-Age 90
-======
-Top 10
-	Body_mass_index_3: 20.98%
-	Diastolic_blood_pressure_5: 15.64%
-	O_E___height_1: 10.44%
-	Basophil_count_22: 7.52%
-	O_E___weight_2: 5.14%
-	ATOPICECZEMA: 3.23%
-	ALLERGICRHINITISCONJ: 3.14%
-	DEPRESSION: 2.65%
-	ASTHMA_PUSHASTHMA: 2.41%
-	ANXIETY: 2.32%
-Bottom 30
-	Plasma_sodium_level_25: 0.00%
-	Plasma_alkaline_phosphatase_level_49: 0.00%
-	SICKLE_CELL_DISEASE_V2: 0.00%
-	PAD: 0.00%
-	Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_70: 0.00%
-	UNK: 0.00%
-	Plasma_B_natriuretic_peptide_level_69: 0.00%
-	Plasma_calcium_level_40: 0.00%
-	Plasma_pro_brain_natriuretic_peptide_level_64: 0.01%
-	DOWNSSYNDROME: 0.01%
-	CYSTICFIBROSIS: 0.01%
-	Albumin___creatinine_ratio_37: 0.01%
-	Serum_pro_brain_natriuretic_peptide_level_65: 0.01%
-	SYSTEMIC_LUPUS_ERYTHEMATOSUS: 0.01%
-	Monocyte_count_23: 0.01%
-	N_terminal_pro_brain_natriuretic_peptide_level_67: 0.01%
-	SYSTEMIC_SCLEROSIS: 0.01%
-	PLASMACELL_NEOPLASM_V2: 0.01%
-	ADDISONS_DISEASE: 0.01%
-	Plasma_ferritin_level_62: 0.01%
-	HAEMOCHROMATOSIS_V2: 0.01%
-	Plasma_cholesterol_HDL_ratio_96: 0.01%
-	Plasma_LDL_cholesterol_level_104: 0.01%
-	Plasma_total_bilirubin_level_54: 0.01%
-	Serum_N_terminal_pro_B_type_natriuretic_peptide_conc_68: 0.01%
-	ADDISON_DISEASE: 0.01%
-	Plasma_corrected_calcium_level_43: 0.01%
-	SJOGRENSSYNDROME: 0.01%
-	Brain_natriuretic_peptide_level_66: 0.01%
-	Combined_total_vitamin_D2_and_D3_level_93: 0.01%
-</pre>
-</div>
-</div>
-
-</div>
-
-</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
@@ -15440,156 +14905,7 @@ Bottom 30
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
-
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-
-
-<div class="jp-RenderedText jp-OutputArea-output " data-mime-type="text/plain">
-<pre>TTETransformerForCausalSequenceModelling(
-  (transformer): TTETransformer(
-    (wpe): TemporalPositionalEncoding()
-    (wte): DataEmbeddingLayer(
-      (static_proj): Linear(in_features=16, out_features=384, bias=True)
-      (dynamic_embedding_layer): SplitDynamicEmbeddingLayer(
-        (cat_event_embed_layer): Embedding(184, 384, padding_idx=0)
-        (cat_event_proj): Linear(in_features=384, out_features=384, bias=True)
-        (num_value_embed_layer): EmbeddingBag(184, 384, mode=sum, padding_idx=0)
-        (num_value_proj): Linear(in_features=384, out_features=384, bias=True)
-      )
-    )
-    (drop): Dropout(p=0.0, inplace=False)
-    (blocks): ModuleList(
-      (0): Block(
-        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
-        (attn): MultiHeadedSelfAttention(
-          (attn_dropout): Dropout(p=0.0, inplace=False)
-          (resid_dropout): Dropout(p=0.0, inplace=False)
-          (k_proj): Linear(in_features=384, out_features=384, bias=False)
-          (v_proj): Linear(in_features=384, out_features=384, bias=False)
-          (q_proj): Linear(in_features=384, out_features=384, bias=False)
-          (out_proj): Linear(in_features=384, out_features=384, bias=True)
-        )
-        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
-        (mlp): MLP(
-          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
-          (acti): ReLU()
-          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
-          (dropout): Dropout(p=0.0, inplace=False)
-        )
-      )
-      (1): Block(
-        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
-        (attn): MultiHeadedSelfAttention(
-          (attn_dropout): Dropout(p=0.0, inplace=False)
-          (resid_dropout): Dropout(p=0.0, inplace=False)
-          (k_proj): Linear(in_features=384, out_features=384, bias=False)
-          (v_proj): Linear(in_features=384, out_features=384, bias=False)
-          (q_proj): Linear(in_features=384, out_features=384, bias=False)
-          (out_proj): Linear(in_features=384, out_features=384, bias=True)
-        )
-        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
-        (mlp): MLP(
-          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
-          (acti): ReLU()
-          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
-          (dropout): Dropout(p=0.0, inplace=False)
-        )
-      )
-      (2): Block(
-        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
-        (attn): MultiHeadedSelfAttention(
-          (attn_dropout): Dropout(p=0.0, inplace=False)
-          (resid_dropout): Dropout(p=0.0, inplace=False)
-          (k_proj): Linear(in_features=384, out_features=384, bias=False)
-          (v_proj): Linear(in_features=384, out_features=384, bias=False)
-          (q_proj): Linear(in_features=384, out_features=384, bias=False)
-          (out_proj): Linear(in_features=384, out_features=384, bias=True)
-        )
-        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
-        (mlp): MLP(
-          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
-          (acti): ReLU()
-          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
-          (dropout): Dropout(p=0.0, inplace=False)
-        )
-      )
-      (3): Block(
-        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
-        (attn): MultiHeadedSelfAttention(
-          (attn_dropout): Dropout(p=0.0, inplace=False)
-          (resid_dropout): Dropout(p=0.0, inplace=False)
-          (k_proj): Linear(in_features=384, out_features=384, bias=False)
-          (v_proj): Linear(in_features=384, out_features=384, bias=False)
-          (q_proj): Linear(in_features=384, out_features=384, bias=False)
-          (out_proj): Linear(in_features=384, out_features=384, bias=True)
-        )
-        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
-        (mlp): MLP(
-          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
-          (acti): ReLU()
-          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
-          (dropout): Dropout(p=0.0, inplace=False)
-        )
-      )
-      (4): Block(
-        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
-        (attn): MultiHeadedSelfAttention(
-          (attn_dropout): Dropout(p=0.0, inplace=False)
-          (resid_dropout): Dropout(p=0.0, inplace=False)
-          (k_proj): Linear(in_features=384, out_features=384, bias=False)
-          (v_proj): Linear(in_features=384, out_features=384, bias=False)
-          (q_proj): Linear(in_features=384, out_features=384, bias=False)
-          (out_proj): Linear(in_features=384, out_features=384, bias=True)
-        )
-        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
-        (mlp): MLP(
-          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
-          (acti): ReLU()
-          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
-          (dropout): Dropout(p=0.0, inplace=False)
-        )
-      )
-      (5): Block(
-        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
-        (attn): MultiHeadedSelfAttention(
-          (attn_dropout): Dropout(p=0.0, inplace=False)
-          (resid_dropout): Dropout(p=0.0, inplace=False)
-          (k_proj): Linear(in_features=384, out_features=384, bias=False)
-          (v_proj): Linear(in_features=384, out_features=384, bias=False)
-          (q_proj): Linear(in_features=384, out_features=384, bias=False)
-          (out_proj): Linear(in_features=384, out_features=384, bias=True)
-        )
-        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
-        (mlp): MLP(
-          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
-          (acti): ReLU()
-          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
-          (dropout): Dropout(p=0.0, inplace=False)
-        )
-      )
-    )
-    (ln_f): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
-  )
-  (lm_head): Linear(in_features=384, out_features=184, bias=False)
-  (tte_layer): ExponentialTTELayer(
-    (proj): Linear(in_features=384, out_features=1, bias=True)
-  )
-)</pre>
-</div>
-
-</div>
-
-</div>
-
-</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 

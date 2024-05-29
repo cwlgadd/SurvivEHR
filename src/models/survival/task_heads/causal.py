@@ -14,28 +14,30 @@ class SurvStreamGPTForCausalModelling(nn.Module):
     """
     
     def __init__(self, 
-                 config,
+                 cfg,
                  vocab_size):
         super().__init__()
-        self.config = config
-        self.surv_weight = 1/2
-        self.value_weight = 1/2
         
-        self.transformer = TTETransformer(config, vocab_size)
+        total_weight = cfg.head.surv_weight + cfg.head.value_weight
+        self.surv_weight = cfg.head.surv_weight / total_weight
+        self.value_weight = cfg.head.value_weight / total_weight
+        self.block_size = cfg.transformer.block_size
+        
+        self.transformer = TTETransformer(cfg, vocab_size)
 
-        match config.SurvLayer.lower():
+        match cfg.head.SurvLayer.lower():
             # Removing padding token from vocab size as this is not considered an event in either case
             case "single-risk" | "sr":
-                self.surv_layer = ODESurvSingleLayer(config.n_embd, [], num_risks=vocab_size - 1, device="cuda")
+                self.surv_layer = ODESurvSingleLayer(cfg.transformer.n_embd, [], num_risks=vocab_size - 1, device="cuda")
             case "competing-risk" | "cr":
-                self.surv_layer = ODESurvCompetingRiskLayer(config.n_embd, [], num_risks=vocab_size - 1, device="cuda")
+                self.surv_layer = ODESurvCompetingRiskLayer(cfg.transformer.n_embd, [], num_risks=vocab_size - 1, device="cuda")
             case _:
                 raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
 
 
         # Regression layers, create a separate regression layer for each measurement
-        self.value_layer = GaussianRegressionLayer(config.n_embd,
-                                                   measurement_tokens=config.tokens_for_univariate_regression
+        self.value_layer = GaussianRegressionLayer(cfg.transformer.n_embd,
+                                                   measurement_tokens=cfg.head.tokens_for_univariate_regression
                                                    )
 
         # apply special scaled init to the residual projections, per GPT-2 paper
@@ -127,9 +129,9 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         
         for _ in range(max_new_tokens):
             # crop tokens to the last block_size tokens
-            tokens_window = tokens[:, -self.config.block_size:]
-            ages_window = ages[:, -self.config.block_size:] 
-            values_window = values[:, -self.config.block_size:] 
+            tokens_window = tokens[:, -self.block_size:]
+            ages_window = ages[:, -self.block_size:] 
+            values_window = values[:, -self.block_size:] 
 
             # get the predictions
             (surv, value_dists), _, _ = self(tokens=tokens_window, 

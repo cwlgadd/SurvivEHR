@@ -18,14 +18,17 @@ class ODESurvSingleLayer(nn.Module):
                                      device=device,
                                      n=n) 
                        for _ in range(num_risks)]             # do not include pad token as an event 
-                                                                                                                   
-        self._time_scale = 365*5                               # this is the maximum period considered in generation, and also used as normalising constant in DeSurv
-        self.t_eval = np.linspace(0, self._time_scale, 300)    # the time grid which we generate over
+
+        # this is the maximum period considered in generation, and also used as normalising constant in DeSurv
+        self._time_scale = 365*5                               
+        # the time grid which we generate over
+        self.t_eval = np.linspace(0, self._time_scale, self._time_scale + 1)    
         self.device = device
 
         logging.info(f"Using Single-Risk DeSurvival head. This module predicts a separate survival curve for each possible future event")
         logging.info(f"Internally scaling time in survival head by {self._time_scale} days")
-        logging.info(f"In generation forwarding DeSurv on the grid between [{self.t_eval.min()}, {self.t_eval.max()}], with delta=1/{len(self.t_eval)}")
+        logging.info(f"In generation forwarding DeSurv on the grid between [{self.t_eval.min()}, {self.t_eval.max()}]")
+        logging.info(f"with {len(self.t_eval)} intervals of delta={self.t_eval[1]-self.t_eval[0]}")
 
     def predict(self,
                 hidden_states: torch.tensor,                    # shape: torch.Size([bsz, seq_len, n_embd])
@@ -184,13 +187,16 @@ class ODESurvCompetingRiskLayer(nn.Module):
                                       device=device,
                                       n=n) 
                                                                                                                    
-        self._time_scale = 365*5                               # this is the maximum period considered in generation, and also used as normalising constant in DeSurv
-        self.t_eval = np.linspace(0, self._time_scale, 300)    # the time grid which we generate over
+        # this is the maximum period considered in generation, and also used as normalising constant in DeSurv
+        self._time_scale = 365*5                               
+        # the time grid which we generate over
+        self.t_eval = np.linspace(0, self._time_scale, self._time_scale + 1)    
         self.device = device
 
         logging.info(f"Using Competing-Risk DeSurv head.")
         logging.info(f"Internally scaling time in survival head by {self._time_scale} days")
-        logging.info(f"In generation forwarding DeSurv on the grid between [{self.t_eval.min()}, {self.t_eval.max()}], with delta=1/{len(self.t_eval)}")
+        logging.info(f"In generation forwarding DeSurv on the grid between [{self.t_eval.min()}, {self.t_eval.max()}]" \
+                     f" with {len(self.t_eval)} intervals of delta={self.t_eval[1]-self.t_eval[0]}")
 
     def predict(self,
                 hidden_states: torch.tensor,                    # shape: torch.Size([bsz, seq_len, n_embd])
