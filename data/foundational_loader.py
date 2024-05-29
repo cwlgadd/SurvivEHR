@@ -143,7 +143,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
             dataset=self.train_set,
             batch_size=self.batch_size,
             num_workers=np.min((self.min_workers, os.cpu_count())),
-            pin_memory=True,
+            # pin_memory=True,
             collate_fn=self.collate_fn,
             shuffle=True
         )
@@ -153,7 +153,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
             dataset=self.val_set,
             batch_size=self.batch_size,
             num_workers=np.min((self.min_workers, os.cpu_count())),
-            pin_memory=True,
+            # pin_memory=True,
             collate_fn=self.collate_fn,
             shuffle=False
         )
@@ -163,7 +163,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
             dataset=self.test_set,
             batch_size=self.batch_size,
             num_workers=np.min((self.min_workers, os.cpu_count())),
-            pin_memory=True,
+            # pin_memory=True,
             collate_fn=self.collate_fn,
             shuffle=False
         )
@@ -173,7 +173,7 @@ class FoundationalDataset(Dataset):
     r"""
     """
 
-    def view_sample(self, idx, max_dynamic_events=30, report_time=False):
+    def view_sample(self, idx, max_dynamic_events=None, report_time=False):
         """ Wrapper around __getitem__ to print a sample in a read-friendly format """
         # Get row
         start_time = time.time()
@@ -188,7 +188,7 @@ class FoundationalDataset(Dataset):
         print("\nToken".ljust(76) + "| Age".ljust(20) + "| Standardised value".ljust(20) + "\n" + "="*115)
         for idx_event, (token, age, value) in enumerate(zip(self.tokenizer.decode(batch["tokens"].tolist()).split(" "), batch["ages"], batch["values"])):
             print(f"{token}".ljust(75) + f"| {age}".ljust(20) + f"| {value:.2f}".ljust(20))
-            if idx_event >= max_dynamic_events - 1:
+            if max_dynamic_events is not None and idx_event >= max_dynamic_events - 1:
                 break
         
     def __init__(self,
@@ -322,7 +322,7 @@ class FoundationalDataset(Dataset):
                         next_value = (next_value -lqr) / (uqr - lqr)
 
                         # But if we use a joint data embedding we will be scaling token embeddings by the value, and so we 
-                        # instead we scale to [-0.5,0.5], so the average token is unit scale
+                        # instead we scale to [-0.5,0.5], so the scaling is symetric around the average value of the token
                         next_value = next_value - 0.5 
 
                         # if lqr < 300 or upr > 300:
@@ -350,20 +350,35 @@ class FoundationalDataset(Dataset):
             sequence_ages = [[_age] + [_age for _ in range(len(str(_value)))] if _value is not np.nan else [_age] for _age, _value in zip(sequence_ages, sequence_values)]
             sequence_ages = sum(sequence_ages, [])            # concat list of lists
             sequence_values = [np.nan for _ in range(len(sequence_tokens))]
-            
-        # Then encode the sequence
-        encoded_tokens = self.tokenizer.encode(sequence_tokens)
-        
-        # Sub-sample if number of tokens exceeds requested block size
-        if len(encoded_tokens) > self.max_seq_length:
-            start_pos = np.random.randint(low=0, high=len(encoded_tokens)-self.max_seq_length, size=1)[0]
-            encoded_tokens = encoded_tokens[start_pos:start_pos+self.max_seq_length]            
-            sequence_ages = sequence_ages[start_pos:start_pos+self.max_seq_length]
-            sequence_values = sequence_values[start_pos:start_pos+self.max_seq_length]
 
-        # print([f"{_event} {_value}" for _event, _value in zip(sequence_tokens, sequence_values)])
-        # print(f"{torch.tensor(encoded_tokens).shape}, {torch.tensor(static_covariates).shape}")
+        # Then encode the sequence
+        ##########################
+        enforce_global = True 
+        encoded_tokens = self.tokenizer.encode(sequence_tokens)
+        # Get a windowed sub-block from the patient's history if context length exceeds block size
+        start_pos = np.random.randint(low=0, high=len(encoded_tokens)-self.max_seq_length, size=1)[0] if len(encoded_tokens) > self.max_seq_length else 0
+        end_pos = start_pos + self.max_seq_length
+        # Get the diagnoses that we will (optionally) not be dropping, as these have life long implications
+        earlier_global_events = []
+        if enforce_global:
+            # Replace first events  m e diagnoses that occurred before start_pos
+            earlier_global_events = self.tokenizer.encode([_event for _event in sequence_tokens[:start_pos]
+                                                           if _event in self.meta_information["diagnosis_table"].event.tolist()])
+            earlier_global_ages = [ _age for _event, _age in zip(sequence_tokens[:start_pos], sequence_ages[:start_pos]) 
+                                   if _event in self.meta_information["diagnosis_table"].event.tolist()]
+            earlier_global_values = [_value for _event, _value in zip(sequence_tokens[:start_pos], sequence_values[:start_pos]) 
+                                     if _event in self.meta_information["diagnosis_table"].event.tolist()]
+
+            # It may be that some of the pushed back events were themselves diagnoses, so check and adjust if needed
+            # TODO
+
+            start_pos += len(earlier_global_events)
         
+        # combine        
+        encoded_tokens = earlier_global_events + encoded_tokens[start_pos:end_pos]            
+        sequence_ages = earlier_global_ages + sequence_ages[start_pos:end_pos]
+        sequence_values = earlier_global_values + sequence_values[start_pos:end_pos]
+                
         return {"static_covariates": torch.tensor(static_covariates, dtype=torch.float),
                 "tokens": torch.tensor(encoded_tokens),
                 "ages": torch.tensor(sequence_ages),
