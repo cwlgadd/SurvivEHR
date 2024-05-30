@@ -52,10 +52,15 @@ class PolarsDataset:
        
         self.save_path = path
         if load is True:
-            try:
-                logging.info(f"Loading Polars dataset from {path}")
-                with open(path + 'meta_information.pickle', 'rb') as handle:
-                   self.meta_information = pickle.load(handle)
+            try:                
+                try:
+                    with open(path + 'meta_information_edited.pickle', 'rb') as handle:
+                       self.meta_information = pickle.load(handle)
+                    logging.info(f"Loaded Polars dataset from {path}. Using edited version of meta_information")
+                except:
+                    with open(path + 'meta_information.pickle', 'rb') as handle:
+                       self.meta_information = pickle.load(handle)
+                    logging.info(f"Loaded Polars dataset from {path}.")
             except OSError as e:
                 raise FileNotFoundError
         else:
