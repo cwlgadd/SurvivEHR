@@ -361,19 +361,17 @@ class FoundationalDataset(Dataset):
         # Get the diagnoses that we will (optionally) not be dropping, as these have life long implications
         earlier_global_events = []
         if enforce_global:
-            # Replace first events  m e diagnoses that occurred before start_pos
+            # Replace the first X events with the diagnoses that occurred before this sampled context block
             earlier_global_events = self.tokenizer.encode([_event for _event in sequence_tokens[:start_pos]
                                                            if _event in self.meta_information["diagnosis_table"].event.tolist()])
             earlier_global_ages = [ _age for _event, _age in zip(sequence_tokens[:start_pos], sequence_ages[:start_pos]) 
                                    if _event in self.meta_information["diagnosis_table"].event.tolist()]
             earlier_global_values = [_value for _event, _value in zip(sequence_tokens[:start_pos], sequence_values[:start_pos]) 
                                      if _event in self.meta_information["diagnosis_table"].event.tolist()]
-
-            # It may be that some of the pushed back events were themselves diagnoses, so check and adjust if needed
-            # TODO
-
             start_pos += len(earlier_global_events)
-        
+
+            # TODO: this does not check if the pushed back events were global themselves
+         
         # combine        
         encoded_tokens = earlier_global_events + encoded_tokens[start_pos:end_pos]            
         sequence_ages = earlier_global_ages + sequence_ages[start_pos:end_pos]
