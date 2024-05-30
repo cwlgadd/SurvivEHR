@@ -20,6 +20,7 @@ optim:
   num_epochs: 1                      # Number of batches. By default we train on each patient one time
   learning_rate: 1e-4                # AdamW learning rate
   val_check_interval: 1000           # How many training batches to perform between validation check    
+  early_stop: False                  # If we should do early stopping  
   early_stop_patience: 5             # How many val_check intervals to continue without seeing an improvement
   log_every_n_steps: 20              # Logging frequency
   limit_val_batches: 0.05            # The fraction of patients we validate on each time (out of entire validation set)

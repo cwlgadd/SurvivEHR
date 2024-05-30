@@ -76,8 +76,8 @@ class SurvivalExperiment(pl.LightningModule):
             "interval": "step",                                                         # The unit of the scheduler's step size
             "frequency": 2 * self.cfg.optim.val_check_interval,                         # How many epochs/steps should pass between calls to `scheduler.step()`
             "monitor": "val_loss",                                                      # Metric to monitor for scheduler
-            "strict": False,                                                             # Enforce that "val_loss" is available when the scheduler is updated
-            # "name": 'LearningRateMonitor',                                              # For `LearningRateMonitor`, specify a custom logged name
+            "strict": False,                                                            # Enforce that "val_loss" is available when the scheduler is updated
+            "name": 'ReduceLROnPlateau',                                                # For `LearningRateMonitor`, specify a custom logged name
         }
         return {
             "optimizer": optimizer,
@@ -111,19 +111,22 @@ def setup_survival_experiment(cfg, vocab_size):
         monitor="val_loss",
     )
 
-    early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
-        monitor="val_loss", mode="min",
-        min_delta=0,
-        patience=cfg.optim.early_stop_patience,
-        verbose=cfg.experiment.verbose,
-    )
-
     lr_monitor = pl.callbacks.LearningRateMonitor(logging_interval='step')
-    
+
     callbacks = [checkpoint_callback,
-                 early_stop_callback,
-                 lr_monitor
+                 lr_monitor,
                  ]
+
+    # optional callbacks
+    if cfg.optim.early_stop:
+        early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
+            monitor="val_loss", mode="min",
+            min_delta=0,
+            patience=cfg.optim.early_stop_patience,
+            verbose=cfg.experiment.verbose,
+        )
+        callbacks.append(early_stop_callback)
+        
 
     _trainer = pl.Trainer(
         logger=logger,

@@ -7,7 +7,7 @@ data:
 
 experiment:
   project_name: SurvStreamGPT_${head.SurvLayer}
-  run_id: PreTrain_${head.SurvLayer}_${experiment.seed}
+  run_id: PreTrain_${head.SurvLayer}_11M_${experiment.seed}
   train: True
   test: True
   verbose: True
@@ -15,11 +15,12 @@ experiment:
   log: True
   log_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/                   # Where to place any log files
   ckpt_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/      # Where to save checkpoints during training  
-
+  
 optim: 
   num_epochs: 1                      # Number of batches. By default we train on each patient one time
   learning_rate: 3e-4                # AdamW learning rate
-  val_check_interval: 1000           # How many training batches to perform between validation check    
+  val_check_interval: 1000           # How many training batches to perform between validation check
+  early_stop: False                  # If we should do early stopping  
   early_stop_patience: 5             # How many val_check intervals to continue without seeing an improvement
   log_every_n_steps: 20              # Logging frequency
   limit_val_batches: 0.05            # The fraction of patients we validate on each time (out of entire validation set)
@@ -40,7 +41,7 @@ transformer:
 
 head:
   # survival head
-  SurvLayer: "cr"                    # Survival head type, ["competing-risk" | "cr"] or ["single-risk" | "sr"]
+  SurvLayer: "sr"                    # Survival head type, ["competing-risk" | "cr"] or ["single-risk" | "sr"]
   surv_weight: 0.5                   # How much weight should be given to this aspect of the head
   # value head
   tokens_for_univariate_regression: None   # These are the tokens for which we create a value prediction head. This must be set after tokenization has been initialised

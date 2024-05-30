@@ -1,0 +1,41 @@
+is_decoder: true
+data:
+  batch_size: 64
+  unk_freq_threshold: 0.0
+  min_workers: 20
+experiment:
+  project_name: SurvStreamGPT_${head.SurvLayer}
+  run_id: PreTrain_${head.SurvLayer}_11M_${experiment.seed}
+  train: true
+  test: true
+  verbose: true
+  seed: 1337
+  log: true
+  log_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/
+  ckpt_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/
+optim:
+  num_epochs: 1
+  learning_rate: 0.0003
+  val_check_interval: 1000
+  early_stop: false
+  early_stop_patience: 5
+  log_every_n_steps: 20
+  limit_val_batches: 0.05
+  limit_test_batches: 0.05
+transformer:
+  block_type: Neo
+  block_size: 128
+  n_layer: 6
+  n_head: 6
+  n_embd: 384
+  layer_norm_bias: false
+  attention_type: global
+  bias: true
+  dropout: 0.0
+  attention_dropout: 0.0
+  resid_dropout: 0.0
+head:
+  SurvLayer: cr
+  surv_weight: 0.5
+  tokens_for_univariate_regression: None
+  value_weight: 0.5
