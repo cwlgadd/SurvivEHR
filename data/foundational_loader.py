@@ -276,8 +276,12 @@ class FoundationalDataset(Dataset):
             else:
                 break
             
-        # Read the corresponding row from the Parquet file        
-        row_df = pq.read_table(file, filters=[('row_nr','=', idx)]).to_pandas().loc[0]
+        # Read the corresponding row from the Parquet file
+        table = pq.read_table(file, filters=[('row_nr','=', idx)]).to_pandas()
+        if not table.empty:
+            row_df = table.loc[0]
+        else:
+            raise ValueError(f"No data found for index {idx} in file {file}")
 
         # Static variables
         ##################
