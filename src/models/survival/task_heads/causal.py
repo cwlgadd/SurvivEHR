@@ -128,7 +128,12 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         """
         
         for _ in range(max_new_tokens):
-            # crop tokens to the last block_size tokens
+            # crop tokens to the last block_size tokens 
+            if tokens.shape[1] > self.block_size:
+                logging.warning(r"""Context window is greater than block size. 
+                                    This is not compatible with `FoundationalDataset()` which 
+                                    enforces earlier diagnoses are prepended to batch windows.
+                                    """)
             tokens_window = tokens[:, -self.block_size:]
             ages_window = ages[:, -self.block_size:] 
             values_window = values[:, -self.block_size:] 
@@ -161,12 +166,13 @@ class SurvStreamGPTForCausalModelling(nn.Module):
             ages = torch.cat((ages, ages_next), dim=1) 
             values = torch.cat((values, values_next), dim=1) 
 
+            # TODO: add death token as EOS token
             # if token_next == eos_token:
             #     raise NotImplementedError
             #     break
 
             if ages_next > 120*365:
-                logging.warning("TODO: add death token")
+                logging.warning("Breaking generation due to implausible age")
                 break
             
         return tokens, ages, values
