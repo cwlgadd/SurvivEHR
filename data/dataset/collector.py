@@ -151,7 +151,7 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         for distinct_value in distinct_values:
             rows_by_table = {}
             for idx_table, table in enumerate(table_names):
-                
+
                 # Construct query for fetching rows with the current prefix for the current table
                 if type(distinct_value) == list:
                     sep_list = ",".join([f"'{dv}'" for dv in distinct_value])
@@ -161,14 +161,14 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                 else:
                     query = f"SELECT * FROM {table} WHERE {identifier_column} = '{distinct_value}'"  # LIMIT {chunk_size}
                     chunk_size = 1 
-                    
+                
                 if conditions is not None:
                     if conditions[idx_table] is not None:
                         #  conditions for each table, e.g. a query asking for only certain diagnoses or measurements to be 
                         #  included in the generator
                         query += f"AND {conditions[idx_table]}"
                                   
-                logging.debug(f"Query: {query[:120] if len(query) > 100 else query}")
+                logging.debug(f"Query: {query[:120] if len(query) > 120 else query}")
                 df = pl.read_database(query=query, connection_uri=self.connection_token)
                 if len(df) > 0:
                     rows_by_table["lazy_" + table] = df.lazy()
@@ -183,6 +183,36 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                              exclude_pre_index_age: bool = False,
                              ) -> pl.LazyFrame:
         """
+
+        ┌───────────┬──────────┬────────────┬────────────┬───┬───────────┬──────────┬──────────┬───────────┐
+        │ PRACTICE_ ┆ PATIENT_ ┆ VALUE      ┆ EVENT      ┆ … ┆ HEALTH_AU ┆ INDEX_DA ┆ START_DA ┆ END_DATE  │
+        │ ID        ┆ ID       ┆ ---        ┆ ---        ┆   ┆ TH        ┆ TE       ┆ TE       ┆ ---       │
+        │ ---       ┆ ---      ┆ list[f64]  ┆ list[str]  ┆   ┆ ---       ┆ ---      ┆ ---      ┆ datetime[ │
+        │ i64       ┆ i64      ┆            ┆            ┆   ┆ str       ┆ datetime ┆ datetime ┆ μs]       │
+        │           ┆          ┆            ┆            ┆   ┆           ┆ [μs]     ┆ [μs]     ┆           │
+        ╞═══════════╪══════════╪════════════╪════════════╪═══╪═══════════╪══════════╪══════════╪═══════════╡
+        │ 20429     ┆ 22038164 ┆ [60.0,     ┆ ["Diastoli ┆ … ┆ South     ┆ 2005-01- ┆ 2005-01- ┆ 2022-03-1 │
+        │           ┆ 20429    ┆ 120.0, …   ┆ c_blood_pr ┆   ┆ East      ┆ 01       ┆ 01       ┆ 7         │
+        │           ┆          ┆ 100.0]     ┆ essure_5", ┆   ┆           ┆ 00:00:00 ┆ 00:00:00 ┆ 00:00:00  │
+        │           ┆          ┆            ┆ "…         ┆   ┆           ┆          ┆          ┆           │
+        │ 20429     ┆ 22038165 ┆ [20.7,     ┆ ["Body_mas ┆ … ┆ South     ┆ 2018-06- ┆ 2018-06- ┆ 2022-03-1 │
+        │           ┆ 20429    ┆ null, …    ┆ s_index_3" ┆   ┆ East      ┆ 27       ┆ 27       ┆ 7         │
+        │           ┆          ┆ 144.0]     ┆ , "Body_ma ┆   ┆           ┆ 00:00:00 ┆ 00:00:00 ┆ 00:00:00  │
+        │           ┆          ┆            ┆ ss…        ┆   ┆           ┆          ┆          ┆           │
+        │ 20429     ┆ 22038168 ┆ [null,     ┆ ["Never_sm ┆ … ┆ South     ┆ 2011-04- ┆ 2011-04- ┆ 2022-03-1 │
+        │           ┆ 20429    ┆ 90.0,      ┆ oked_tobac ┆   ┆ East      ┆ 23       ┆ 23       ┆ 7         │
+        │           ┆          ┆ 130.0]     ┆ co_85",    ┆   ┆           ┆ 00:00:00 ┆ 00:00:00 ┆ 00:00:00  │
+        │           ┆          ┆            ┆ "Dia…      ┆   ┆           ┆          ┆          ┆           │
+        │ 20429     ┆ 22038169 ┆ [25.9,     ┆ ["Body_mas ┆ … ┆ South     ┆ 2005-01- ┆ 2005-01- ┆ 2011-11-0 │
+        │           ┆ 20429    ┆ 80.0, …    ┆ s_index_3" ┆   ┆ East      ┆ 01       ┆ 01       ┆ 7         │
+        │           ┆          ┆ 120.0]     ┆ , "Diastol ┆   ┆           ┆ 00:00:00 ┆ 00:00:00 ┆ 00:00:00  │
+        │           ┆          ┆            ┆ ic…        ┆   ┆           ┆          ┆          ┆           │
+        │ 20429     ┆ 22038170 ┆ [24.8,     ┆ ["Body_mas ┆ … ┆ South     ┆ 2005-01- ┆ 2005-01- ┆ 2008-06-1 │
+        │           ┆ 20429    ┆ 76.0, …    ┆ s_index_3" ┆   ┆ East      ┆ 01       ┆ 01       ┆ 9         │
+        │           ┆          ┆ null]      ┆ , "Diastol ┆   ┆           ┆ 00:00:00 ┆ 00:00:00 ┆ 00:00:00  │
+        │           ┆          ┆            ┆ ic…        ┆   ┆           ┆          ┆          ┆           │
+        └───────────┴──────────┴────────────┴────────────┴───┴───────────┴──────────┴──────────┴───────────┘
+
         Notes:  The collection is applied after this function
                 We do not sort within the lazy operation, so the row order will not be deterministic
         """
@@ -291,7 +321,7 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                             ) -> dict:
 
         # Standardisation is TODO
-        logging.info("Collecting meta information from database. This will be used for tokenization and (optionally) standardisation.")
+        logging.info("\n\nCollecting meta information from database. This will be used for tokenization and (optionally) standardisation.")
         
         # Initialise meta information 
         meta_information = {}

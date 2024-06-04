@@ -17,11 +17,7 @@ from tqdm import tqdm
 import psutil
 import os
 
-
 class PolarsDataset:
-    r"""
-        Combine data streams
-    """
     
     def __init__(self, path_to_db, db_name="cprd.db"):
         """
@@ -31,51 +27,104 @@ class PolarsDataset:
         self.path_to_db = path_to_db
         self.db_name = db_name
         self.collector = SQLiteDataCollector(self.path_to_db + self.db_name)
+        self.collector.connect()
         
     def fit(self,
-            path: str,
-            load: bool = False,
+            path:                       str,
+            inclusion_conditions:       Optional[list[str]] = None,
+            include_static:             bool = True,
+            include_diagnoses:          bool = True,
+            include_measurements:       bool = True,
+            overwrite_meta_information: Optional[str] = None,                 
             **kwargs
-           ) -> pl.LazyFrame:
+           ):
         r"""
         Create Deep-Learning friendly dataset
 
          Load information from SQL tables into polars frames for each table in chunks. For each chunk
            * Then combine, align frames, and put into a DL friendly lazy Polars representation
            * iteratively find normalisation statistics, counts, or any other meta information 
-           * Save polars frames to parquets, and pickle meta information
+           * Save polars frames to parquets
+           * Create a hashmap dictionary which allows us to do faster lookups than native PyArrow solutions
            
         ARGS:
-            path:  full to to folder where parquet files containing the Polars dataset and meta information
-            load:  True: load directly from previously processed parquet files; or False: create the parquet files again and save to `path`.        
+            path:  
+                Full path to folder where parquet files containing the Polars dataset, meta information, and file-look up pickles
+            
+        KWARGS:
+            inclusion_conditions:
+                The set of inclusion conditions to query against the collector. For example, only include patients from ["COUNTRY = 'E'"]
+            include_static:
+                Whether to include static information in the meta_information
+            include_diagnoses:
+                Whether to include diagnoses in the meta_information, and in the parquet dataset
+            include_measurements
+                Whether to include measurements in the meta_information, and in the parquet dataset
+            overwrite_meta_information:
+                If you want to overwrite the meta_information, for example using quantile bounds for some measurements, then there is no need
+                to pre-process it again.
+
+        **KWARGS:
+            drop_empty_dynamic: bool = True,
+
+            drop_missing_data: bool = True,
+            
+            exclude_pre_index_age: bool = False,
+
+            
+
+        TODO: pickle this class rather than separately saving the different attributes. However the SQLite collector cannot be pickled
+            
         """
        
         self.save_path = path
-        if load is True:
-            try:                
-                try:
-                    with open(path + 'meta_information_edited.pickle', 'rb') as handle:
-                       self.meta_information = pickle.load(handle)
-                    logging.info(f"Loaded Polars dataset from {path}. Using edited version of meta_information")
-                except:
-                    with open(path + 'meta_information.pickle', 'rb') as handle:
-                       self.meta_information = pickle.load(handle)
-                    logging.info(f"Loaded Polars dataset from {path}.")
-            except OSError as e:
-                raise FileNotFoundError
-        else:
-            logging.info(f"Building Polars dataset and saving to {path}")     
-            self.meta_information = self._build_DL_representation(save_path=path, **kwargs)            
-            with open(path + 'meta_information.pickle', 'wb') as handle:
-                pickle.dump(self.meta_information, handle, protocol=pickle.HIGHEST_PROTOCOL)
-                
-        return self.meta_information
+        logging.info(f"Building Polars datasets and saving to {path}")     
+    
+        # Train, test, validation split
+        self.train_practice_ids, self.val_practice_ids, self.test_practice_ids = self._train_test_val_split(inclusion_conditions=inclusion_conditions)
 
+        # Collect meta information. 
+        #    These are pre-calculations for torch loader len(), tokenization, and optionally for standardisation        
+        if overwrite_meta_information is None:
+            meta_information = self.collector.get_meta_information(practice_ids = None, # all_train = list(itertools.chain.from_iterable(self.train_practice_ids))
+                                                                   static       = include_static,
+                                                                   diagnoses    = include_diagnoses,
+                                                                   measurement  = include_measurements
+                                                                   )
+            with open(self.save_path + f'meta_information.pickle', 'wb') as handle:
+                pickle.dump(meta_information, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        #  Create train/test/val DL Polars datasets
+        # Loop over practice IDs
+        #    * create the generator that performs a lookup on the database for each practice ID and returns a lazy frame for each table's rows        
+        #    * collating the lazy tables into a lazy DL-friendly representation,
+        for split_name, split_ids in zip(["train", "test", "val"], [self.train_practice_ids,  self.test_practice_ids,  self.val_practice_ids]):
+
+            # for debugging just create dataset on only first
+            # split_ids = split_ids[:1]
+            
+            path: pathlib.Path = self.save_path + f"split={split_name}"    # /{chunk_name}.parquet
+
+            # Check directory is currently empty
+            assert not any(path.iterdir())
+            
+            logging.info(f"Writing {split_name} split into a DL friendly .parquet dataset.")
+            self._write_parquet_dl_dataset(save_path=path, 
+                                           split_ids=split_ids, 
+                                           include_diagnoses = include_diagnoses,
+                                           include_measurements = include_measurements,
+                                           **kwargs)
+            
+            logging.info(f"Creating file_row_count_dicts for file-index look-ups")
+            hashmap = self._get_file_row_counts(path)
+            with open(self.save_path + f'file_row_count_dict_{split_name}.pickle', 'wb') as handle:
+                pickle.dump(hashmap, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            
     def _train_test_val_split(self, inclusion_conditions=None):
         
         # get a list of practice IDs which are used to chunk the database
-        #    We can optionally pass a filtering kwarg through .fit() method to constrain which practice IDs should be included in the study 
-        #    based on some criteria. For example, asserting that we only want practices in England can be achieved by adding an inclusion
+        #    We can optionally subset which practice IDs should be included in the study based on some criteria.
+        #    For example, asserting that we only want practices in England can be achieved by adding an inclusion
         #    that applies to the static table
         logging.info(f"Chunking by unique practice ID with {'no' if inclusion_conditions is None else inclusion_conditions} inclusion conditions")
         practice_ids = self.collector._extract_distinct(table_names=["static_table"],
@@ -85,18 +134,17 @@ class PolarsDataset:
         
         # Create train/test/val splits, each is list of practice_id
         logging.info(f"Creating train/test/val splits using practice_ids")
-        self.train_practice_ids, test_practice_ids = sk_split(practice_ids, test_size=0.1)       
-        self.test_practice_ids, self.val_practice_ids = sk_split(test_practice_ids, test_size=0.5)
+        train_practice_ids, test_practice_ids = sk_split(practice_ids, test_size=0.1)       
+        test_practice_ids, val_practice_ids = sk_split(test_practice_ids, test_size=0.5)
+        return train_practice_ids, val_practice_ids, test_practice_ids
     
-    def _build_DL_representation(self,
-                                 save_path:               str,
-                                 include_static:          bool = True,
-                                 include_measurements:    bool = True,
-                                 include_diagnoses:       bool = True,
-                                 preprocess_measurements: bool = False,
-                                 inclusion_conditions:    Optional[str] = False,
-                                 **kwargs,
-                                ) -> pl.LazyFrame:
+    def _write_parquet_dl_dataset(self,
+                                  save_path:               str,
+                                  split_ids:               list[str],
+                                  include_diagnoses:       bool = True,
+                                  include_measurements:    bool = True,
+                                  **kwargs,
+                                 ) -> pl.LazyFrame:
         r"""
         Build the DL-friendly representation in polars given the list of `practice_patient_id`s which fit study criteria
                 
@@ -105,63 +153,52 @@ class PolarsDataset:
         KWARGS:
         
         """
-        self.collector.connect()
         
-        # Create train/test/val splits
-        self._train_test_val_split(inclusion_conditions=inclusion_conditions)
-        
-        # Collect meta information that is used for tokenization, but also optionally for standardisation        
-        # all_train = list(itertools.chain.from_iterable(self.train_practice_ids))
-        meta_information = self.collector.get_meta_information(practice_ids = None, #self.train_practice_ids,
-                                                               static       = include_static,
-                                                               diagnoses    = include_diagnoses,
-                                                               measurement  = include_measurements
-                                                              )
-        logging.debug(meta_information)
-        
-        #  Create train/test/val DL Polars datasets
-        # Loop over practice IDs
-        #    * create the generator that performs a lookup on the database for each practice ID and returns a lazy frame for each table's rows        
-        #    * collating the lazy tables into a lazy DL-friendly representation,
-        for split_name, split_ids in zip(["train", "test", "val"], [self.train_practice_ids,  self.test_practice_ids,  self.val_practice_ids]):
+        # Create the generator which we will chunk over
+        # Can process entire list of IDs at once by changing to `distinct_values=[split_ids]`
+        logging.debug(f"Generating over practices IDs")
+        generator = self.collector._generate_lazy_by_distinct(distinct_values=split_ids,                            
+                                                              identifier_column="PRACTICE_ID",
+                                                              include_diagnoses=include_diagnoses,
+                                                              include_measurements=include_measurements)
 
-            # Create the generator which we will chunk over
-            logging.info(f"Collating {split_name} split into a DL friendly format. Generating over practices IDs")
-            generator = self.collector._generate_lazy_by_distinct(distinct_values=split_ids,
-                                                                  identifier_column="PRACTICE_ID",
-                                                                  include_diagnoses=include_diagnoses,
-                                                                  include_measurements=include_measurements)
+        total_samples = 0
+        for _idx, (chunk_name, lazy_table_frames_dict) in enumerate(tqdm(generator, total=len(split_ids))):
             
-            for chunk_name, lazy_table_frames_dict in tqdm(generator, total=len(split_ids)):
+            # Merge the lazy polars tables provided by the generator into one lazy polars frame
+            lazy_batch = self.collector._collate_lazy_tables(lazy_table_frames_dict, **kwargs)
+
+            if save_path is not None:
+                # save splits `hive` style partitioning using parquet which is a columnal format, but gives efficient compression
+                # TODO: make directories if they dont already exist
+
+                # include row count so we can filter when reading from file
+                df = lazy_batch.collect().with_row_count(offset=total_samples).to_pandas()   
+
+                # convert row count to a lower cardinality bin which can be used in the hive partitioning for faster reading
+                # ... the smaller the window the more files created, storage space used, and the longer this takes to run, but 
+                # ... the faster the read efficiency.
+                df = df.assign(CHUNK = [int(_v / 500) for _v in df['row_nr']])                  
                 
-                # Merge the lazy polars tables provided by the generator into one lazy polars frame
-                lazy_batch = self.collector._collate_lazy_tables(lazy_table_frames_dict, **kwargs)
+                total_samples += len(df.index)
+                
+                table = pa.Table.from_pandas(df)
+                pq.write_to_dataset(table, root_path=save_path, 
+                                    partition_cols=['COUNTRY', 'HEALTH_AUTH', 'PRACTICE_ID', 'CHUNK'],
+                                   )
+                
+                logging.debug(f'{df.iloc[0]["COUNTRY"]}, {df.iloc[0]["HEALTH_AUTH"]}, {df.iloc[0]["PRACTICE_ID"]}')
 
-                if save_path is not None:
-                    # save splits `hive` style partitioning                # TODO: make directories if they dont already exist
-                    # use parquet which is a columnal format               # TODO: is this the best for fast loading? Row format would be faster
-                    path: pathlib.Path = f"{save_path}/split={split_name}"    # /{chunk_name}.parquet
+        logging.info(f"Created dataset at {save_path} with {total_samples:,} samples")
+        
+        return 
 
-                    df = lazy_batch.collect().to_pandas() # include row count so we can lazily filter the in reads  .with_row_count()
-                    
-                    logging.debug(f'{df.iloc[0]["COUNTRY"]}, {df.iloc[0]["HEALTH_AUTH"]}, {df.iloc[0]["PRACTICE_ID"]}')
+    def _get_file_row_counts(self, parquet_path):
 
-                    for df_chunk in [df[i:i+500] for i in range(0, len(df), 500)]:
-
-                        df_chunk = df_chunk.copy()
-                        df_chunk['row_nr'] = np.arange(len(df_chunk))
-
-                        table = pa.Table.from_pandas(df_chunk)
-                        pq.write_to_dataset(table, root_path=path, 
-                                            partition_cols=['COUNTRY', 'HEALTH_AUTH', 'PRACTICE_ID'],
-                                           )
-                        # ds.write_dataset(table, path, 
-                        #                  format="parquet",
-                        #                  partitioning=['COUNTRY', 'HEALTH_AUTH', 'PRACTICE_ID'],
-                        #                  max_rows_per_file=500,
-                        #                  max_rows_per_group=500,
-                        #                    )
-
-        self.collector.disconnect()
-
-        return meta_information
+        # Get all files at specified path, and calculate how many samples are in each file for faster reading during __getitem__
+        file_row_counts = {}
+        desc = "Getting file row counts. This allows the creation of an index to file map, increasing read efficiency"
+        for file in tqdm(pathlib.Path(parquet_path).rglob('*.parquet'), desc=desc):
+            file_row_counts[file] = pq.ParquetFile(file).metadata.num_rows   # update hash map
+    
+        return file_row_counts

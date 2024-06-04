@@ -7,6 +7,7 @@ from torch.nn.utils.rnn import pad_sequence
 import pytorch_lightning as pl
 import polars as plr
 import pyarrow.parquet as pq
+import pyarrow.dataset as ds
 from abc import ABC
 from textwrap import wrap
 from typing import Optional
@@ -39,14 +40,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         batch_size (int): 
         
         unk_freq_threshold (float). 
-            Value between 0 and 1, controlling at what level of frequency rare tokens (equiv. conditions/measurements 
-            with this tokenizer) are mapped to the UNK token. Used to reduce vocabulary size
             
-        min_workers (int):
-
-        load_event_stream (optional, str):
-        
-        save_event_stream (optional, str):
         
     """
     
@@ -54,38 +48,85 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
                  path_to_db: str,
                  load: bool,
                  tokenizer: str = "tabular",
-                 max_seq_length: int = 256,
-                 batch_size: int = 512,
-                 unk_freq_threshold=1e-2,
+                 batch_size: int = 64,
                  min_workers:int = 1,
+                 overwrite_meta_information: Optional[str] = None,                 
                  **kwargs   
                 ):
-       
+        """
         
+        ARGS:
+            path_to_db:
+            
+            load:  
+                True: load directly from previously processed parquet files; or False: create the parquet files again and save to `path`.  
+        KWARGS:
+            tokenizer:
+
+            batch_size:
+
+            min_workers:
+
+            overwrite_meta_information:
+                If you want to overwrite the meta_information, for example using quantile bounds for some measurements, then there is no need
+                to pre-process it again.
+
+        **KWARGS 
+            freq_threshold:
+                Value between 0 and 1, controlling at what level of frequency rare tokens are mapped to the UNK token. Used to reduce vocabulary size
+            inclusion_conditions:
+                The set of inclusion conditions to query against the collector. For example, only include patients from ["COUNTRY = 'E'"]
+            include_static:
+                Whether to include static information in the meta_information
+            include_diagnoses:
+                Whether to include diagnoses in the meta_information, and in the parquet dataset
+            include_measurements
+                Whether to include measurements in the meta_information, and in the parquet dataset
+            drop_empty_dynamic: bool = True,
+
+            drop_missing_data: bool = True,
+            
+            exclude_pre_index_age: bool = False,
+
+            max_seq_length:
+
+            standardise_values:
+
+        """
         super().__init__()
         
         self.batch_size = batch_size
         self.min_workers = min_workers 
         
         # Get the DL friendly representation, either by loading or building from scratch.
-        polars_dataset = PolarsDataset(path_to_db=path_to_db)
-        meta_information = polars_dataset.fit(path=path_to_db + "polars/", load=load, **kwargs)
-        self.meta_information = meta_information
-        logging.debug(meta_information)
+        if load is False:
+            polars_dataset = PolarsDataset(path_to_db=path_to_db)
+            polars_dataset.fit(path=path_to_db + "polars/", 
+                               overwrite_meta_information=overwrite_meta_information,
+                               **kwargs)
+
+        # Load meta information
+        meta_path = path_to_db + "polars/meta_information.pickle" if overwrite_meta_information is None else overwrite_meta_information
+        with open(meta_path, 'rb') as f:
+            self.meta_information = pickle.load(f)
+        # Load the file_row_count_dicts for each split
+        file_row_count_dicts = {}
+        for _key in ["train", "test", "val"]:
+            with open(path_to_db + f"polars/file_row_count_dict_{_key}.pickle", 'rb') as f:
+                file_row_count_dicts[_key] = pickle.load(f)
     
         # Create tokenizer, and build based on vocabulary from training set. 
         #   Vocabularly begins with the PAD (padding) token, then the UNK (unknown) token, and is then ordered by token frequency        
-        logging.info(f"Using tokenizer {tokenizer}")
-        self.tokenizer = Tabular() if tokenizer == "tabular" else NonTabular()
-        self.tokenizer.fit(meta_information, freq_threshold=unk_freq_threshold, **kwargs)
+        self.tokenizer = Tabular() if tokenizer.lower() == "tabular" else NonTabular()
+        self.tokenizer.fit(self.meta_information, **kwargs)
+        logging.info(f"Using {tokenizer} tokenizer, created from meta information and containing {self.tokenizer.vocab_size} tokens")
         
         # Train/test/validation GenerativeDatasets
         parquet_path = path_to_db + "polars/"
         dataset_args = {"tokenizer": self.tokenizer, "meta_information": self.meta_information}
-        dataset_kwargs = {"max_seq_length": max_seq_length, "standardise_values": True, "load": load}
-        self.train_set = FoundationalDataset(parquet_path, "train", **dataset_args, **dataset_kwargs)
-        self.test_set = FoundationalDataset(parquet_path, "test", **dataset_args, **dataset_kwargs)
-        self.val_set = FoundationalDataset(parquet_path, "val", **dataset_args, **dataset_kwargs)
+        self.train_set = FoundationalDataset(parquet_path, "train", **dataset_args, file_row_count_dict=file_row_count_dicts["train"], **kwargs)
+        self.test_set = FoundationalDataset(parquet_path, "test", **dataset_args, file_row_count_dict=file_row_count_dicts["test"], **kwargs)
+        self.val_set = FoundationalDataset(parquet_path, "val", **dataset_args, file_row_count_dict=file_row_count_dicts["val"], **kwargs)
 
     def standardise(self, event, value):
         # Standardise a single value and event
@@ -192,14 +233,36 @@ class FoundationalDataset(Dataset):
                 break
         
     def __init__(self,
-                 parquet_path: str, 
-                 split: str,
-                 tokenizer:TokenizerBase,
-                 meta_information:dict,
-                 load: bool=False, 
-                 max_seq_length:int = 256,
-                 standardise_values:bool = True,
+                 parquet_path:                 str, 
+                 split:                        str,
+                 tokenizer:                    TokenizerBase,
+                 meta_information:             dict,
+                 file_row_count_dict:          dict,
+                 max_seq_length:               int = 256,
+                 standardise_values:           bool = True,
+                 **kwargs
                 ):
+        """
+
+        ARGS:
+            parquet_path:
+
+            split:
+
+            tokenizer:
+
+            meta_information:
+
+            file_row_count_dict:
+
+        KWARGS:
+            max_seq_length:
+
+            standardise_values
+
+        **KWARGS:
+            None
+        """        
         super().__init__()
         
         self.parquet_path = parquet_path
@@ -209,30 +272,26 @@ class FoundationalDataset(Dataset):
         self.standardise_values = standardise_values
         self.meta_information = meta_information
 
-        logging.info(f"Creating {self.sub_dir} dataset")
-        logging.debug(f"\t Using root {self.parquet_path}")
-        
-        self.dataset = pq.ParquetDataset(parquet_path + self.sub_dir, validate_schema=False)
-
-        # create a hash map that lets us look up the correct parquet in O(1)
-        #    TODO: update to use fragments API        
-        if load is True:
-            try:
-                logging.info(f"\t Loading {self.sub_dir} hash map for parquet")
-                with open(self.parquet_path + f'lookup_hashmap_{split}.pickle', 'rb') as handle:
-                   self.file_row_count_dict = pickle.load(handle)
-            except OSError as e:
-                raise FileNotFoundError
-        else:
-            logging.info(f"\t Creating {self.sub_dir} hash map from parquet")
-            logging.debug(f"\t\t saving to {self.parquet_path}")     
-            self.file_row_count_dict = self._get_file_row_counts(self.parquet_path + f'split={split}/')
-            with open(self.parquet_path + f'lookup_hashmap_{split}.pickle', 'wb') as handle:
-                pickle.dump(self.file_row_count_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        
+        # Create a PyArrow dataset directly from the PolarsDataset saved hive partitioned dataset
+        # NOTE:   This can take some time to initialise, but using the API is cleaner
+        # self.dataset = pq.ParquetDataset(parquet_path + self.sub_dir, validate_schema=False)
+        # self.dataset = ds.dataset(parquet_path + self.sub_dir, format="parquet", partitioning="hive")
+        # These are really slow options, creation takes a ds.dataset: 70 secs, vs.  pq.Parquet: 133 secs.
+        # Then the APIs for taking items is also really slow:
+        #    e.g. `self.dataset.take([idx]).to_pandas().loc[0]` for `ds.dataset`                                
+        #     or   filtering predicates `filter=(ds.field('CHUNK') == chunk ) & (ds.field('row_nr') == index)`  -> 0.5 sec/read
+        #    TODO: is there a way to simplify code using PyArrow that retains speed?
+        self.file_row_count_dict = file_row_count_dict
         # Pre-calculate total number of samples (patients) on initialisation        
+        # NOTE:   Updating to the ds.dataset API (instead of previously using custom a hash map) now means the dataset 
+        #         length is being calculated every initialisation - this is very slow (~13 mins) as it needs to touch every file.
+        #         Fortunately pyarrow saves total row count of each file in the footer, so we dont need to load the data.
+        #         Consider caching this sum somewhere when building dataset. E.g. in meta information? Currently I can't
+        #         extract it from here as this information isn't aggregated across train/test/val splits.
+        # self.total_samples = self.dataset.count_rows()   
+        # self.total_samples = sum(_frag.count_rows() for _frag in self.dataset.get_fragments())
         self.total_samples = sum(self.file_row_count_dict.values())
-        logging.info(f"\t Hash map created for {self.sub_dir} with {self.total_samples:,} samples")
+        logging.info(f"Loaded {self.parquet_path + self.sub_dir} dataset, with {self.total_samples:,} samples")
 
         # Create one-hot encoder map for static categorical variables.
         #   Note we use one hot even when the data is ordinal (e.g. with IMD deprivation score) so we can include the predict with missing data at inference time
@@ -248,16 +307,6 @@ class FoundationalDataset(Dataset):
         """
         return self.total_samples
     
-    def _get_file_row_counts(self, parquet_path):
-
-        # Get all files at specified path, and calculate how many samples are in each file for faster reading during __getitem__
-        file_row_counts = {}
-        for file in tqdm(Path(parquet_path).rglob('*.parquet'), 
-                         desc="Getting file row counts. This allows the creation of an index to file map, increasing read efficiency"):
-            file_row_counts[file] = pq.ParquetFile(file).metadata.num_rows   # update hash map
-    
-        return file_row_counts
-    
     def __getitem__(self, idx):
         r"""
             Get a single item from the dataset, 
@@ -269,19 +318,22 @@ class FoundationalDataset(Dataset):
             idx = idx.tolist()
 
         # Determine which file and row the idx corresponds to.
-        #    TODO: replace with a better sorting algorithm. Can use the fact that most files have a maximum row number to estimate where to start search. Regardless, this won't be a bottleneck 
+        #    TODO: replace with a better sorting algorithm.
+        #          Can use the fact that most files have a maximum number of rows to 
+        #          estimate where to start search.
         for file in self.file_row_count_dict.keys():
             if idx >= self.file_row_count_dict[file]:
                 idx -= self.file_row_count_dict[file]
             else:
                 break
-            
-        # Read the corresponding row from the Parquet file
-        table = pq.read_table(file, filters=[('row_nr','=', idx)]).to_pandas()
-        if not table.empty:
-            row_df = table.loc[0]
-        else:
-            raise ValueError(f"No data found for index {idx} in file {file}")
+                
+        # Read the corresponding row from the Parquet dataset
+        try:
+            # row_df = self.dataset.take([idx]).to_pandas().loc[0]
+            row_df = pq.read_table(file).to_pandas().loc[idx]
+            # row_df = pq.read_table(file, filters=[('row_nr','=', idx)]).to_pandas().loc[0]
+        except:
+            raise ValueError(f"No data found for index {idx}")
 
         # Static variables
         ##################
@@ -326,16 +378,10 @@ class FoundationalDataset(Dataset):
                         next_value = (next_value -lqr) / (uqr - lqr)
 
                         # But if we use a joint data embedding we will be scaling token embeddings by the value, and so we 
-                        # instead we scale to [-0.5,0.5], so the scaling is symetric around the average value of the token
+                        # instead scale to [-0.5,0.5], so the scaling is symetric around the average value of the token.
+                        # this still leads to strong assumptions with this embedding choice (that average values are not meaningful)
                         next_value = next_value - 0.5 
 
-                        # if lqr < 300 or upr > 300:
-                        #     print(f"{next_event}: {lqr} - {uqr}: \t\t{next_value} -> {new_value}")
-
-            # # Testing for tabular models
-            # if next_value is np.nan:
-            #     print(f"{next_event}: \t\t{next_value}")
-                            
             sequence_values.append(float(next_value))
 
             ## AGES
@@ -343,8 +389,6 @@ class FoundationalDataset(Dataset):
             # e.g. [6661, 7569, 7866, ...]
             sequence_ages.append(next_age)
 
-            # print(f"\n\n {next_event}, {next_value}, {next_age}")
-        
         if not self.tokenizer.is_tabular:
             # Merge together events and their values (and when value is None, do not include it)
             #     E.g. events = ["bmi", "DEPRESSION", "bmi"] and values = [23.3, None, 27.7] --> merge to --> "bmi", "2", "3", ".", "3", "DEPRESSION", "bmi", "2", "7", ".", "7""

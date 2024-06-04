@@ -1,0 +1,48 @@
+is_decoder: True
+
+data:
+  batch_size: 64                    # Batch size
+  unk_freq_threshold: 0.0           # Frequency required for token to be included. Tokens below threshold are transformed to <UNK>
+  min_workers: 20                   # The number of workers to create for dataloader
+
+experiment:
+  project_name: SurvStreamGPT_${head.SurvLayer}
+  run_id: PreTrain_${head.SurvLayer}_Tiny_${experiment.seed}
+  train: True
+  test: True
+  verbose: True
+  seed: 1337
+  log: True
+  log_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/                   # Where to place any log files
+  ckpt_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/      # Where to save checkpoints during training  
+  
+optim: 
+  num_epochs: 1                      # Number of batches. By default we train on each patient one time
+  learning_rate: 3e-4                # AdamW learning rate
+  val_check_interval: 1000           # How many training batches to perform between validation check
+  early_stop: False                  # If we should do early stopping
+  early_stop_patience: 5             # How many val_check intervals to continue without seeing an improvement
+  log_every_n_steps: 20              # Logging frequency
+  limit_val_batches: 0.05            # The fraction of patients we validate on each time (out of entire validation set)
+  limit_test_batches: 0.05           # The fraction of patients we test on each time (out of entire test set)
+
+transformer:
+  block_type: "Neo"                  # Architecture (Neo, or Nano)
+  block_size: 32                     # what is the maximum context length for predictions?
+  n_layer: 1                         # Number of MHA layers
+  n_head: 3                          # Number of attention heads
+  n_embd: 96                        # Embedding dimension
+  layer_norm_bias: False             # Whether to add bias to layer norm (inspired by gpt 2 having = False)
+  attention_type: "global"           # Type of attention. Neo: ["global", "local"], Nano ["global"]
+  bias: True                         # Bias in the MLP layer inside the blocks
+  dropout: 0.0                       # Dropout before attention blocks, and after MLP layer inside blocks
+  attention_dropout: 0.0             # Dropout inside of attention
+  resid_dropout: 0.0                 # Dropout in residual connection
+
+head:
+  # survival head
+  SurvLayer: "cr"                    # Survival head type, ["competing-risk" | "cr"] or ["single-risk" | "sr"]
+  surv_weight: 0.5                   # How much weight should be given to this aspect of the head
+  # value head
+  tokens_for_univariate_regression: None   # These are the tokens for which we create a value prediction head. This must be set after tokenization has been initialised
+  value_weight: 0.5                  # How much weight should be given to this aspect of the head

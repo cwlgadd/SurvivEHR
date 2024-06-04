@@ -4,7 +4,6 @@ import hydra
 import torch
 import logging
 from CPRD.data.foundational_loader import FoundationalDataModule
-from CPRD.examples.modelling.SurvStreamGPT.setup_experiment import setup_survival_experiment, SurvivalExperiment
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("wandb")
@@ -12,7 +11,7 @@ logger = logging.getLogger("wandb")
 @hydra.main(version_base=None, config_path="confs", config_name="default")
 def run(cfg : DictConfig):
 
-    logging.info(f"Running {cfg.head.SurvLayer} experiment on {os.cpu_count()} CPUs and {torch.cuda.device_count()} GPUs")
+    logging.info(f"Running dataloader test for {cfg.head.SurvLayer} experiment config, on {os.cpu_count()} CPUs and {torch.cuda.device_count()} GPUs")
 
     # Global settings
     torch.manual_seed(cfg.experiment.seed)
@@ -28,7 +27,6 @@ def run(cfg : DictConfig):
                                 unk_freq_threshold=cfg.data.unk_freq_threshold,
                                 min_workers=cfg.data.min_workers,
                                 inclusion_conditions=["COUNTRY = 'E'"],
-                                # overwrite_meta_information = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/meta_information_edited.pickle"
                                )
     # Get required information from initialised dataloader
     # ... vocab size
@@ -40,24 +38,12 @@ def run(cfg : DictConfig):
     cfg.head.tokens_for_univariate_regression = dm.encode(measurements_for_univariate_regression) 
     logging.debug(OmegaConf.to_yaml(cfg))
     
-    # Create experiment
-    experiment, trainer = setup_survival_experiment(cfg=cfg, vocab_size=vocab_size)
-
-    # Train/load
-    ckpt_path = cfg.experiment.log_dir + f'checkpoints/{cfg.experiment.run_id}.ckpt'
-    if cfg.experiment.train:
-        logging.info(f"Training model. Checkpointing to {ckpt_path}")
-        trainer.fit(experiment, datamodule=dm)
+    # Run over batch to ensure loader is working
+    for loader in [dm.train_dataloader, dm.val_dataloader, dm.test_dataloader]:
+        for batch in loader():
+            pass
         
-    # checkpoint = trainer.checkpoint_callback.dirpath + f"/{cfg.experiment.run_id}.ckpt"
-    logging.info(f"Loading from cached checkpoint {ckpt_path}")
-    experiment = SurvivalExperiment.load_from_checkpoint(ckpt_path)
-
-    # Test model
-    if cfg.experiment.test:
-        trainer.test(experiment, dataloaders=dm.test_dataloader())
-
-    return experiment.model, dm
+    return
 
 if __name__ == "__main__":
     run()

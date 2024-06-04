@@ -23,7 +23,7 @@ class NonTabular(TokenizerBase):
     
     def fit(self,
             meta_information,
-            freq_threshold:float = 0.00001,
+            freq_threshold:float = 0,
             include_measurements: bool = True,
             include_diagnoses: bool = True,
             **kwargs
