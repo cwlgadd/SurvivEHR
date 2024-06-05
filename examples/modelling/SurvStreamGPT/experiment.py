@@ -25,10 +25,10 @@ def run(cfg : DictConfig):
                                 tokenizer="tabular",
                                 batch_size=cfg.data.batch_size,
                                 max_seq_length=cfg.transformer.block_size,
-                                unk_freq_threshold=cfg.data.unk_freq_threshold,
+                                global_diagnoses=cfg.data.global_diagnoses,
+                                freq_threshold=cfg.data.unk_freq_threshold,
                                 min_workers=cfg.data.min_workers,
-                                inclusion_conditions=["COUNTRY = 'E'"],
-                                # overwrite_meta_information = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/meta_information_edited.pickle"
+                                overwrite_meta_information=cfg.data.meta_information_path,
                                )
     # Get required information from initialised dataloader
     # ... vocab size

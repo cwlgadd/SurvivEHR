@@ -4,7 +4,9 @@ data:
   batch_size: 64                    # Batch size
   unk_freq_threshold: 0.0           # Frequency required for token to be included. Tokens below threshold are transformed to <UNK>
   min_workers: 20                   # The number of workers to create for dataloader
-
+  global_diagnoses: False           # Whether we enforce diagnoses which occurred before context block to prepend the block
+  meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/meta_information.pickle  # Path to meta_information. For example if we want to update outlier bounds to custom values
+  
 experiment:
   project_name: SurvStreamGPT_${head.SurvLayer}
   run_id: PreTrain_${head.SurvLayer}_11M_${experiment.seed}
@@ -18,7 +20,7 @@ experiment:
   
 optim: 
   num_epochs: 1                      # Number of batches. By default we train on each patient one time
-  learning_rate: 3e-4                # AdamW learning rate
+  learning_rate: 1e-4                # AdamW learning rate
   val_check_interval: 1000           # How many training batches to perform between validation check
   early_stop: False                  # If we should do early stopping  
   early_stop_patience: 5             # How many val_check intervals to continue without seeing an improvement

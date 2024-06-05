@@ -4,7 +4,9 @@ data:
   batch_size: 64                    # Batch size
   unk_freq_threshold: 0.0           # Frequency required for token to be included. Tokens below threshold are transformed to <UNK>
   min_workers: 20                   # The number of workers to create for dataloader
-
+  global_diagnoses: False           # Whether we enforce diagnoses which occurred before context block to prepend the block
+  meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/meta_information.pickle  # Path to meta_information. For example if we want to update outlier bounds to custom values
+  
 experiment:
   project_name: SurvStreamGPT_${head.SurvLayer}
   run_id: PreTrain_${head.SurvLayer}_BIGM_${experiment.seed}

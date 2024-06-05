@@ -42,7 +42,8 @@ class SurvivalExperiment(pl.LightningModule):
                                                                             )
 
         losses = {"loss": loss,
-                  "losses_desurv": losses_desurv,
+                  "loss_desurv": torch.sum(torch.stack(losses_desurv)),
+                  # **{f"losses_desurv_{idx}": desurv_loss for idx, desurv_loss in enumerate(losses_desurv)},
                   "loss_values": loss_values
                  }
 
@@ -50,23 +51,20 @@ class SurvivalExperiment(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         _, loss_dict = self(batch)        
-        self.log(f"train_loss", loss_dict['loss'], prog_bar=True, logger=True)
-        self.log(f"train_loss_desurv", loss_dict['losses_desurv'], prog_bar=True, logger=True)
-        self.log(f"train_loss_values", loss_dict['loss_values'], prog_bar=True, logger=True)
+        for _key in loss_dict.keys():
+            self.log(f"train_" + _key, loss_dict[_key], prog_bar=False, logger=True)
         return loss_dict['loss'] 
 
     def validation_step(self, batch, batch_idx):
         _, loss_dict = self(batch)        
-        self.log(f"val_loss", loss_dict['loss'], prog_bar=True, logger=True)
-        self.log(f"val_loss_desurv", loss_dict['losses_desurv'], prog_bar=True, logger=True)
-        self.log(f"val_loss_values", loss_dict['loss_values'], prog_bar=True, logger=True)
+        for _key in loss_dict.keys():
+            self.log(f"val_" + _key, loss_dict[_key], prog_bar=False, logger=True)
         return loss_dict['loss'] 
 
     def test_step(self, batch, batch_idx):
         _, loss_dict = self(batch)        
-        self.log(f"test_loss", loss_dict['loss'], prog_bar=True, logger=True)
-        self.log(f"test_loss_desurv", loss_dict['losses_desurv'], prog_bar=True, logger=True)
-        self.log(f"test_loss_values", loss_dict['loss_values'], prog_bar=True, logger=True)
+        for _key in loss_dict.keys():
+            self.log(f"test_" + _key, loss_dict[_key], prog_bar=False, logger=True)
         return loss_dict['loss'] 
 
     def configure_optimizers(self):

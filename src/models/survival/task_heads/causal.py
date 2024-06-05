@@ -108,7 +108,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                                                             )
 
         if not is_generation:
-            loss = (self.surv_weight * torch.sum(losses_desurv)) + (self.value_weight * loss_values)
+            loss = (self.surv_weight * torch.sum(torch.stack(losses_desurv))) + (self.value_weight * loss_values)
         else:
             loss = None
 

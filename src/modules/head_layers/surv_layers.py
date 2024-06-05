@@ -86,7 +86,7 @@ class ODESurvSingleLayer(nn.Module):
             #    and we sum across the mixture of survival ODEs
             surv_losses = [_sr_ode.loss(in_hidden_state, tte_deltas, _k) / _k.shape[0] for _k, _sr_ode in zip(k, self.sr_ode)]           
             # obtained a list of losses, for each event type
-            surv_losses= torch.stack(surv_losses, dim=0)
+            # surv_losses= torch.stack(surv_losses, dim=0)
 
             # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
             surv_CDF = None
@@ -251,7 +251,7 @@ class ODESurvCompetingRiskLayer(nn.Module):
             # Calculate losses, excluding masked values. Each sr_ode returns the sum over observed events
             #    to be consistent with other heads, we scale by number of observed values to obtain per SR-model mean
             #    and we sum across the mixture of survival ODEs
-            surv_loss = self.sr_ode.loss(in_hidden_state, tte_deltas, k) / k.shape[0]          
+            surv_loss = [self.sr_ode.loss(in_hidden_state, tte_deltas, k) / k.shape[0]]
 
             # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
             surv_CDF = None

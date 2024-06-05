@@ -92,6 +92,8 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
 
             standardise_values:
 
+            global_diagnoses:
+
         """
         super().__init__()
         
@@ -109,11 +111,14 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         meta_path = path_to_db + "polars/meta_information.pickle" if overwrite_meta_information is None else overwrite_meta_information
         with open(meta_path, 'rb') as f:
             self.meta_information = pickle.load(f)
+            logging.info(f"Using meta information from {meta_path}")
         # Load the file_row_count_dicts for each split
         file_row_count_dicts = {}
         for _key in ["train", "test", "val"]:
-            with open(path_to_db + f"polars/file_row_count_dict_{_key}.pickle", 'rb') as f:
+            file_row_path = path_to_db + f"polars/file_row_count_dict_{_key}.pickle"
+            with open(file_row_path, 'rb') as f:
                 file_row_count_dicts[_key] = pickle.load(f)
+                logging.info(f"Using {_key} file-row count dictionary from {file_row_path}")
     
         # Create tokenizer, and build based on vocabulary from training set. 
         #   Vocabularly begins with the PAD (padding) token, then the UNK (unknown) token, and is then ordered by token frequency        
@@ -240,6 +245,7 @@ class FoundationalDataset(Dataset):
                  file_row_count_dict:          dict,
                  max_seq_length:               int = 256,
                  standardise_values:           bool = True,
+                 global_diagnoses:             bool = False,
                  **kwargs
                 ):
         """
@@ -260,6 +266,8 @@ class FoundationalDataset(Dataset):
 
             standardise_values
 
+            global_diagnoses:
+
         **KWARGS:
             None
         """        
@@ -270,6 +278,7 @@ class FoundationalDataset(Dataset):
         self.tokenizer = tokenizer
         self.max_seq_length = max_seq_length
         self.standardise_values = standardise_values
+        self.global_diagnoses = global_diagnoses 
         self.meta_information = meta_information
 
         # Create a PyArrow dataset directly from the PolarsDataset saved hive partitioned dataset
@@ -401,14 +410,12 @@ class FoundationalDataset(Dataset):
 
         # Then encode the sequence
         ##########################
-        enforce_global = True 
         encoded_tokens = self.tokenizer.encode(sequence_tokens)
         # Get a windowed sub-block from the patient's history if context length exceeds block size
         start_pos = np.random.randint(low=0, high=len(encoded_tokens)-self.max_seq_length, size=1)[0] if len(encoded_tokens) > self.max_seq_length else 0
         end_pos = start_pos + self.max_seq_length
-        # Get the diagnoses that we will (optionally) not be dropping, as these have life long implications
-        earlier_global_events = []
-        if enforce_global:
+        # Get the diagnoses that we will (optionally) not be dropping, as these have life long implications        
+        if self.global_diagnoses:
             # Replace the first X events with the diagnoses that occurred before this sampled context block
             earlier_global_events = self.tokenizer.encode([_event for _event in sequence_tokens[:start_pos]
                                                            if _event in self.meta_information["diagnosis_table"].event.tolist()])
@@ -419,7 +426,9 @@ class FoundationalDataset(Dataset):
             start_pos += len(earlier_global_events)
 
             # TODO: this does not check if the pushed back events were global themselves
-         
+        else:
+            earlier_global_events, earlier_global_ages, earlier_global_values = [], [], []
+            
         # combine        
         encoded_tokens = earlier_global_events + encoded_tokens[start_pos:end_pos]            
         sequence_ages = earlier_global_ages + sequence_ages[start_pos:end_pos]
