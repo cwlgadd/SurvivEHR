@@ -2,6 +2,7 @@ import pytorch_lightning as pl
 import torch
 import logging
 from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlateau, CosineAnnealingLR, LambdaLR, SequentialLR, ChainedScheduler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("wandb")
@@ -69,13 +70,26 @@ class SurvivalExperiment(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.cfg.optim.learning_rate)
+        # Create scheduler with linear warmup followed by Cosine Annealing with warm restarts.
+        warmup = 320000 / self.cfg.data.batch_size
+        lambda1 = lambda step: float(step) / warmup if step < warmup else 1
+        scheduler1 = LambdaLR(optimizer, lr_lambda=lambda1)
+        scheduler2 = CosineAnnealingWarmRestarts(optimizer, 
+                                                 T_0=warmup,
+                                                 T_mult=2,
+                                                 eta_min=self.cfg.optim.learning_rate / 5)
+        scheduler = SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup])      
         lr_scheduler_config = {
-            "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer),         # The scheduler instance
+            # ReduceLROnPlateau
+            # "scheduler": ReduceLROnPlateau(optimizer),         
+            # "interval": "step",                                                         # The unit of the scheduler's step size
+            # "frequency": 2 * self.cfg.optim.val_check_interval,                         # How many epochs/steps should pass between calls to `scheduler.step()`
+            # "monitor": "val_loss",                                                      # Metric to monitor for scheduler
+            # "strict": False,                                                            # Enforce that "val_loss" is available when the scheduler is updated
+            "scheduler": scheduler,                                                     # The scheduler instance
             "interval": "step",                                                         # The unit of the scheduler's step size
-            "frequency": 2 * self.cfg.optim.val_check_interval,                         # How many epochs/steps should pass between calls to `scheduler.step()`
-            "monitor": "val_loss",                                                      # Metric to monitor for scheduler
-            "strict": False,                                                            # Enforce that "val_loss" is available when the scheduler is updated
-            "name": 'ReduceLROnPlateau',                                                # For `LearningRateMonitor`, specify a custom logged name
+            "frequency": 1,                                                             # How many epochs/steps should pass between calls to `scheduler.step()`
+            "name": 'Scheduler',                                                        # For `LearningRateMonitor`, specify a custom logged name
         }
         return {
             "optimizer": optimizer,
