@@ -108,11 +108,23 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                                                             )
 
         if not is_generation:
-            loss = (self.surv_weight * torch.sum(torch.stack(losses_desurv))) + (self.value_weight * loss_values)
+            # DeSurv losses are returned as a list, as the Single-Risk head is many DeSurv models in parallel, combine
+            loss_desurv = torch.sum(torch.stack(losses_desurv))
+            # Weight the loss
+            loss = (self.surv_weight * loss_desurv) + (self.value_weight * loss_values)
+            # If we want to look at individual single risk losses in the future...
+            # **{f"losses_desurv_{idx}": desurv_loss for idx, desurv_loss in enumerate(losses_desurv)},
         else:
             loss = None
 
-        return (surv, values_dist), (losses_desurv, loss_values), loss
+        outputs = {"surv": surv,
+                   "values_dist": values_dist}
+        losses = {"loss": loss,
+                  "loss_desurv": loss_desurv,
+                  "loss_values": loss_values
+                 }
+        
+        return outputs, losses, hidden_states
     
     def generate(self, 
                  tokens: torch.tensor,
@@ -139,21 +151,21 @@ class SurvStreamGPTForCausalModelling(nn.Module):
             values_window = values[:, -self.block_size:] 
 
             # get the predictions
-            (surv, value_dists), _, _ = self(tokens=tokens_window, 
-                                             ages=ages_window,
-                                             values=values_window, 
-                                             covariates=covariates,
-                                             is_generation=True)
+            outputs, _, _ = self(tokens=tokens_window, 
+                                 ages=ages_window,
+                                 values=values_window, 
+                                 covariates=covariates,
+                                 is_generation=True)
 
             # sample survival 
-            token_next, delta_age =  self.surv_layer.sample_surv(surv)
+            token_next, delta_age =  self.surv_layer.sample_surv(outputs["surv"])
             ages_next = ages[:, [-1]] + delta_age
             
             # values
             values_next = []
             for i in range(token_next.shape[0]):
                 if token_next[i, 0].item() in self.value_layer.measurement_tokens:
-                    values_next.append(value_dists[self.value_layer.token_key(token_next[i, 0])].sample()[0])
+                    values_next.append(outputs["value_dist"][self.value_layer.token_key(token_next[i, 0])].sample()[0])
                 else:
                     values_next.append(torch.tensor([torch.nan], device=tokens.device))
 

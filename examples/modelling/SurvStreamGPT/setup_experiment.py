@@ -3,6 +3,7 @@ import torch
 import logging
 from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlateau, CosineAnnealingLR, LambdaLR, SequentialLR, ChainedScheduler
+from CPRD.src.models.base_callback import Embedding
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("wandb")
@@ -25,7 +26,7 @@ class SurvivalExperiment(pl.LightningModule):
         
         self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size)
 
-    def forward(self, batch):
+    def forward(self, batch, is_generation=False):
         # Because of how DeSurv is coded we have the loss returned in the forward, so we have some redundancy
 
         tokens = batch['tokens'].to(self.device)
@@ -34,36 +35,28 @@ class SurvivalExperiment(pl.LightningModule):
         covariates = batch["static_covariates"].to(self.device)
         attention_mask = batch['attention_mask'].to(self.device)   
 
-        (surv, values_dist), (losses_desurv, loss_values), loss = self.model(tokens,
-                                                                             ages,
-                                                                             values,
-                                                                             covariates,
-                                                                             attention_mask,
-                                                                             is_generation=False
-                                                                            )
-
-        losses = {"loss": loss,
-                  "loss_desurv": torch.sum(torch.stack(losses_desurv)),
-                  # **{f"losses_desurv_{idx}": desurv_loss for idx, desurv_loss in enumerate(losses_desurv)},
-                  "loss_values": loss_values
-                 }
-
-        return (surv, values_dist), losses
+        return self.model(tokens,
+                          ages,
+                          values,
+                          covariates,
+                          attention_mask,
+                          is_generation=is_generation
+                          )
 
     def training_step(self, batch, batch_idx):
-        _, loss_dict = self(batch)        
+        _, loss_dict, _ = self(batch)        
         for _key in loss_dict.keys():
             self.log(f"train_" + _key, loss_dict[_key], prog_bar=False, logger=True)
         return loss_dict['loss'] 
 
     def validation_step(self, batch, batch_idx):
-        _, loss_dict = self(batch)        
+        _, loss_dict, _ = self(batch)        
         for _key in loss_dict.keys():
             self.log(f"val_" + _key, loss_dict[_key], prog_bar=False, logger=True)
         return loss_dict['loss'] 
 
     def test_step(self, batch, batch_idx):
-        _, loss_dict = self(batch)        
+        _, loss_dict, _ = self(batch)        
         for _key in loss_dict.keys():
             self.log(f"test_" + _key, loss_dict[_key], prog_bar=False, logger=True)
         return loss_dict['loss'] 
@@ -71,7 +64,7 @@ class SurvivalExperiment(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.cfg.optim.learning_rate)
         # Create scheduler with linear warmup followed by Cosine Annealing with warm restarts.
-        warmup = 320000 / self.cfg.data.batch_size
+        warmup = int(320000 / self.cfg.data.batch_size)
         lambda1 = lambda step: float(step) / warmup if step < warmup else 1
         scheduler1 = LambdaLR(optimizer, lr_lambda=lambda1)
         scheduler2 = CosineAnnealingWarmRestarts(optimizer, 
@@ -96,11 +89,7 @@ class SurvivalExperiment(pl.LightningModule):
             "lr_scheduler": lr_scheduler_config
         }
 
-def setup_survival_experiment(cfg, vocab_size):
-
-    # Get validation and test hook batch
-    # val_data = next(iter(data_module.val_dataloader()))
-    # test_data = next(iter(data_module.test_dataloader()))
+def setup_survival_experiment(cfg, dm, vocab_size):
 
     _model = SurvivalExperiment(cfg=cfg, vocab_size=vocab_size)
     logging.debug(_model)
@@ -129,7 +118,17 @@ def setup_survival_experiment(cfg, vocab_size):
                  lr_monitor,
                  ]
 
-    # optional callbacks
+    # ... custom callbacks
+    val_batch = next(iter(dm.val_dataloader()))
+    test_batch = next(iter(dm.test_dataloader()))
+
+    # Hidden state embedding
+    embedding_callback = Embedding(val_batch=val_batch,
+                                   test_batch=test_batch
+                                  )
+    callbacks.append(embedding_callback)
+
+    # ... optional callbacks
     if cfg.optim.early_stop:
         early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
             monitor="val_loss", mode="min",
@@ -138,7 +137,6 @@ def setup_survival_experiment(cfg, vocab_size):
             verbose=cfg.experiment.verbose,
         )
         callbacks.append(early_stop_callback)
-        
 
     _trainer = pl.Trainer(
         logger=logger,
@@ -149,6 +147,7 @@ def setup_survival_experiment(cfg, vocab_size):
         limit_val_batches=cfg.optim.limit_val_batches,
         limit_test_batches=cfg.optim.limit_test_batches,
         devices=torch.cuda.device_count(),
+        # gradient_clip_val=0.5
     )
 
     return _model, _trainer

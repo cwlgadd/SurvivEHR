@@ -41,7 +41,7 @@ def run(cfg : DictConfig):
     logging.debug(OmegaConf.to_yaml(cfg))
     
     # Create experiment
-    experiment, trainer = setup_survival_experiment(cfg=cfg, vocab_size=vocab_size)
+    experiment, trainer = setup_survival_experiment(cfg=cfg, dm=dm, vocab_size=vocab_size)
 
     # Train/load
     ckpt_path = cfg.experiment.log_dir + f'checkpoints/{cfg.experiment.run_id}.ckpt'
