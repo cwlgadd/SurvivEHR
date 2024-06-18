@@ -3,7 +3,8 @@ from torch import nn
 from torch.nn import functional as F
 import numpy as np
 from CPRD.src.models.TTE.base import TTETransformer
-from CPRD.src.modules.head_layers.surv_layers import ODESurvSingleLayer, ODESurvCompetingRiskLayer
+from CPRD.src.modules.head_layers.survival.competing_risk import ODESurvCompetingRiskLayer
+from CPRD.src.modules.head_layers.survival.single_risk import ODESurvSingleRiskLayer
 from CPRD.src.modules.head_layers.value_layers import GaussianRegressionLayer
 
 from typing import Optional
@@ -28,7 +29,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         match cfg.head.SurvLayer.lower():
             # Removing padding token from vocab size as this is not considered an event in either case
             case "single-risk" | "sr":
-                self.surv_layer = ODESurvSingleLayer(cfg.transformer.n_embd, [], num_risks=vocab_size - 1, device="cuda")
+                self.surv_layer = ODESurvSingleRiskLayer(cfg.transformer.n_embd, [], num_risks=vocab_size - 1, device="cuda")
             case "competing-risk" | "cr":
                 self.surv_layer = ODESurvCompetingRiskLayer(cfg.transformer.n_embd, [], num_risks=vocab_size - 1, device="cuda")
             case _:
