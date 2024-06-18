@@ -14664,7 +14664,7 @@ data:
   meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/meta_information.pickle
 experiment:
   project_name: SurvStreamGPT_${head.SurvLayer}
-  run_id: PreTrain_${head.SurvLayer}_11M_${experiment.seed}
+  run_id: SR_11M
   train: false
   test: false
   verbose: true
@@ -14675,6 +14675,10 @@ experiment:
 optim:
   num_epochs: 1
   learning_rate: 0.0001
+  scheduler: CAWarmRestarts
+  scheduler_periods: 5000
+  scheduler_warmup: true
+  lr_cosine_decay_period: 10000000.0
   val_check_interval: 1000
   early_stop: false
   early_stop_patience: 5
@@ -14744,24 +14748,23 @@ INFO:root:Loaded /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/po
 INFO:root:Loaded /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/split=test/ dataset, with 1,263,168 samples
 INFO:root:Loaded /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/split=val/ dataset, with 1,233,601 samples
 INFO:root:184 vocab elements
-INFO:torch.distributed.nn.jit.instantiator:Created a temporary directory at /tmp/tmpjmglboa5
-INFO:torch.distributed.nn.jit.instantiator:Writing /tmp/tmpjmglboa5/_remote_module_non_scriptable.py
 INFO:root:Using Temporal Positional Encoding. This module uses the patient&#39;s age at an event within their time series.
 INFO:root:Using Single-Risk DeSurvival head. This module predicts a separate survival curve for each possible future event
-INFO:root:Internally scaling time in survival head by 1825 days
-INFO:root:In generation forwarding DeSurv on the grid between [0.0, 1825.0]
-INFO:root:with 1826 intervals of delta=1.0
+INFO:root:Internally scaling time in survival head by 3650 days
+INFO:root:In generation forwarding DeSurv on the grid between [0.0, 3650.0]
+INFO:root:with 121 intervals of delta=30.416666666666668
+/rds/bear-apps/2022a/EL8-ice/software/PyTorch/2.0.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/torch/utils/data/dataloader.py:560: UserWarning: This DataLoader will create 20 worker processes in total. Our suggested max number of worker in current system is 12, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  warnings.warn(_create_warning_msg(
 GPU available: True (cuda), used: True
 TPU available: False, using: 0 TPU cores
 IPU available: False, using: 0 IPUs
 HPU available: False, using: 0 HPUs
-/rds/bear-apps/2022a/EL8-ice/software/PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/logger_connector.py:67: Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `pytorch_lightning` package, due to potential conflicts with other packages in the ML ecosystem. For this reason, `logger=True` will use `CSVLogger` as the default logger, unless the `tensorboard` or `tensorboardX` packages are found. Please `pip install lightning[extra]` or one of them to enable TensorBoard support by default
-INFO:root:Loading from cached checkpoint /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/PreTrain_sr_11M_1337.ckpt
+INFO:root:Loading from cached checkpoint /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/SR_11M.ckpt
 INFO:root:Using Temporal Positional Encoding. This module uses the patient&#39;s age at an event within their time series.
 INFO:root:Using Single-Risk DeSurvival head. This module predicts a separate survival curve for each possible future event
-INFO:root:Internally scaling time in survival head by 1825 days
-INFO:root:In generation forwarding DeSurv on the grid between [0.0, 1825.0]
-INFO:root:with 1826 intervals of delta=1.0
+INFO:root:Internally scaling time in survival head by 3650 days
+INFO:root:In generation forwarding DeSurv on the grid between [0.0, 3650.0]
+INFO:root:with 121 intervals of delta=30.416666666666668
 </pre>
 </div>
 </div>
@@ -14789,7 +14792,7 @@ INFO:root:with 1826 intervals of delta=1.0
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Time to retrieve sample index 100 was 0.06998252868652344 seconds
+<pre>Time to retrieve sample index 100 was 0.06150221824645996 seconds
 
 SEX                 | F
 IMD                 | 2.0
@@ -14798,58 +14801,6 @@ birth_year          | 1954.0
 
 Token                                                                      | Age               | Standardised value
 ===================================================================================================================
-Diastolic_blood_pressure_5                                                 | 16475             | 0.04              
-Systolic_blood_pressure_4                                                  | 16475             | 0.07              
-Basophil_count_22                                                          | 16911             | -0.05             
-Eosinophil_count_21                                                        | 16911             | -0.01             
-Erythrocyte_sedimentation_rate_61                                          | 16911             | 0.05              
-Erythrocyte_sedimentation_rate_61                                          | 16911             | nan               
-Free_T4_level_76                                                           | 16911             | 0.05              
-Haematocrit___PCV_16                                                       | 16911             | -0.05             
-Haemoglobin_estimation_9                                                   | 16911             | nan               
-Lymphocyte_count_20                                                        | 16911             | -0.12             
-Mean_corpusc_Hb_conc__MCHC__14                                             | 16911             | nan               
-Mean_corpusc_haemoglobin_MCH__13                                           | 16911             | 0.02              
-Mean_corpuscular_volume__MCV__11                                           | 16911             | -0.01             
-Monocyte_count_23                                                          | 16911             | -0.29             
-Neutrophil_count_19                                                        | 16911             | -0.07             
-Platelet_count_12                                                          | 16911             | -0.03             
-Red_blood_cell__RBC__count_10                                              | 16911             | -0.06             
-Serum_cholesterol_97                                                       | 16911             | 0.00              
-Serum_creatinine_31                                                        | 16911             | -0.05             
-Serum_potassium_26                                                         | 16911             | -0.04             
-Serum_sodium_24                                                            | 16911             | 0.28              
-Serum_triglycerides_105                                                    | 16911             | -0.09             
-TSH___thyroid_stim_hormone_72                                              | 16911             | -0.17             
-Total_white_cell_count_18                                                  | 16911             | -0.14             
-Diastolic_blood_pressure_5                                                 | 17252             | 0.22              
-Systolic_blood_pressure_4                                                  | 17252             | 0.26              
-Diastolic_blood_pressure_5                                                 | 17470             | 0.04              
-Systolic_blood_pressure_4                                                  | 17470             | -0.03             
-Diastolic_blood_pressure_5                                                 | 17562             | -0.13             
-Systolic_blood_pressure_4                                                  | 17562             | -0.13             
-Body_mass_index_3                                                          | 18016             | 0.30              
-Diastolic_blood_pressure_5                                                 | 18016             | 0.39              
-O_E___height_1                                                             | 18016             | -0.09             
-O_E___weight_2                                                             | 18016             | 0.19              
-Systolic_blood_pressure_4                                                  | 18016             | 0.07              
-Diastolic_blood_pressure_5                                                 | 18260             | 0.11              
-Systolic_blood_pressure_4                                                  | 18260             | 0.15              
-Body_mass_index_3                                                          | 18379             | 0.31              
-O_E___weight_2                                                             | 18379             | 0.20              
-Basophil_count_22                                                          | 18417             | -0.09             
-Diastolic_blood_pressure_5                                                 | 18417             | 0.11              
-Eosinophil_count_21                                                        | 18417             | -0.03             
-Erythrocyte_sedimentation_rate_61                                          | 18417             | 0.03              
-Haematocrit_15                                                             | 18417             | 0.00              
-Haemoglobin_estimation_9                                                   | 18417             | nan               
-Lymphocyte_count_20                                                        | 18417             | 0.04              
-Mean_corpusc_Hb_conc__MCHC__14                                             | 18417             | nan               
-Mean_corpusc_haemoglobin_MCH__13                                           | 18417             | -0.02             
-Mean_corpuscular_volume__MCV__11                                           | 18417             | -0.00             
-Monocyte_count_23                                                          | 18417             | -0.23             
-Neutrophil_count_19                                                        | 18417             | -0.08             
-Platelet_count_12                                                          | 18417             | -0.02             
 Red_blood_cell__RBC__count_10                                              | 18417             | -0.01             
 Serum_TSH_level_71                                                         | 18417             | -0.22             
 Serum_albumin_51                                                           | 18417             | 0.26              
@@ -14926,6 +14877,58 @@ FIBROMYALGIA                                                               | 191
 OSTEOARTHRITIS                                                             | 19192             | nan               
 Basophil_count_22                                                          | 19193             | -0.05             
 Eosinophil_count_21                                                        | 19193             | -0.10             
+Erythrocyte_sedimentation_rate_61                                          | 19193             | 0.04              
+Haematocrit_15                                                             | 19193             | 0.01              
+Haemoglobin_estimation_9                                                   | 19193             | nan               
+Lymphocyte_count_20                                                        | 19193             | -0.00             
+Mean_corpusc_Hb_conc__MCHC__14                                             | 19193             | nan               
+Mean_corpusc_haemoglobin_MCH__13                                           | 19193             | -0.06             
+Mean_corpuscular_volume__MCV__11                                           | 19193             | -0.05             
+Monocyte_count_23                                                          | 19193             | -0.07             
+Neutrophil_count_19                                                        | 19193             | 0.07              
+Platelet_count_12                                                          | 19193             | -0.04             
+Red_blood_cell__RBC__count_10                                              | 19193             | 0.03              
+Serum_cholesterol_97                                                       | 19193             | 0.11              
+Serum_triglycerides_105                                                    | 19193             | -0.08             
+Total_white_cell_count_18                                                  | 19193             | 0.02              
+Body_mass_index_3                                                          | 21368             | 0.26              
+Diastolic_blood_pressure_5                                                 | 21368             | 0.13              
+O_E___weight_2                                                             | 21368             | 0.17              
+Systolic_blood_pressure_4                                                  | 21368             | 0.07              
+Basophil_count_22                                                          | 21617             | 0.10              
+Body_mass_index_3                                                          | 21617             | 0.23              
+Diastolic_blood_pressure_5                                                 | 21617             | 0.20              
+Eosinophil_count_21                                                        | 21617             | -0.10             
+Erythrocyte_sedimentation_rate_61                                          | 21617             | -0.04             
+GFR_calculated_abbreviated_MDRD_34                                         | 21617             | 0.25              
+Haematocrit_15                                                             | 21617             | 0.04              
+Haemoglobin_estimation_9                                                   | 21617             | 0.10              
+Lymphocyte_count_20                                                        | 21617             | -0.02             
+Mean_corpusc_haemoglobin_MCH__13                                           | 21617             | 0.08              
+Mean_corpuscular_volume__MCV__11                                           | 21617             | -0.01             
+Monocyte_count_23                                                          | 21617             | -0.12             
+Neutrophil_count_19                                                        | 21617             | 0.32              
+O_E___height_1                                                             | 21617             | -0.08             
+O_E___weight_2                                                             | 21617             | 0.15              
+Platelet_count_12                                                          | 21617             | -0.04             
+Red_blood_cell__RBC__count_10                                              | 21617             | 0.04              
+Serum_HDL_cholesterol_level_100                                            | 21617             | 0.18              
+Serum_LDL_cholesterol_level_102                                            | 21617             | 0.18              
+Serum_TSH_level_71                                                         | 21617             | -0.20             
+Serum_alanine_aminotransferase_level_45                                    | 21617             | 0.40              
+Serum_albumin_51                                                           | 21617             | 0.35              
+Serum_cholesterol_97                                                       | 21617             | 0.22              
+Serum_cholesterol_HDL_ratio_94                                             | 21617             | -0.00             
+Serum_creatinine_31                                                        | 21617             | -0.22             
+Serum_free_T4_level_75                                                     | 21617             | 0.21              
+Serum_gamma_glutamyl_transferase_level_57                                  | 21617             | nan               
+Serum_potassium_26                                                         | 21617             | 0.09              
+Serum_sodium_24                                                            | 21617             | 0.13              
+Serum_total_bilirubin_level_56                                             | 21617             | 0.15              
+Serum_triglycerides_105                                                    | 21617             | 0.03              
+Serum_urea_level_29                                                        | 21617             | -0.07             
+Systolic_blood_pressure_4                                                  | 21617             | -0.02             
+Total_white_cell_count_18                                                  | 21617             | 0.21              
 </pre>
 </div>
 </div>
@@ -15220,44 +15223,39 @@ Eosinophil_count_21                                                        | 191
 {&#39;sex&#39;: &#39;F&#39;, &#39;deprivation&#39;: 1.0, &#39;ethnicity&#39;: &#39;WHITE&#39;, &#39;year_of_birth&#39;: 1957}
 ==========================================================================================
 PROMPT:
-O_E___height_1                                    -0.04          at age 18 (6643.0 days)
-O_E___weight_2                                    0.07           at age 48 (17593.0 days)
+O_E___height_1                                    -0.04          at age 18 (6643 days)
+O_E___weight_2                                    0.07           at age 18 (6643 days)
 ==========================================================================================
 GENERATION
-PTSDDIAGNOSIS                                     nan            at age 49 (18060.0 days)
-Serum_total_25_hydroxy_vitamin_D_level_87         0.03           at age 50 (18204.0 days)
-Serum_cholesterol_HDL_ratio_94                    -0.08          at age 54 (19643.0 days)
-ASTHMA_PUSHASTHMA                                 nan            at age 56 (20595.0 days)
-UNK                                               nan            at age 56 (20619.0 days)
-FIBROMYALGIA                                      nan            at age 59 (21420.0 days)
-Brain_natriuretic_peptide_level_66                -0.16          at age 60 (21873.0 days)
-Lymphocyte_count_20                               0.39           at age 62 (22612.0 days)
-OSTEOARTHRITIS                                    nan            at age 62 (22616.0 days)
-Calcium_adjusted_level_41                         0.52           at age 64 (23478.0 days)
-TSH_level_74                                      -0.05          at age 65 (23738.0 days)
-Combined_total_vitamin_D2_and_D3_level_93         0.52           at age 70 (25544.0 days)
-Brain_natriuretic_peptide_level_66                -0.10          at age 73 (26611.0 days)
-POLYCYSTIC_OVARIAN_SYNDROME_PCOS_V2               nan            at age 75 (27415.0 days)
-Diastolic_blood_pressure_5                        -0.13          at age 76 (27588.0 days)
-Serum_albumin_51                                  -0.09          at age 79 (28868.0 days)
-SUBSTANCEMISUSE                                   nan            at age 83 (30332.0 days)
-OSTEOARTHRITIS                                    nan            at age 87 (31758.0 days)
-EATINGDISORDERS                                   nan            at age 87 (31845.0 days)
-Serum_cholesterol_97                              -0.18          at age 88 (31949.0 days)
-FIBROMYALGIA                                      nan            at age 88 (32046.0 days)
-EPILEPSY                                          nan            at age 89 (32385.0 days)
-EATINGDISORDERS                                   nan            at age 91 (33045.0 days)
-SYSTEMIC_LUPUS_ERYTHEMATOSUS                      nan            at age 92 (33566.0 days)
-Serum_albumin_51                                  -0.06          at age 96 (34876.0 days)
-Serum_calcium_39                                  -0.18          at age 99 (36312.0 days)
-GFR_calculated_abbreviated_MDRD_34                -0.18          at age 102 (37185.0 days)
-Serum_C_reactive_protein_level_59                 0.03           at age 104 (37947.0 days)
-Plasma_triglyceride_level_106                     0.12           at age 106 (38703.0 days)
-BIPOLAR                                           nan            at age 106 (38778.0 days)
-AUTISM                                            nan            at age 111 (40393.0 days)
-RHEUMATOIDARTHRITIS                               nan            at age 115 (42109.0 days)
-Plasma_N_terminal_pro_B_type_natriuretic_peptide_conc_700.33           at age 118 (43065.0 days)
-HAEMOCHROMATOSIS_V2                               nan            at age 120 (43979.0 days)
+INR___international_normalised_ratio_81           0.21           at age 26 (9532 days)
+COPD                                              nan            at age 27 (9958 days)
+Serum_calcium_39                                  0.37           at age 28 (10110 days)
+Total_white_cell_count_18                         -0.11          at age 35 (12726 days)
+PVD_V3                                            nan            at age 36 (13212 days)
+Calcium_adjusted_level_41                         0.15           at age 42 (15250 days)
+OSA                                               nan            at age 44 (16102 days)
+VISUAL_IMPAIRMENT                                 nan            at age 47 (17106 days)
+Total_25_hydroxyvitamin_D_level_91                0.07           at age 51 (18596 days)
+PLASMACELL_NEOPLASM_V2                            nan            at age 53 (19174 days)
+ANY_DEAFNESS_HEARING_LOSS_V2                      nan            at age 61 (22398 days)
+Total_bilirubin_55                                0.07           at age 66 (24254 days)
+Serum_pro_brain_natriuretic_peptide_level_65      -0.11          at age 67 (24619 days)
+SYSTEMIC_LUPUS_ERYTHEMATOSUS                      nan            at age 72 (26109 days)
+Plasma_corrected_calcium_level_43                 -0.24          at age 72 (26109 days)
+ALCOHOLMISUSE_V2                                  nan            at age 73 (26474 days)
+MENIERESDISEASE                                   nan            at age 78 (28512 days)
+BRONCHIECTASIS                                    nan            at age 81 (29485 days)
+TSH_level_74                                      -0.01          at age 86 (31554 days)
+GOUT                                              nan            at age 91 (33075 days)
+Basophil_count_22                                 -0.25          at age 99 (36268 days)
+Plasma_urea_level_30                              -0.03          at age 102 (37059 days)
+Serum_total_bilirubin_level_56                    -0.31          at age 102 (37090 days)
+Total_25_hydroxyvitamin_D_level_91                0.37           at age 102 (37272 days)
+NAFLD_V2                                          nan            at age 112 (40861 days)
+Plasma_urea_level_30                              0.18           at age 112 (40983 days)
+ISCHAEMICSTROKE_V2                                nan            at age 113 (41287 days)
+GOUT                                              nan            at age 118 (43082 days)
+PERNICIOUSANAEMIA                                 nan            at age 128 (46549 days)
 </pre>
 </div>
 </div>
@@ -15334,9 +15332,9 @@ HAEMOCHROMATOSIS_V2                               nan            at age 120 (439
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
 <pre>DEPRESSION                    leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.2)
-TYPE2DIABETES                 leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.0, 0.2)
+TYPE2DIABETES                 leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.2)
 HF_V3                         leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.2)
-HYPERTENSION                  leads to            standardised Diastolic_blood_pressure_5 ~ N(0.1, 0.2)
+HYPERTENSION                  leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.2)
 </pre>
 </div>
 </div>
@@ -15366,11 +15364,11 @@ HYPERTENSION                  leads to            standardised Diastolic_blood_p
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Body_mass_index_3 of 18.0     leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.2)
-Body_mass_index_3 of 21.0     leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.2)
-Body_mass_index_3 of 24.0     leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.2)
-Body_mass_index_3 of 30.0     leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.0, 0.2)
-Body_mass_index_3 of 40.0     leads to            standardised Diastolic_blood_pressure_5 ~ N(0.0, 0.2)
+<pre>Body_mass_index_3 of 18.0     leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.1)
+Body_mass_index_3 of 21.0     leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.1)
+Body_mass_index_3 of 24.0     leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.1)
+Body_mass_index_3 of 30.0     leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.1, 0.2)
+Body_mass_index_3 of 40.0     leads to            standardised Diastolic_blood_pressure_5 ~ N(-0.0, 0.1)
 </pre>
 </div>
 </div>
@@ -15418,165 +15416,148 @@ Body_mass_index_3 of 40.0     leads to            standardised Diastolic_blood_p
   (transformer): TTETransformer(
     (wpe): TemporalPositionalEncoding()
     (wte): DataEmbeddingLayer(
-      (static_proj): Linear(in_features=16, out_features=1024, bias=True)
+      (static_proj): Linear(in_features=16, out_features=384, bias=True)
       (dynamic_embedding_layer): SplitDynamicEmbeddingLayer(
-        (cat_event_embed_layer): Embedding(184, 1024, padding_idx=0)
-        (cat_event_proj): Linear(in_features=1024, out_features=1024, bias=True)
-        (num_value_embed_layer): EmbeddingBag(184, 1024, mode=&#39;sum&#39;, padding_idx=0)
-        (num_value_proj): Linear(in_features=1024, out_features=1024, bias=True)
+        (cat_event_embed_layer): Embedding(184, 384, padding_idx=0)
+        (cat_event_proj): Linear(in_features=384, out_features=384, bias=True)
+        (num_value_embed_layer): EmbeddingBag(184, 384, mode=&#39;sum&#39;, padding_idx=0)
+        (num_value_proj): Linear(in_features=384, out_features=384, bias=True)
       )
     )
-    (drop): Dropout(p=0.2, inplace=False)
+    (drop): Dropout(p=0.0, inplace=False)
     (blocks): ModuleList(
-      (0-9): 10 x Block(
-        (ln_1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      (0-5): 6 x Block(
+        (ln_1): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
         (attn): MultiHeadedSelfAttention(
-          (attn_dropout): Dropout(p=0.2, inplace=False)
-          (resid_dropout): Dropout(p=0.2, inplace=False)
-          (k_proj): Linear(in_features=1024, out_features=1024, bias=False)
-          (v_proj): Linear(in_features=1024, out_features=1024, bias=False)
-          (q_proj): Linear(in_features=1024, out_features=1024, bias=False)
-          (out_proj): Linear(in_features=1024, out_features=1024, bias=True)
+          (attn_dropout): Dropout(p=0.0, inplace=False)
+          (resid_dropout): Dropout(p=0.0, inplace=False)
+          (k_proj): Linear(in_features=384, out_features=384, bias=False)
+          (v_proj): Linear(in_features=384, out_features=384, bias=False)
+          (q_proj): Linear(in_features=384, out_features=384, bias=False)
+          (out_proj): Linear(in_features=384, out_features=384, bias=True)
         )
-        (ln_2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        (ln_2): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
         (mlp): MLP(
-          (c_fc): Linear(in_features=1024, out_features=4096, bias=True)
+          (c_fc): Linear(in_features=384, out_features=1536, bias=True)
           (acti): ReLU()
-          (c_proj): Linear(in_features=4096, out_features=1024, bias=True)
-          (dropout): Dropout(p=0.2, inplace=False)
+          (c_proj): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.0, inplace=False)
         )
       )
     )
-    (ln_f): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+    (ln_f): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
   )
-  (surv_layer): ODESurvCompetingRiskLayer(
-    (sr_ode): ODESurvMultiple(
-      (pinet): FCNet(
-        (mapping): Sequential(
-          (0): Linear(in_features=1024, out_features=183, bias=True)
-          (1): Softmax(dim=1)
-        )
-      )
-      (odenet): CondODENet(
-        (BaseNet): FCNet(
-          (mapping): Sequential(
-            (0): Linear(in_features=1025, out_features=183, bias=True)
-            (1): Softplus(beta=1, threshold=20)
-          )
-        )
-      )
-    )
-  )
+  (surv_layer): ODESurvSingleLayer()
   (value_layer): GaussianRegressionLayer(
     (regression_layers): ModuleDict(
-      (Token 15): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 17): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 24): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 26): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 41): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 46): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 49): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 50): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 52): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 53): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 57): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 59): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 61): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 62): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 64): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 67): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 68): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 71): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 74): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 78): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 79): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 80): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 86): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 88): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 89): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 91): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 92): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 93): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 95): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 97): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 98): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 99): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 100): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 101): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 102): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 103): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 105): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 106): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 107): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 109): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 111): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 113): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 114): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 116): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 119): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 121): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 122): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 123): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 124): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 125): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 126): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 127): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 128): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 129): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 130): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 131): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 132): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 133): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 134): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 135): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 136): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 137): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 138): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 139): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 140): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 141): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 142): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 143): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 144): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 145): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 146): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 147): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 148): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 149): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 150): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 151): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 152): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 153): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 154): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 155): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 156): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 157): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 158): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 159): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 160): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 161): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 162): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 163): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 164): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 165): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 166): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 167): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 168): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 169): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 170): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 171): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 172): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 173): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 174): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 175): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 176): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 177): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 178): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 179): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 180): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 181): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 182): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 183): Linear(in_features=1024, out_features=2, bias=True)
+      (Token 15): Linear(in_features=384, out_features=2, bias=True)
+      (Token 17): Linear(in_features=384, out_features=2, bias=True)
+      (Token 24): Linear(in_features=384, out_features=2, bias=True)
+      (Token 26): Linear(in_features=384, out_features=2, bias=True)
+      (Token 41): Linear(in_features=384, out_features=2, bias=True)
+      (Token 46): Linear(in_features=384, out_features=2, bias=True)
+      (Token 49): Linear(in_features=384, out_features=2, bias=True)
+      (Token 50): Linear(in_features=384, out_features=2, bias=True)
+      (Token 52): Linear(in_features=384, out_features=2, bias=True)
+      (Token 53): Linear(in_features=384, out_features=2, bias=True)
+      (Token 57): Linear(in_features=384, out_features=2, bias=True)
+      (Token 59): Linear(in_features=384, out_features=2, bias=True)
+      (Token 61): Linear(in_features=384, out_features=2, bias=True)
+      (Token 62): Linear(in_features=384, out_features=2, bias=True)
+      (Token 64): Linear(in_features=384, out_features=2, bias=True)
+      (Token 67): Linear(in_features=384, out_features=2, bias=True)
+      (Token 68): Linear(in_features=384, out_features=2, bias=True)
+      (Token 71): Linear(in_features=384, out_features=2, bias=True)
+      (Token 74): Linear(in_features=384, out_features=2, bias=True)
+      (Token 78): Linear(in_features=384, out_features=2, bias=True)
+      (Token 79): Linear(in_features=384, out_features=2, bias=True)
+      (Token 80): Linear(in_features=384, out_features=2, bias=True)
+      (Token 86): Linear(in_features=384, out_features=2, bias=True)
+      (Token 88): Linear(in_features=384, out_features=2, bias=True)
+      (Token 89): Linear(in_features=384, out_features=2, bias=True)
+      (Token 91): Linear(in_features=384, out_features=2, bias=True)
+      (Token 92): Linear(in_features=384, out_features=2, bias=True)
+      (Token 93): Linear(in_features=384, out_features=2, bias=True)
+      (Token 95): Linear(in_features=384, out_features=2, bias=True)
+      (Token 97): Linear(in_features=384, out_features=2, bias=True)
+      (Token 98): Linear(in_features=384, out_features=2, bias=True)
+      (Token 99): Linear(in_features=384, out_features=2, bias=True)
+      (Token 100): Linear(in_features=384, out_features=2, bias=True)
+      (Token 101): Linear(in_features=384, out_features=2, bias=True)
+      (Token 102): Linear(in_features=384, out_features=2, bias=True)
+      (Token 103): Linear(in_features=384, out_features=2, bias=True)
+      (Token 105): Linear(in_features=384, out_features=2, bias=True)
+      (Token 106): Linear(in_features=384, out_features=2, bias=True)
+      (Token 107): Linear(in_features=384, out_features=2, bias=True)
+      (Token 109): Linear(in_features=384, out_features=2, bias=True)
+      (Token 111): Linear(in_features=384, out_features=2, bias=True)
+      (Token 113): Linear(in_features=384, out_features=2, bias=True)
+      (Token 114): Linear(in_features=384, out_features=2, bias=True)
+      (Token 116): Linear(in_features=384, out_features=2, bias=True)
+      (Token 119): Linear(in_features=384, out_features=2, bias=True)
+      (Token 121): Linear(in_features=384, out_features=2, bias=True)
+      (Token 122): Linear(in_features=384, out_features=2, bias=True)
+      (Token 123): Linear(in_features=384, out_features=2, bias=True)
+      (Token 124): Linear(in_features=384, out_features=2, bias=True)
+      (Token 125): Linear(in_features=384, out_features=2, bias=True)
+      (Token 126): Linear(in_features=384, out_features=2, bias=True)
+      (Token 127): Linear(in_features=384, out_features=2, bias=True)
+      (Token 128): Linear(in_features=384, out_features=2, bias=True)
+      (Token 129): Linear(in_features=384, out_features=2, bias=True)
+      (Token 130): Linear(in_features=384, out_features=2, bias=True)
+      (Token 131): Linear(in_features=384, out_features=2, bias=True)
+      (Token 132): Linear(in_features=384, out_features=2, bias=True)
+      (Token 133): Linear(in_features=384, out_features=2, bias=True)
+      (Token 134): Linear(in_features=384, out_features=2, bias=True)
+      (Token 135): Linear(in_features=384, out_features=2, bias=True)
+      (Token 136): Linear(in_features=384, out_features=2, bias=True)
+      (Token 137): Linear(in_features=384, out_features=2, bias=True)
+      (Token 138): Linear(in_features=384, out_features=2, bias=True)
+      (Token 139): Linear(in_features=384, out_features=2, bias=True)
+      (Token 140): Linear(in_features=384, out_features=2, bias=True)
+      (Token 141): Linear(in_features=384, out_features=2, bias=True)
+      (Token 142): Linear(in_features=384, out_features=2, bias=True)
+      (Token 143): Linear(in_features=384, out_features=2, bias=True)
+      (Token 144): Linear(in_features=384, out_features=2, bias=True)
+      (Token 145): Linear(in_features=384, out_features=2, bias=True)
+      (Token 146): Linear(in_features=384, out_features=2, bias=True)
+      (Token 147): Linear(in_features=384, out_features=2, bias=True)
+      (Token 148): Linear(in_features=384, out_features=2, bias=True)
+      (Token 149): Linear(in_features=384, out_features=2, bias=True)
+      (Token 150): Linear(in_features=384, out_features=2, bias=True)
+      (Token 151): Linear(in_features=384, out_features=2, bias=True)
+      (Token 152): Linear(in_features=384, out_features=2, bias=True)
+      (Token 153): Linear(in_features=384, out_features=2, bias=True)
+      (Token 154): Linear(in_features=384, out_features=2, bias=True)
+      (Token 155): Linear(in_features=384, out_features=2, bias=True)
+      (Token 156): Linear(in_features=384, out_features=2, bias=True)
+      (Token 157): Linear(in_features=384, out_features=2, bias=True)
+      (Token 158): Linear(in_features=384, out_features=2, bias=True)
+      (Token 159): Linear(in_features=384, out_features=2, bias=True)
+      (Token 160): Linear(in_features=384, out_features=2, bias=True)
+      (Token 161): Linear(in_features=384, out_features=2, bias=True)
+      (Token 162): Linear(in_features=384, out_features=2, bias=True)
+      (Token 163): Linear(in_features=384, out_features=2, bias=True)
+      (Token 164): Linear(in_features=384, out_features=2, bias=True)
+      (Token 165): Linear(in_features=384, out_features=2, bias=True)
+      (Token 166): Linear(in_features=384, out_features=2, bias=True)
+      (Token 167): Linear(in_features=384, out_features=2, bias=True)
+      (Token 168): Linear(in_features=384, out_features=2, bias=True)
+      (Token 169): Linear(in_features=384, out_features=2, bias=True)
+      (Token 170): Linear(in_features=384, out_features=2, bias=True)
+      (Token 171): Linear(in_features=384, out_features=2, bias=True)
+      (Token 172): Linear(in_features=384, out_features=2, bias=True)
+      (Token 173): Linear(in_features=384, out_features=2, bias=True)
+      (Token 174): Linear(in_features=384, out_features=2, bias=True)
+      (Token 175): Linear(in_features=384, out_features=2, bias=True)
+      (Token 176): Linear(in_features=384, out_features=2, bias=True)
+      (Token 177): Linear(in_features=384, out_features=2, bias=True)
+      (Token 178): Linear(in_features=384, out_features=2, bias=True)
+      (Token 179): Linear(in_features=384, out_features=2, bias=True)
+      (Token 180): Linear(in_features=384, out_features=2, bias=True)
+      (Token 181): Linear(in_features=384, out_features=2, bias=True)
+      (Token 182): Linear(in_features=384, out_features=2, bias=True)
+      (Token 183): Linear(in_features=384, out_features=2, bias=True)
     )
   )
 )</pre>
@@ -15600,7 +15581,7 @@ Body_mass_index_3 of 40.0     leads to            standardised Diastolic_blood_p
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
 <pre>[NbConvertApp] Converting notebook generation.ipynb to html
-[NbConvertApp] Writing 627138 bytes to generation.html
+[NbConvertApp] Writing 641376 bytes to generation.html
 </pre>
 </div>
 </div>

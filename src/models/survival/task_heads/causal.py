@@ -97,12 +97,12 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                                          attention_mask=attention_mask)  # shape: (bsz, seq_len, n_embd)
 
         # survival time to event head (survival curve until next token)
-        surv, losses_desurv = self.surv_layer.predict(hidden_states,
-                                                      target_tokens=tokens,
-                                                      target_ages=ages, 
-                                                      attention_mask=attention_mask,
-                                                      is_generation=is_generation,
-                                                      return_cdf=return_cdf)
+        surv_dict, losses_desurv = self.surv_layer.predict(hidden_states,
+                                                           target_tokens=tokens,
+                                                           target_ages=ages, 
+                                                           attention_mask=attention_mask,
+                                                           is_generation=is_generation,
+                                                           return_cdf=return_cdf)
             
         # regression head (values of next token if applicable)
         values_dist, loss_values = self.value_layer.predict(hidden_states,
@@ -123,7 +123,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
             loss = None
             loss_desurv = None
 
-        outputs = {"surv": surv,
+        outputs = {"surv": surv_dict,
                    "values_dist": values_dist}
         losses = {"loss": loss,
                   "loss_desurv": loss_desurv,
@@ -164,14 +164,15 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                                  is_generation=True)
 
             # sample survival 
-            token_next, delta_age =  self.surv_layer.sample_surv(outputs["surv"])
+            surv = outputs["surv"]["surv_CDF"]
+            token_next, delta_age =  self.surv_layer.sample_surv(surv)
             ages_next = ages[:, [-1]] + delta_age
             
             # values
             values_next = []
             for i in range(token_next.shape[0]):
                 if token_next[i, 0].item() in self.value_layer.measurement_tokens:
-                    values_next.append(outputs["value_dist"][self.value_layer.token_key(token_next[i, 0])].sample()[0])
+                    values_next.append(outputs["values_dist"][self.value_layer.token_key(token_next[i, 0])].sample()[0])
                 else:
                     values_next.append(torch.tensor([torch.nan], device=tokens.device))
 

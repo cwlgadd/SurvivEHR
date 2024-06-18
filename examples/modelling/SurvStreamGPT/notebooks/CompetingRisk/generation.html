@@ -14660,6 +14660,8 @@ data:
   batch_size: 64
   unk_freq_threshold: 0.0
   min_workers: 20
+  global_diagnoses: false
+  meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/meta_information.pickle
 experiment:
   project_name: SurvStreamGPT_${head.SurvLayer}
   run_id: PreTrain_${head.SurvLayer}_129M_${experiment.seed}
@@ -14673,7 +14675,12 @@ experiment:
 optim:
   num_epochs: 1
   learning_rate: 0.0001
+  scheduler: CAWarmRestarts
+  scheduler_periods: 5000
+  scheduler_warmup: true
+  lr_cosine_decay_period: 10000000.0
   val_check_interval: 1000
+  early_stop: false
   early_stop_patience: 5
   log_every_n_steps: 20
   limit_val_batches: 0.05
@@ -14716,7 +14723,6 @@ head:
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
 <pre>INFO:root:Running cr experiment on 72 CPUs and 1 GPUs
-INFO:root:Loading Polars dataset from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/
 </pre>
 </div>
 </div>
@@ -14732,26 +14738,29 @@ INFO:root:Loading Polars dataset from /rds/projects/g/gokhalkm-optimal/OPTIMAL_M
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>INFO:root:Using tokenizer tabular
+<pre>INFO:root:Using meta information from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/meta_information.pickle
+INFO:root:Using train file-row count dictionary from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/file_row_count_dict_train.pickle
+INFO:root:Using test file-row count dictionary from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/file_row_count_dict_test.pickle
+INFO:root:Using val file-row count dictionary from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/file_row_count_dict_val.pickle
 INFO:root:Tokenzier created based on 3584.43M tokens
-INFO:root:Creating split=train/ dataset
-INFO:root:	 Loading split=train/ hash map for parquet
-INFO:root:	 Hash map created for split=train/ with 22,912,046 samples
-INFO:root:Creating split=test/ dataset
-INFO:root:	 Loading split=test/ hash map for parquet
-INFO:root:	 Hash map created for split=test/ with 1,207,449 samples
-INFO:root:Creating split=val/ dataset
-INFO:root:	 Loading split=val/ hash map for parquet
-INFO:root:	 Hash map created for split=val/ with 1,226,576 samples
+INFO:root:Using tabular tokenizer, created from meta information and containing 184 tokens
+INFO:root:Loaded /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/split=train/ dataset, with 23,343,104 samples
+INFO:root:Loaded /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/split=test/ dataset, with 1,263,168 samples
+INFO:root:Loaded /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/polars/split=val/ dataset, with 1,233,601 samples
 INFO:root:184 vocab elements
+INFO:torch.distributed.nn.jit.instantiator:Created a temporary directory at /tmp/tmpd2jb52r4
+INFO:torch.distributed.nn.jit.instantiator:Writing /tmp/tmpd2jb52r4/_remote_module_non_scriptable.py
 INFO:root:Using Temporal Positional Encoding. This module uses the patient&#39;s age at an event within their time series.
 INFO:root:Using Competing-Risk DeSurv head.
 INFO:root:Internally scaling time in survival head by 1825 days
 INFO:root:In generation forwarding DeSurv on the grid between [0.0, 1825.0] with 1826 intervals of delta=1.0
+/rds/bear-apps/2022a/EL8-ice/software/PyTorch/2.0.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/torch/utils/data/dataloader.py:560: UserWarning: This DataLoader will create 20 worker processes in total. Our suggested max number of worker in current system is 12, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  warnings.warn(_create_warning_msg(
 GPU available: True (cuda), used: True
 TPU available: False, using: 0 TPU cores
 IPU available: False, using: 0 IPUs
 HPU available: False, using: 0 HPUs
+/rds/bear-apps/2022a/EL8-ice/software/PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/logger_connector.py:67: Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `pytorch_lightning` package, due to potential conflicts with other packages in the ML ecosystem. For this reason, `logger=True` will use `CSVLogger` as the default logger, unless the `tensorboard` or `tensorboardX` packages are found. Please `pip install lightning[extra]` or one of them to enable TensorBoard support by default
 INFO:root:Loading from cached checkpoint /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/PreTrain_cr_129M_1337.ckpt
 INFO:root:Using Temporal Positional Encoding. This module uses the patient&#39;s age at an event within their time series.
 INFO:root:Using Competing-Risk DeSurv head.
@@ -14784,31 +14793,80 @@ INFO:root:In generation forwarding DeSurv on the grid between [0.0, 1825.0] with
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Time to retrieve sample index 100 was 0.13484811782836914 seconds
+<pre>Time to retrieve sample index 1 was 0.03159332275390625 seconds
 
-SEX                 | M
-IMD                 | 4.0
-ETHNICITY           | MIXED
-birth_year          | 1991.0
+SEX                 | F
+IMD                 | 3.0
+ETHNICITY           | ASIAN
+birth_year          | 1981.0
 
 Token                                                                      | Age               | Standardised value
 ===================================================================================================================
-Haemoglobin_estimation_9                                                   | 6405              | nan               
-Platelet_count_12                                                          | 6405              | -0.17             
-Serum_creatinine_31                                                        | 6405              | 0.17              
-Serum_potassium_26                                                         | 6405              | 0.13              
-Serum_sodium_24                                                            | 6405              | -0.01             
-Serum_urea_level_29                                                        | 6405              | -0.17             
-Total_white_cell_count_18                                                  | 6405              | -0.28             
-O_E___weight_2                                                             | 7206              | 0.13              
-Body_mass_index_3                                                          | 7418              | -0.00             
-Diastolic_blood_pressure_5                                                 | 7418              | 0.15              
-O_E___height_1                                                             | 7418              | 0.25              
-O_E___weight_2                                                             | 7418              | 0.15              
-Systolic_blood_pressure_4                                                  | 7418              | 0.07              
-Body_mass_index_3                                                          | 7788              | -0.08             
-O_E___height_1                                                             | 7788              | 0.25              
-O_E___weight_2                                                             | 7788              | 0.07              
+Body_mass_index_3                                                          | 11146             | -0.21             
+O_E___height_1                                                             | 11146             | nan               
+O_E___weight_2                                                             | 11146             | -0.18             
+AST_serum_level_47                                                         | 11187             | -0.11             
+Basophil_count_22                                                          | 11187             | -0.13             
+Eosinophil_count_21                                                        | 11187             | -0.13             
+GFR_calculated_abbreviated_MDRD_34                                         | 11187             | 0.25              
+Haematocrit_15                                                             | 11187             | -0.28             
+Haemoglobin_estimation_9                                                   | 11187             | nan               
+Lymphocyte_count_20                                                        | 11187             | 0.02              
+Mean_corpusc_Hb_conc__MCHC__14                                             | 11187             | nan               
+Mean_corpusc_haemoglobin_MCH__13                                           | 11187             | nan               
+Mean_corpuscular_volume__MCV__11                                           | 11187             | -0.49             
+Monocyte_count_23                                                          | 11187             | -0.13             
+Neutrophil_count_19                                                        | 11187             | -0.15             
+Platelet_count_12                                                          | 11187             | -0.06             
+Red_blood_cell__RBC__count_10                                              | 11187             | 0.01              
+Red_blood_cell_distribution_width_17                                       | 11187             | 0.44              
+Serum_albumin_51                                                           | 11187             | -0.04             
+Serum_creatinine_31                                                        | 11187             | -0.25             
+Serum_potassium_26                                                         | 11187             | 0.09              
+Serum_sodium_24                                                            | 11187             | -0.01             
+Serum_total_bilirubin_level_56                                             | 11187             | -0.31             
+Total_alkaline_phosphatase_48                                              | 11187             | -0.07             
+Total_white_cell_count_18                                                  | 11187             | -0.14             
+Body_mass_index_3                                                          | 11390             | -0.11             
+Never_smoked_tobacco_85                                                    | 11390             | nan               
+O_E___height_1                                                             | 11390             | -0.16             
+O_E___weight_2                                                             | 11390             | -0.15             
+Diastolic_blood_pressure_5                                                 | 13266             | -0.13             
+Systolic_blood_pressure_4                                                  | 13266             | -0.33             
+Basophil_count_22                                                          | 13281             | 0.03              
+Eosinophil_count_21                                                        | 13281             | -0.13             
+Haematocrit_15                                                             | 13281             | -0.38             
+Haemoglobin_estimation_9                                                   | 13281             | -0.36             
+Lymphocyte_count_20                                                        | 13281             | 0.02              
+Mean_corpusc_haemoglobin_MCH__13                                           | 13281             | -0.47             
+Mean_corpuscular_volume__MCV__11                                           | 13281             | -0.47             
+Monocyte_count_23                                                          | 13281             | -0.04             
+Neutrophil_count_19                                                        | 13281             | 0.17              
+Platelet_count_12                                                          | 13281             | -0.14             
+Red_blood_cell__RBC__count_10                                              | 13281             | -0.12             
+Total_white_cell_count_18                                                  | 13281             | 0.11              
+Diastolic_blood_pressure_5                                                 | 13341             | -0.23             
+Systolic_blood_pressure_4                                                  | 13341             | -0.36             
+Diastolic_blood_pressure_5                                                 | 13404             | -0.34             
+Systolic_blood_pressure_4                                                  | 13404             | -0.41             
+Diastolic_blood_pressure_5                                                 | 13516             | 0.04              
+Systolic_blood_pressure_4                                                  | 13516             | -0.13             
+Diastolic_blood_pressure_5                                                 | 13571             | -0.27             
+Systolic_blood_pressure_4                                                  | 13571             | -0.42             
+Basophil_count_22                                                          | 14229             | 0.03              
+Eosinophil_count_21                                                        | 14229             | -0.11             
+Haematocrit_15                                                             | 14229             | -0.13             
+Haemoglobin_estimation_9                                                   | 14229             | -0.05             
+Lymphocyte_count_20                                                        | 14229             | -0.03             
+Mean_corpusc_haemoglobin_MCH__13                                           | 14229             | -0.06             
+Mean_corpuscular_volume__MCV__11                                           | 14229             | -0.20             
+Monocyte_count_23                                                          | 14229             | -0.11             
+Neutrophil_count_19                                                        | 14229             | 0.24              
+Platelet_count_12                                                          | 14229             | -0.09             
+Red_blood_cell__RBC__count_10                                              | 14229             | -0.03             
+Serum_ferritin_63                                                          | 14229             | -0.09             
+Total_white_cell_count_18                                                  | 14229             | 0.14              
+Never_smoked_tobacco_85                                                    | 14490             | nan               
 </pre>
 </div>
 </div>
@@ -14905,8 +14963,8 @@ O_E___weight_2                                                             | 778
       <td>0.000</td>
       <td>6.860000e+02</td>
       <td>3.908721</td>
-      <td>-4.646246</td>
-      <td>10.806670</td>
+      <td>-4.563002</td>
+      <td>10.788817</td>
     </tr>
     <tr>
       <th>1</th>
@@ -14917,8 +14975,8 @@ O_E___weight_2                                                             | 778
       <td>0.000</td>
       <td>9.518000e+02</td>
       <td>47.148892</td>
-      <td>-36.374906</td>
-      <td>121.281425</td>
+      <td>-36.406444</td>
+      <td>121.163127</td>
     </tr>
     <tr>
       <th>2</th>
@@ -14953,8 +15011,8 @@ O_E___weight_2                                                             | 778
       <td>-1.000</td>
       <td>1.282100e+04</td>
       <td>10.672548</td>
-      <td>-4.327568</td>
-      <td>8.831512</td>
+      <td>-4.329018</td>
+      <td>8.832383</td>
     </tr>
     <tr>
       <th>...</th>
@@ -14977,8 +15035,8 @@ O_E___weight_2                                                             | 778
       <td>-3.100</td>
       <td>3.720369e+09</td>
       <td>964.704260</td>
-      <td>0.503984</td>
-      <td>6.883091</td>
+      <td>0.445266</td>
+      <td>6.918591</td>
     </tr>
     <tr>
       <th>104</th>
@@ -14989,8 +15047,8 @@ O_E___weight_2                                                             | 778
       <td>-14.700</td>
       <td>3.720369e+09</td>
       <td>250.189546</td>
-      <td>1.595425</td>
-      <td>12.090323</td>
+      <td>1.618844</td>
+      <td>12.034846</td>
     </tr>
     <tr>
       <th>105</th>
@@ -15001,8 +15059,8 @@ O_E___weight_2                                                             | 778
       <td>-14.000</td>
       <td>1.000000e+10</td>
       <td>996.069857</td>
-      <td>-3.867288</td>
-      <td>8.042548</td>
+      <td>-3.788562</td>
+      <td>7.911867</td>
     </tr>
     <tr>
       <th>106</th>
@@ -15013,8 +15071,8 @@ O_E___weight_2                                                             | 778
       <td>-5.803</td>
       <td>3.176800e+04</td>
       <td>10.775029</td>
-      <td>-4.142800</td>
-      <td>8.260179</td>
+      <td>-4.128243</td>
+      <td>8.251042</td>
     </tr>
     <tr>
       <th>107</th>
@@ -15025,8 +15083,8 @@ O_E___weight_2                                                             | 778
       <td>-90.000</td>
       <td>8.713000e+04</td>
       <td>74.274588</td>
-      <td>22.625042</td>
-      <td>130.097152</td>
+      <td>22.592304</td>
+      <td>130.116795</td>
     </tr>
   </tbody>
 </table>
@@ -15071,7 +15129,7 @@ O_E___weight_2                                                             | 778
 <div class="jp-OutputArea-child">
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>tensor([[-0.0444,  0.0650]], device=&#39;cuda:0&#39;)
+<pre>tensor([[-0.0446,  0.0652]], device=&#39;cuda:0&#39;)
 </pre>
 </div>
 </div>
@@ -15095,50 +15153,50 @@ O_E___weight_2                                                             | 778
 {&#39;sex&#39;: &#39;F&#39;, &#39;deprivation&#39;: 1.0, &#39;ethnicity&#39;: &#39;WHITE&#39;, &#39;year_of_birth&#39;: 1957}
 ==========================================================================================
 PROMPT:
-O_E___height_1                                    -0.04          at age 18 (6643.0 days)
-O_E___weight_2                                    0.06           at age 48 (17593.0 days)
+O_E___height_1                                    -0.04          at age 18 (6643 days)
+O_E___weight_2                                    0.07           at age 18 (6643 days)
 ==========================================================================================
 GENERATION
-O_E___weight_2                                    0.08           at age 48 (17594.0 days)
-O_E___weight_2                                    0.18           at age 48 (17596.0 days)
-Systolic_blood_pressure_4                         -0.03          at age 48 (17596.0 days)
-Basophil_count_22                                 0.04           at age 51 (18498.0 days)
-Corrected_serum_calcium_level_42                  0.05           at age 51 (18500.0 days)
-Eosinophil_count_21                               -0.14          at age 51 (18501.0 days)
-Haematocrit_15                                    -0.08          at age 51 (18504.0 days)
-Haemoglobin_A1c_level___IFCC_standardised_6       -0.24          at age 51 (18505.0 days)
-Haemoglobin_estimation_9                          -0.11          at age 51 (18505.0 days)
-Lymphocyte_count_20                               0.16           at age 51 (18506.0 days)
-Mean_corpusc_Hb_conc__MCHC__14                    0.01           at age 51 (18506.0 days)
-Mean_corpusc_haemoglobin_MCH__13                  -0.06          at age 51 (18506.0 days)
-Mean_corpuscular_volume__MCV__11                  -0.04          at age 51 (18508.0 days)
-Monocyte_count_23                                 -0.04          at age 51 (18509.0 days)
-Neutrophil_count_19                               -0.01          at age 51 (18509.0 days)
-Plasma_C_reactive_protein_60                      -0.04          at age 51 (18510.0 days)
-Non_HDL_cholesterol_level_108                     -0.32          at age 51 (18510.0 days)
-Platelet_count_12                                 0.19           at age 51 (18510.0 days)
-Red_blood_cell__RBC__count_10                     -0.09          at age 51 (18511.0 days)
-Serum_TSH_level_71                                -0.11          at age 51 (18513.0 days)
-Serum_alanine_aminotransferase_level_45           0.09           at age 51 (18515.0 days)
-Serum_albumin_51                                  0.11           at age 51 (18516.0 days)
-Serum_calcium_39                                  -0.17          at age 51 (18517.0 days)
-Serum_cholesterol_97                              -0.42          at age 51 (18517.0 days)
-Serum_cholesterol_HDL_ratio_94                    -0.25          at age 51 (18518.0 days)
-Serum_creatinine_31                               -0.04          at age 51 (18518.0 days)
-Serum_HDL_cholesterol_level_100                   -0.02          at age 51 (18522.0 days)
-Serum_LDL_cholesterol_level_102                   -0.25          at age 51 (18524.0 days)
-Serum_alanine_aminotransferase_level_45           0.16           at age 51 (18524.0 days)
-Serum_albumin_51                                  0.08           at age 51 (18524.0 days)
-Serum_alkaline_phosphatase_50                     -0.28          at age 51 (18524.0 days)
-Serum_bilirubin_level_53                          -0.17          at age 51 (18526.0 days)
-Serum_calcium_39                                  0.23           at age 51 (18527.0 days)
-Serum_creatinine_31                               -0.03          at age 51 (18528.0 days)
-Serum_ferritin_63                                 0.13           at age 51 (18534.0 days)
-Serum_non_high_density_lipoprotein_cholesterol_level_107-0.23          at age 51 (18535.0 days)
-Serum_potassium_26                                0.00           at age 51 (18537.0 days)
-Serum_sodium_24                                   0.19           at age 51 (18538.0 days)
-Serum_total_cholesterol_level_98                  -0.34          at age 51 (18538.0 days)
-Serum_triglycerides_105                           -0.13          at age 51 (18539.0 days)
+Diastolic_blood_pressure_5                        -0.28          at age 20 (7267 days)
+Systolic_blood_pressure_4                         -0.15          at age 20 (7267 days)
+Diastolic_blood_pressure_5                        -0.01          at age 22 (8084 days)
+Systolic_blood_pressure_4                         -0.04          at age 22 (8084 days)
+Body_mass_index_3                                 0.26           at age 23 (8255 days)
+O_E___height_1                                    -0.10          at age 23 (8256 days)
+O_E___weight_2                                    0.17           at age 23 (8259 days)
+Body_mass_index_3                                 0.33           at age 24 (8600 days)
+O_E___height_1                                    -0.09          at age 24 (8600 days)
+O_E___weight_2                                    0.22           at age 24 (8606 days)
+Body_mass_index_3                                 0.36           at age 24 (8815 days)
+Diastolic_blood_pressure_5                        -0.13          at age 24 (8817 days)
+O_E___height_1                                    -0.12          at age 24 (8818 days)
+O_E___weight_2                                    0.23           at age 24 (8819 days)
+Systolic_blood_pressure_4                         -0.07          at age 24 (8819 days)
+Body_mass_index_3                                 0.23           at age 25 (9075 days)
+Diastolic_blood_pressure_5                        0.02           at age 25 (9076 days)
+O_E___height_1                                    -0.10          at age 25 (9076 days)
+O_E___weight_2                                    0.13           at age 25 (9083 days)
+Systolic_blood_pressure_4                         -0.12          at age 25 (9083 days)
+Body_mass_index_3                                 0.33           at age 26 (9413 days)
+O_E___height_1                                    -0.14          at age 26 (9417 days)
+O_E___weight_2                                    0.17           at age 26 (9418 days)
+Body_mass_index_3                                 0.21           at age 26 (9449 days)
+O_E___height_1                                    -0.16          at age 26 (9450 days)
+O_E___weight_2                                    0.09           at age 26 (9452 days)
+Diastolic_blood_pressure_5                        -0.17          at age 27 (9836 days)
+O_E___weight_2                                    0.12           at age 27 (9837 days)
+Systolic_blood_pressure_4                         -0.38          at age 27 (9837 days)
+Body_mass_index_3                                 0.13           at age 27 (9886 days)
+Diastolic_blood_pressure_5                        0.10           at age 27 (9894 days)
+O_E___weight_2                                    0.02           at age 27 (9894 days)
+Systolic_blood_pressure_4                         -0.12          at age 27 (9894 days)
+Body_mass_index_3                                 0.17           at age 27 (9904 days)
+Diastolic_blood_pressure_5                        -0.15          at age 27 (9905 days)
+O_E___height_1                                    -0.14          at age 27 (9907 days)
+O_E___weight_2                                    0.03           at age 27 (9918 days)
+Systolic_blood_pressure_4                         -0.24          at age 27 (9918 days)
+Body_mass_index_3                                 0.12           at age 27 (9920 days)
+Body_mass_index_3                                 -0.00          at age 27 (10008 days)
 </pre>
 </div>
 </div>
@@ -15282,213 +15340,9 @@ Body_mass_index_3 of 40.0     leads to            standardised Diastolic_blood_p
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-
-
-<div class="jp-RenderedText jp-OutputArea-output " data-mime-type="text/plain">
-<pre>SurvStreamGPTForCausalModelling(
-  (transformer): TTETransformer(
-    (wpe): TemporalPositionalEncoding()
-    (wte): DataEmbeddingLayer(
-      (static_proj): Linear(in_features=16, out_features=1024, bias=True)
-      (dynamic_embedding_layer): SplitDynamicEmbeddingLayer(
-        (cat_event_embed_layer): Embedding(184, 1024, padding_idx=0)
-        (cat_event_proj): Linear(in_features=1024, out_features=1024, bias=True)
-        (num_value_embed_layer): EmbeddingBag(184, 1024, mode=&#39;sum&#39;, padding_idx=0)
-        (num_value_proj): Linear(in_features=1024, out_features=1024, bias=True)
-      )
-    )
-    (drop): Dropout(p=0.2, inplace=False)
-    (blocks): ModuleList(
-      (0-9): 10 x Block(
-        (ln_1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
-        (attn): MultiHeadedSelfAttention(
-          (attn_dropout): Dropout(p=0.2, inplace=False)
-          (resid_dropout): Dropout(p=0.2, inplace=False)
-          (k_proj): Linear(in_features=1024, out_features=1024, bias=False)
-          (v_proj): Linear(in_features=1024, out_features=1024, bias=False)
-          (q_proj): Linear(in_features=1024, out_features=1024, bias=False)
-          (out_proj): Linear(in_features=1024, out_features=1024, bias=True)
-        )
-        (ln_2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
-        (mlp): MLP(
-          (c_fc): Linear(in_features=1024, out_features=4096, bias=True)
-          (acti): ReLU()
-          (c_proj): Linear(in_features=4096, out_features=1024, bias=True)
-          (dropout): Dropout(p=0.2, inplace=False)
-        )
-      )
-    )
-    (ln_f): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
-  )
-  (surv_layer): ODESurvCompetingRiskLayer(
-    (sr_ode): ODESurvMultiple(
-      (pinet): FCNet(
-        (mapping): Sequential(
-          (0): Linear(in_features=1024, out_features=183, bias=True)
-          (1): Softmax(dim=1)
-        )
-      )
-      (odenet): CondODENet(
-        (BaseNet): FCNet(
-          (mapping): Sequential(
-            (0): Linear(in_features=1025, out_features=183, bias=True)
-            (1): Softplus(beta=1, threshold=20)
-          )
-        )
-      )
-    )
-  )
-  (value_layer): GaussianRegressionLayer(
-    (regression_layers): ModuleDict(
-      (Token 15): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 17): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 24): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 26): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 41): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 46): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 49): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 50): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 52): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 53): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 57): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 59): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 61): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 62): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 64): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 67): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 68): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 71): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 74): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 78): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 79): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 80): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 86): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 88): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 89): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 91): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 92): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 93): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 95): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 97): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 98): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 99): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 100): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 101): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 102): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 103): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 105): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 106): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 107): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 109): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 111): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 113): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 114): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 116): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 119): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 121): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 122): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 123): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 124): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 125): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 126): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 127): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 128): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 129): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 130): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 131): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 132): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 133): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 134): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 135): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 136): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 137): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 138): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 139): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 140): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 141): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 142): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 143): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 144): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 145): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 146): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 147): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 148): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 149): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 150): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 151): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 152): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 153): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 154): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 155): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 156): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 157): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 158): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 159): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 160): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 161): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 162): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 163): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 164): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 165): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 166): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 167): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 168): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 169): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 170): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 171): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 172): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 173): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 174): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 175): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 176): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 177): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 178): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 179): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 180): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 181): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 182): Linear(in_features=1024, out_features=2, bias=True)
-      (Token 183): Linear(in_features=1024, out_features=2, bias=True)
-    )
-  )
-)</pre>
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell  jp-mod-noInput ">
-
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>[NbConvertApp] Converting notebook generation.ipynb to html
-[NbConvertApp] Writing 626718 bytes to generation.html
-</pre>
-</div>
-</div>
-
-</div>
-
-</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput ">
 

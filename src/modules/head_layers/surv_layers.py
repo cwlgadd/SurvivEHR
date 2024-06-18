@@ -90,7 +90,7 @@ class ODESurvSingleLayer(nn.Module):
             # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
             surv = {"k": k,
                     "tte_deltas": tte_deltas,
-                    "surv_CDF": self._predict_cdf(in_hidden_state) if return_cdf else None}
+                    "surv_CDF": self._predict_cdf(in_hidden_state.reshape((-1,in_hidden_state.shape[-1]))) if return_cdf else None}
 
             # TODO: NEEDED HERE?
             # Mask and sum across sequence (so log likelihood factorises as a product along the sequence)
@@ -240,16 +240,16 @@ class ODESurvCompetingRiskLayer(nn.Module):
             # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
             surv = {"k": [k],
                     "tte_deltas": tte_deltas,
-                    "surv_CDF": self._predict_cdf(in_hidden_state) if return_cdf else None
+                    "surv_CDF": self._predict_cdf(in_hidden_state.reshape((-1,in_hidden_state.shape[-1]))) if return_cdf else None
                    }
 
         else:
             # inference-time mini-optimization: only forward the head on the very last position
             in_hidden_state = hidden_states[:, -1, :]
-            surv_losses = None
+            surv_loss = None
             surv = {"k": None,
                     "tte_deltas": None,
-                    "surv_CDF": [self._predict_cdf(in_hidden_state)]
+                    "surv_CDF": self._predict_cdf(in_hidden_state)
                    }
 
         return surv, surv_loss
@@ -260,6 +260,9 @@ class ODESurvCompetingRiskLayer(nn.Module):
         """
         Predict survival curves from the hidden states
         """
+
+        assert hidden_states.dim() == 2
+        
         # The normalised grid over which to predict
         t_test = torch.tensor(np.concatenate([self.t_eval] * hidden_states.shape[0], 0), dtype=torch.float32, device=self.device)
         t_test /= self._time_scale
@@ -280,7 +283,6 @@ class ODESurvCompetingRiskLayer(nn.Module):
     def sample_surv(self, surv):
         """ Generate samples from survival curves using inverse sampling
         """
-
         assert surv[0].shape[0] == 1, "TODO: not implemented for batches"
 
         # Sample which event occurs next by sampling with probability proportional to the AUC
