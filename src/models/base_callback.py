@@ -26,11 +26,6 @@ class BaseCallback(object):
         if val_batch is not None:
             self.do_validation = True
             self.val_batch = val_batch
-            # self.val_tokens = val_samples['tokens']       # .to(self.device)
-            # self.val_ages = val_samples['ages']           # .to(self.device)
-            # self.val_values = val_samples['values']       # .to(self.device)
-            # self.val_covariates = val_samples["static_covariates"] # .to(self.device)
-            # self.val_attention_mask = val_samples['attention_mask'] # .to(self.device)   
         else:
             self.do_validation = False
             
@@ -38,11 +33,6 @@ class BaseCallback(object):
         if test_batch is not None:
             self.do_test = True
             self.test_batch = test_batch
-            # self.test_tokens = test_samples['tokens']       # .to(self.device)
-            # self.test_ages = test_samples['ages']           # .to(self.device)
-            # self.test_values = test_samples['values']       # .to(self.device)
-            # self.test_covariates = test_samples["static_covariates"] # .to(self.device)
-            # self.test_attention_mask = test_samples['attention_mask'] # .to(self.device)   
         else:
             self.do_test = False
 
@@ -122,7 +112,6 @@ class Embedding(Callback, BaseCallback):
         # Push features through the model to get the hidden dimension from the Transformer output:
         #      hidden_states: torch.Size([bsz, seq_len, hid_dim])
         _, _, hidden_states = _pl_module(batch)
-        
 
         # Plot each resolution-embedding vectors
         wandb_images = []
@@ -178,13 +167,6 @@ class Embedding(Callback, BaseCallback):
 
     def on_validation_epoch_end(self, trainer, pl_module):
         if self.do_validation is True:
-            # Send to device
-            # val_tokens = self.val_tokens.to(device=pl_module.device)
-            # val_ages = self.val_ages.to(pl_module.device)
-            # val_values = self.val_values.to(pl_module.device)
-            # val_covariates = self.val_covariates.to(pl_module.device)
-            # val_attention_mask = self.val_attention_mask.to(pl_module.device)   
-
             # Run callback
             self.run_callback(_trainer=trainer, 
                               _pl_module = pl_module,
@@ -192,14 +174,14 @@ class Embedding(Callback, BaseCallback):
                               log_name = "Val:Embedding", 
                               )
 
-    # def on_test_epoch_end(self, trainer, pl_module):
-    #     if self.test_features is not None:
-    #         # Send to device
-    #         features = self.test_features.to(device=pl_module.device)
-    #         test_surv = {k: v.to(device=pl_module.device, non_blocking=True) for k, v in
-    #                      self.test_surv.items()}  # possibly empty surv dictionary
-    #         # Run callback
-    #         self.run_callback(features, self.test_labels, "Test:Resolution", trainer, pl_module, **test_surv)
+    def on_test_epoch_end(self, trainer, pl_module):
+        if self.do_testation is True:
+            # Run callback
+            self.run_callback(_trainer=trainer, 
+                              _pl_module = pl_module,
+                              batch=self.test_batch,
+                              log_name = "Test:Embedding", 
+                              )
 
 # class SaveOutput(Callback, BaseCallback):
 #     """

@@ -20,7 +20,11 @@ experiment:
 
 optim: 
   num_epochs: 1                      # Number of batches. By default we train on each patient one time
-  learning_rate: 1e-4                # AdamW learning rate
+  learning_rate: 1e-4                # AdamW learning rate (initial)
+  scheduler: CAWarmRestarts          # Type of scheduler to use (CAWarmRestarts, CosineAnnealingLR, default: ReduceLROnPlateau)
+  scheduler_periods: 5000            # If scheduler has periodicity (i.e. how long is warmup, how long between warmups in CA)
+  scheduler_warmup: True             # Whether to add warmup to learning rate scheduler 
+  lr_cosine_decay_period: 1e7        # (after warm up) how long to decay learning rate over  
   val_check_interval: 1000           # How many training batches to perform between validation check
   early_stop: False                  # If we should do early stopping  
   early_stop_patience: 5             # How many val_check intervals to continue without seeing an improvement

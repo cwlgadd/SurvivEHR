@@ -7,10 +7,11 @@ from sklearn.manifold import TSNE
 import umap
 import wandb
 import matplotlib.pyplot as plt
-from WaveLSTM.custom_callbacks.base import BaseCallback
+from CPRD.src.models.base_callback import BaseCallback
 from pycox.evaluation import EvalSurv
 import pandas as pd
 import seaborn as sns
+import logging
 # from plotly import offline
 import copy
 
@@ -23,174 +24,161 @@ class PerformanceMetrics(Callback, BaseCallback):
         # Get Mean Absolute Error and Root Mean Square Error
         raise NotImplementedError
 
-    def __init__(self, val_samples=None, test_samples=None, label_dictionary=None):
+    def __init__(self, val_batch=None, test_batch=None):
         Callback.__init__(self)
-        BaseCallback.__init__(self, val_samples=val_samples, test_samples=test_samples, label_dict=label_dictionary)
+        BaseCallback.__init__(self, val_batch=val_batch, test_batch=test_batch)
 
-    def run_callback(self, features, labels, log_name, _trainer, _pl_module, **val_surv):
-        labels = labels.cpu().detach().numpy()
-        t_eval = np.linspace(start=0, stop=_pl_module.time_scale, num=300)
+    def plot_km(self,
+                _trainer,
+                _pl_module,
+                predictions,
+                ks,
+                t_eval,
+                log_name,
+               ):
+        # Put into df (#TODO: vectorise)
+        surv = []
+        for ode_idx, (prediction, k) in enumerate(zip(predictions, ks)):
+            for idx_n in range(10):#prediction.shape[0]):
+                for idx_t in range(prediction.shape[1]):
+                    d = {'survival_prob' : prediction[idx_n, idx_t],
+                         'time' : t_eval[idx_t],
+                         'sample_id' : f"s{idx_n}",
+                         'ODE': ode_idx,
+                         'event': int(k[idx_n])
+                         }
+                    surv.append(d)
+        surv = pd.DataFrame(surv)
 
-        # Push features through the model
-        prediction, _ = _pl_module.predict(features, val_surv["c"], t=t_eval)
-        surv = pd.DataFrame(np.transpose((1 - prediction)), index=t_eval)
+        # Plot KM-curves
+        wandb_images = []
+        # ... plot mean estimator of each ODE group
+        if True:
+            logging.debug("Plotting ODE KM means")
+            fig, ax = plt.subplots(1, 1)
+            fig.suptitle(f"Mean with 95% CI of estimator")
+            sns.lineplot(data=surv, x="time", y="survival_prob", hue="ODE", ax=ax,
+                         estimator="mean")   # style="event",
+            plt.xlim((0, _pl_module.model.surv_layer._time_scale))
+            # plt.ylim((0, 1))
+            plt.xlabel(f"Time ({int(_pl_module.model.surv_layer._time_scale/365)} years)")
+            plt.ylabel(f"Risk of token idx {ode_idx}")
+            wandb_images.append(wandb.Image(fig))
 
-        t = val_surv["t"].cpu().detach().numpy() # / _pl_module.time_scale
-        k = val_surv["k"].cpu().detach().numpy()
-        ev = EvalSurv(surv, t, k, censor_surv='km')
+        # ... plot individual samples of each ODE curve
+        if False:
+            for ode_idx in surv["ODE"].unique():
+                logging.debug(f"Plotting ODE KM for ODE {ode_idx+1}")
+                group_surv = surv[surv["ODE"] == ode_idx]
+                fig, ax = plt.subplots(1, 1)
+                # fig.suptitle(f"label: {cancer}")
+                sns.lineplot(data=group_surv, x="time", y="survival_prob", hue="ODE", units="sample_id",
+                             estimator=None, lw=1, alpha=0.2, ax=ax)
+                plt.xlim((0, _pl_module.model.surv_layer._time_scale))
+                # plt.ylim((0, 1))
+                plt.xlabel(f"Time ({int(_pl_module.model.surv_layer._time_scale/365)} years)")
+                plt.ylabel(f"Risk of token idx {ode_idx}")
+                wandb_images.append(wandb.Image(fig))
 
-        time_grid = np.linspace(start=t.min(), stop=0.9 * _pl_module.time_scale, num=300)
-        ctd = ev.concordance_td()                           # Time-dependent Concordance Index
-        ibs = ev.integrated_brier_score(time_grid)          # Integrated Brier Score
-        inbll = ev.integrated_nbll(time_grid)               # Integrated Negative Binomial LogLikelihood
-        # mae, rmse = self.get_mae_rmse()
+        _trainer.logger.experiment.log({
+            log_name + "_km": wandb_images
+        })
         
+    def run_callback(self,
+                     _trainer,
+                     _pl_module,
+                     batch,
+                     log_name:               str='Embedding',
+                    ):
+        
+        # Push features through the model. The forward method of the model has two modes decided by is_generation. 
+        # ... When true we forward only the last step (which saves compute for appliation of the model), whilst 
+        # ... when false we forward all, but only compute the loss.
+        # ... We need a third option here, as we want to generate, but we want to do this on all steps - i.e., we
+        # ... want to evaluate the metrics across all the sequence (just as we do for the loss)
+
+        # ... is_generation = False ensures we forward all hidden states (not just the last)
+        # ... whilst return_cdf = True ensures we do calculate the CDF surves, as these are not required to train the model
+        all_outputs, _, _ = _pl_module(batch, is_generation=False, return_cdf=True)
+        outputs = all_outputs["surv"]
+        # print(outputs)
+        
+        # the real time deltas 
+        t = outputs["tte_deltas"].cpu().detach().numpy() 
+        # t += np.abs(np.random.normal(size=t.shape))/10
+        # the real outcomes, split as needed across each survival ODE model
+        k = [_k.cpu().detach().numpy() for _k in outputs["k"]]
+        # the predicted KM curve for each survival ODE model
+        predictions = outputs["surv_CDF"] # [_surv_cdf.cpu().detach().numpy() for _surv_cdf in outputs["surv_CDF"]]
+        surv = [pd.DataFrame(np.transpose((1 - _pred)), index=_pl_module.model.surv_layer.t_eval) for _pred in predictions] 
+
+        if True:
+            self.plot_km(_trainer, _pl_module,
+                         predictions,
+                         k,
+                         _pl_module.model.surv_layer.t_eval,
+                         log_name + "_first_ode_model")
+            
+        ctd, ibs, inbll = 0, 0, 0
+        for _idx, (_surv, _k) in enumerate(zip(surv, k)):
+            _k[0] = 1
+            ev = EvalSurv(_surv, t, _k, censor_surv='km')
+    
+            # The tte_deltas are scaled inside the survival head, we calculate the metrics over a normalised time grid
+            time_grid = np.linspace(start=t.min(), stop=0.9 * _pl_module.model.surv_layer._time_scale, num=300)         
+            try:
+                ctd += ev.concordance_td()                           # Time-dependent Concordance Index
+                # ibs += ev.integrated_brier_score(time_grid)          # Integrated Brier Score
+                # inbll += ev.integrated_nbll(time_grid)               # Integrated Negative Binomial LogLikelihood
+                # mae, rmse = self.get_mae_rmse()
+                print("Sucess")
+                print(_surv.shape)
+                print(_surv)
+                print(len(t))
+                print([_ for _ in t])
+                print(len(k))
+                print([_ for _ in _k])
+                print(batch.keys())
+            except:
+                print("Fail")
+                print(_surv.shape)              # (121, 3217)
+                print(_surv)
+                print(len(t))                   # 3217
+                print([_ for _ in t])
+                print(len(_k))                  # 3217
+                print([_ for _ in _k])
+                print(batch.keys())
+                print(batch["ages"].shape)
+                print(batch["ages"])
+                print(batch["attention_mask"])
+                print(torch.sum(batch["attention_mask"]))
+                raise NotImplementedError
+
+        print(f"{ctd}, {ibs}, {inbll}")
+            
+
         # Log all
-        self.log_dict({log_name + "ctd": ctd,
-                       log_name + "ibs": ibs,
-                       log_name + "inbll": inbll,
+        self.log_dict({log_name + "ctd": ctd / (_idx + 1),
+                       log_name + "ibs": ibs / (_idx + 1),
+                       log_name + "inbll": inbll / (_idx + 1),
                        # log_name + "mae": mae,
                        # log_name + "rmse": rmse
                        })
 
     def on_validation_epoch_end(self, trainer, pl_module):
-        if self.val_features is not None:
-            # Send to device
-            features = self.val_features.to(device=pl_module.device)
-            val_surv = {k: v.to(device=pl_module.device, non_blocking=True) for k, v in
-                         self.val_surv.items()}
+        if self.do_validation is True:
             # Run callback
-            self.run_callback(features, self.val_labels, "Val:", trainer, pl_module, **val_surv)
+            self.run_callback(_trainer=trainer, 
+                              _pl_module = pl_module,
+                              batch=self.val_batch,
+                              log_name = "Val:PerformanceMetrics", 
+                              )
 
-    def on_test_epoch_end(self, trainer, pl_module):
-        if self.test_features is not None:
-            # Send to device
-            features = self.test_features.to(device=pl_module.device)
-            test_surv = {k: v.to(device=pl_module.device, non_blocking=True) for k, v in
-                         self.test_surv.items()}  # possibly empty surv dictionary
-            # Run callback
-            self.run_callback(features, self.test_labels, "Test:", trainer, pl_module, **test_surv)
-
-
-class KaplanMeier(Callback, BaseCallback):
-
-    def __init__(self,
-                 val_samples=None, test_samples=None,
-                 label_dictionary=None, group_by=["label"],
-                 error_bars=True, samples=True):
-        """
-        @param: group_by
-            Cancer type: "label"
-            Multi-resolution quantile: "quant"
-        @param: error bars (bool)
-            Whether we make the KM-plot with error bars
-        @param: samples (bool)
-            Whether we make the KM-plot with individual samples
-
-        """
-        Callback.__init__(self)
-        BaseCallback.__init__(self, val_samples=val_samples, test_samples=test_samples, label_dict=label_dictionary)
-        self.group_by = group_by
-        self.error_bars = error_bars
-        self.samples = samples
-
-    def run_callback(self, features, labels, log_name, _trainer, _pl_module, **val_surv):
-        labels = labels.cpu().detach().numpy()
-        if self.label_dict is not None:
-            labels = [self.label_dict[l] for l in labels]
-        t_eval = np.linspace(0, _pl_module.time_scale, 100)
-
-        # Push features through the model
-        prediction, meta_data = _pl_module.predict(features, val_surv["c"], t=t_eval)
-        prediction = 1 - prediction
-
-        # Put into df (#TODO: vectorise)
-        surv = []
-        for idx_n in range(prediction.shape[0]):
-            for idx_t in range(prediction.shape[1]):
-                d = {'survival_prob' : prediction[idx_n, idx_t],
-                     'time' : t_eval[idx_t],
-                     'sample_id' : f"s{idx_n}",
-                     'cancer type': labels[idx_n],
-                     'event': int(val_surv["k"][idx_n].detach().cpu().numpy())
-                     }
-                surv.append(d)
-        surv = pd.DataFrame(surv)
-
-        # Plot KM-curves
-        wandb_images = []
-        if "label" in self.group_by:
-            if self.error_bars:
-                fig, ax = plt.subplots(1, 1)
-                fig.suptitle(f"Mean with 95% CI of estimator")
-                sns.lineplot(data=surv, x="time", y="survival_prob", hue="cancer type", ax=ax,
-                             estimator="mean")   # style="event",
-                plt.xlim((0, _pl_module.time_scale))
-                plt.ylim((0, 1))
-                plt.xlabel("Time")
-                plt.ylabel("Probability of survival")
-                wandb_images.append(wandb.Image(fig))
-            if self.samples:
-                for cancer in surv["cancer type"].unique():
-                    group_surv = surv[surv["cancer type"] == cancer]
-                    fig, ax = plt.subplots(1, 1)
-                    # fig.suptitle(f"label: {cancer}")
-                    sns.lineplot(data=group_surv, x="time", y="survival_prob", hue="cancer type", units="sample_id",
-                                 estimator=None, lw=1, alpha=0.2, ax=ax)
-                    plt.xlim((0, _pl_module.time_scale))
-                    plt.ylim((0, 1))
-                    plt.xlabel("Time")
-                    plt.ylabel("Probability of survival")
-                    wandb_images.append(wandb.Image(fig))
-
-        _trainer.logger.experiment.log({
-            log_name + "_label": wandb_images
-        })
-
-        if  "quant" in self.group_by:
-                pass
-
-
-
-            # for lbl in np.unique(labels):
-            #     idx_lbl = np.where(labels == lbl)[0]
-            #     for k, idx_lbl_k in enumerate([np.where(_k[idx_lbl] == 0)[0], np.where(_k[idx_lbl] != 0)[0]]):
-            #         idx_lbl_k = idx_lbl_k[:40] if len(idx_lbl_k) > 40 else idx_lbl_k
-            #         # idx_lbl = idx_lbl[:5] if len(idx_lbl) > 5 else idx_lbl
-            #         # for i in range(len(idx_lbl)):
-            #         if len(idx_lbl_k) > 0:
-            #             ev[idx_lbl_k].plot_surv()
-            #             plt.title(
-            #                 f"Cancer {cancer_types[lbl]} and {'event' if k == 1 else 'censored'}")  # at normalised time {_t[i]:.2f},
-            #             plt.ylim((0, 1))
-        # elif self.group_by == "quant":
-        #     pass
-        # else:
-        #     raise NotImplementedError
-
-
-        # _trainer.logger.experiment.log({
-        #     log_name: wandb_images
-        # })
-
-        plt.close()
-
-    def on_validation_epoch_end(self, trainer, pl_module):
-        if self.val_features is not None:
-            # Send to device
-            features = self.val_features.to(device=pl_module.device)
-            val_surv = {k: v.to(device=pl_module.device, non_blocking=True) for k, v in
-                         self.val_surv.items()}
-            # Run callback
-            self.run_callback(features, self.val_labels, f"Val:KM", trainer, pl_module,
-                              **val_surv)
-
-    def on_test_epoch_end(self, trainer, pl_module):
-        if self.test_features is not None:
-            # Send to device
-            features = self.test_features.to(device=pl_module.device)
-            test_surv = {k: v.to(device=pl_module.device, non_blocking=True) for k, v in
-                         self.test_surv.items()}  # possibly empty surv dictionary
-            # Run callback
-            self.run_callback(features, self.test_labels, f"Test:KM", trainer, pl_module,
-                              **test_surv)
+    # def on_test_epoch_end(self, trainer, pl_module):
+    #     if self.test_features is not None:
+    #         # Send to device
+    #         features = self.test_features.to(device=pl_module.device)
+    #         test_surv = {k: v.to(device=pl_module.device, non_blocking=True) for k, v in
+    #                      self.test_surv.items()}  # possibly empty surv dictionary
+    #         # Run callback
+    #         self.run_callback(features, self.test_labels, "Test:", trainer, pl_module, **test_surv)

@@ -6,12 +6,10 @@ import logging
 from CPRD.data.foundational_loader import FoundationalDataModule
 from CPRD.examples.modelling.SurvStreamGPT.setup_experiment import setup_survival_experiment, SurvivalExperiment
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("wandb")
-
 @hydra.main(version_base=None, config_path="confs", config_name="default")
 def run(cfg : DictConfig):
 
+    logging.basicConfig(level=logging.DEBUG)
     logging.info(f"Running {cfg.head.SurvLayer} experiment on {os.cpu_count()} CPUs and {torch.cuda.device_count()} GPUs")
 
     # Global settings

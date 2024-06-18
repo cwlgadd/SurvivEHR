@@ -51,7 +51,8 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                 values:                 torch.tensor,
                 covariates:             Optional[torch.tensor] = None,
                 attention_mask:         Optional[torch.tensor] = None,
-                is_generation:          bool = False
+                is_generation:          bool = False,
+                return_cdf:             bool = False,
                 ):
         r"""
         ARGS:
@@ -73,6 +74,9 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                 
             is_generation:
                 Whether GPT model is in generation or training mode
+
+            return_cdf:
+                Whether (when is_generation=False) to also return the survival predicted CDF
 
 
         Note 1:
@@ -97,7 +101,8 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                                                       target_tokens=tokens,
                                                       target_ages=ages, 
                                                       attention_mask=attention_mask,
-                                                      is_generation=is_generation)
+                                                      is_generation=is_generation,
+                                                      return_cdf=return_cdf)
             
         # regression head (values of next token if applicable)
         values_dist, loss_values = self.value_layer.predict(hidden_states,
@@ -116,6 +121,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
             # **{f"losses_desurv_{idx}": desurv_loss for idx, desurv_loss in enumerate(losses_desurv)},
         else:
             loss = None
+            loss_desurv = None
 
         outputs = {"surv": surv,
                    "values_dist": values_dist}

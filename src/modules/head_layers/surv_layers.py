@@ -20,9 +20,9 @@ class ODESurvSingleLayer(nn.Module):
                        for _ in range(num_risks)]             # do not include pad token as an event 
 
         # this is the maximum period considered in generation, and also used as normalising constant in DeSurv
-        self._time_scale = 365*5                               
+        self._time_scale = 365*10
         # the time grid which we generate over
-        self.t_eval = np.linspace(0, self._time_scale, self._time_scale + 1)    
+        self.t_eval = np.linspace(0, self._time_scale,  int(self._time_scale*12/365) + 1)    # eval at roughly 1 month increments for 10 years
         self.device = device
 
         logging.info(f"Using Single-Risk DeSurvival head. This module predicts a separate survival curve for each possible future event")
@@ -35,7 +35,8 @@ class ODESurvSingleLayer(nn.Module):
                 target_tokens: Optional[torch.tensor] = None,   # shape: torch.Size([bsz, seq_len])
                 target_ages: Optional[torch.tensor] = None,     # shape: torch.Size([bsz, seq_len])        
                 attention_mask: Optional[torch.tensor] = None,  # shape: torch.Size([bsz, seq_len])
-                is_generation: bool = False
+                is_generation: bool = False,
+                return_cdf: bool = False
                 ):
         r"""
         """
@@ -78,18 +79,18 @@ class ODESurvSingleLayer(nn.Module):
 
             # At this point we have a 1vAll single-risk for each type of event, where tte_deltas are the times to each next
             #  event, whether this occurred or not within this single-risk model. k indicates whether event occurred, where
-            #  1=yes, and 0=another event occurred. There is no support for a null event (such as GP visit with no 
-            #  diagnosis/measurement/test. I.e. k=0 for all single-risk models, though this would be informative if available.         
-
+            #  1=yes, and 0=another event occurred. 
+            
             # Calculate losses, excluding masked values. Each sr_ode returns the sum over observed events
             #    to be consistent with other heads, we scale by number of observed values to obtain per SR-model mean
             #    and we sum across the mixture of survival ODEs
             surv_losses = [_sr_ode.loss(in_hidden_state, tte_deltas, _k) / _k.shape[0] for _k, _sr_ode in zip(k, self.sr_ode)]           
             # obtained a list of losses, for each event type
-            # surv_losses= torch.stack(surv_losses, dim=0)
 
             # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
-            surv_CDF = None
+            surv = {"k": k,
+                    "tte_deltas": tte_deltas,
+                    "surv_CDF": self._predict_cdf(in_hidden_state) if return_cdf else None}
 
             # TODO: NEEDED HERE?
             # Mask and sum across sequence (so log likelihood factorises as a product along the sequence)
@@ -99,35 +100,38 @@ class ODESurvSingleLayer(nn.Module):
             # tte_ll_per_patient = (log_prob * tte_obs_mask.float()).sum(-1) / (tte_obs_mask.float().sum(-1) + 1e-5)  # shape: torch.Size([bsz])
         
         else:        
-            # The normalised grid over which to predict
-            # t_eval = np.linspace(start=0, stop=self._normalising_scaling_constant, num=300)
-            t_test = torch.tensor(np.concatenate([self.t_eval] * hidden_states.shape[0], 0), dtype=torch.float32, device=self.device)
-            t_test /= self._time_scale
-                
             # inference-time mini-optimization: only forward the head on the very last position
             in_hidden_state = hidden_states[:, -1, :]
-            H_test = in_hidden_state.repeat_interleave(self.t_eval.size, 0).to(self.device, torch.float32)
-
-            # Batched predict: Cannot make all predictions at once due to memory constraints
-            preds = []
-            for _k, _sr_ode in enumerate(self.sr_ode):
-                    
-                pred_bsz = 16382                                                        # Predict in batches
-                pred = []
-                for H_test_batched, t_test_batched in zip(torch.split(H_test, pred_bsz), torch.split(t_test, pred_bsz)):
-                    pred.append(_sr_ode(H_test_batched, t_test_batched))
-                pred = torch.concat(pred)
-                preds.append(pred.reshape((hidden_states.shape[0], self.t_eval.size)).cpu().detach().numpy())
-
-            # inference-time mini-optimization: only forward the head on the very last position
-            # tte_dist = self(hidden_states[:, [-1], :])       # Exponential(rate: torch.Size([bsz, 1]))
-                                                             #    note: using list [-1] to preserve the seq_len dim
-            # tte_dist = tte_dist.rsample() * self._normalising_scaling_constant
             surv_losses = None
-            surv_CDF = preds
+            surv = {"k": None,
+                    "tte_deltas": None,
+                    "surv_CDF": self._predict_cdf(in_hidden_state)}
 
-        return surv_CDF, surv_losses
+        return surv, surv_losses
 
+    def _predict_cdf(self,
+                    hidden_states: torch.tensor,                    # shape: torch.Size([*, n_embd])
+                   ):
+        """
+        Predict survival curves from the hidden states
+        """
+        # The normalised grid over which to predict
+        t_test = torch.tensor(np.concatenate([self.t_eval] * hidden_states.shape[0], 0), dtype=torch.float32, device=self.device)
+        t_test /= self._time_scale
+        H_test = hidden_states.repeat_interleave(self.t_eval.size, 0).to(self.device, torch.float32)
+
+        # Batched predict: Cannot make all predictions at once due to memory constraints
+        preds = []
+        for _k, _sr_ode in enumerate(self.sr_ode):
+            pred_bsz = 256                                                        # Predict in batches of pred_bsz
+            pred = []
+            for H_test_batched, t_test_batched in zip(torch.split(H_test, pred_bsz), torch.split(t_test, pred_bsz)):
+                pred.append(_sr_ode(H_test_batched, t_test_batched))
+            pred = torch.concat(pred)
+            preds.append(pred.reshape((hidden_states.shape[0], self.t_eval.size)).cpu().detach().numpy())
+            
+        return preds
+        
 
     def sample_surv(self, surv):
 
@@ -152,27 +156,6 @@ class ODESurvSingleLayer(nn.Module):
         next_token_index = next_index.reshape(-1, 1).to(self.device) + 1   # add one as the survival curves do not include the PAD token, which has token index 0
         
         return next_token_index, delta_age
-        # # Randomly sample between 0 and the maximum CDF across all events
-        # rsample = np.random.uniform(0, np.max([_s[0, -1] for _s in surv]))
-        # # rsample = np.max([_s[0, -1] for _s in surv])
-        # logging.debug(f"single-risk generation inverse tranform random sample: {rsample}")
-        
-        # # Get all of the events which have their max cdf (within considered time region) < rsample
-        # probs = torch.FloatTensor([0 if rsample > _s[0, -1] else 1 for _s in surv])
-        # probs /= torch.sum(probs)
-        # # print(probs)
-        # # print(np.where(probs>0))
-
-        # # Sample which token occurs next, out of possible tokens. Add one as we excluded the PAD token
-        # token_next = torch.multinomial(probs, num_samples=1).reshape(-1, 1).to(self.device) + 1  # (B, 1)
-
-        # # age
-        # time_index = np.sum(surv[token_next][0, :] <= rsample) - 1
-        # delta_age = self.t_eval[time_index]
-
-        # # print(f"sampled token {token_next} ({token_next.shape}) to occur in {delta_age} days")
-        
-        # return token_next, delta_age
 
 
 class ODESurvCompetingRiskLayer(nn.Module):
@@ -203,7 +186,8 @@ class ODESurvCompetingRiskLayer(nn.Module):
                 target_tokens: Optional[torch.tensor] = None,   # shape: torch.Size([bsz, seq_len])
                 target_ages: Optional[torch.tensor] = None,     # shape: torch.Size([bsz, seq_len])        
                 attention_mask: Optional[torch.tensor] = None,  # shape: torch.Size([bsz, seq_len])
-                is_generation: bool = False
+                is_generation: bool = False,
+                return_cdf: bool = False
                 ):
         r"""
         """
@@ -254,34 +238,44 @@ class ODESurvCompetingRiskLayer(nn.Module):
             surv_loss = [self.sr_ode.loss(in_hidden_state, tte_deltas, k) / k.shape[0]]
 
             # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
-            surv_CDF = None
+            surv = {"k": [k],
+                    "tte_deltas": tte_deltas,
+                    "surv_CDF": self._predict_cdf(in_hidden_state) if return_cdf else None
+                   }
 
         else:
-            # The normalised grid over which to predict
-            # t_eval = np.linspace(start=0, stop=self._normalising_scaling_constant, num=300)
-            t_test = torch.tensor(np.concatenate([self.t_eval] * hidden_states.shape[0], 0), dtype=torch.float32, device=self.device)
-            t_test /= self._time_scale
-                
             # inference-time mini-optimization: only forward the head on the very last position
             in_hidden_state = hidden_states[:, -1, :]
-            H_test = in_hidden_state.repeat_interleave(self.t_eval.size, 0).to(self.device, torch.float32)
+            surv_losses = None
+            surv = {"k": None,
+                    "tte_deltas": None,
+                    "surv_CDF": [self._predict_cdf(in_hidden_state)]
+                   }
 
-            # Batched predict: Cannot make all predictions at once due to memory constraints
-            pred_bsz = 16382                                                        # Predict in batches
-            pred = []
-            for H_test_batched, t_test_batched in zip(torch.split(H_test, pred_bsz), torch.split(t_test, pred_bsz)):
-                pred.append(self.sr_ode(H_test_batched, t_test_batched)[0])
-            pred = torch.concat(pred)
-            # print(pred.shape)
-            # print(f"hidden_states {hidden_states.shape}")
-            # print(f"t_eval {self.t_eval.size}")
-            pred = pred.reshape((hidden_states.shape[0], self.t_eval.size, -1)).cpu().detach().numpy()
-            preds = [pred[:, :, _i] for _i in range(pred.shape[-1])]
+        return surv, surv_loss
 
-            surv_loss = None
-            surv_CDF = preds
+    def _predict_cdf(self,
+                    hidden_states: torch.tensor,                    # shape: torch.Size([*, n_embd])
+                   ):
+        """
+        Predict survival curves from the hidden states
+        """
+        # The normalised grid over which to predict
+        t_test = torch.tensor(np.concatenate([self.t_eval] * hidden_states.shape[0], 0), dtype=torch.float32, device=self.device)
+        t_test /= self._time_scale
+        H_test = hidden_states.repeat_interleave(self.t_eval.size, 0).to(self.device, torch.float32)
 
-        return surv_CDF, surv_loss
+        # Batched predict: Cannot make all predictions at once due to memory constraints
+        pred_bsz = 256                                                        # Predict in batches
+        pred = []
+        for H_test_batched, t_test_batched in zip(torch.split(H_test, pred_bsz), torch.split(t_test, pred_bsz)):
+            pred.append(self.sr_ode(H_test_batched, t_test_batched)[0])
+        pred = torch.concat(pred)
+
+        pred = pred.reshape((hidden_states.shape[0], self.t_eval.size, -1)).cpu().detach().numpy()
+        preds = [pred[:, :, _i] for _i in range(pred.shape[-1])]
+
+        return preds
 
     def sample_surv(self, surv):
         """ Generate samples from survival curves using inverse sampling
