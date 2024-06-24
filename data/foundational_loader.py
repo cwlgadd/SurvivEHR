@@ -46,6 +46,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
     
     def __init__(self, 
                  path_to_db: str,
+                 path_to_ds: str,
                  load: bool,
                  tokenizer: str = "tabular",
                  batch_size: int = 64,
@@ -57,6 +58,10 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         
         ARGS:
             path_to_db:
+                Complete path to the SQL database folder
+
+            path_to_ds:
+                Complete path to the pre-processed dataset folder, either to load from or save to
             
             load:  
                 True: load directly from previously processed parquet files; or False: create the parquet files again and save to `path`.  
@@ -69,7 +74,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
 
             overwrite_meta_information:
                 If you want to overwrite the meta_information, for example using quantile bounds for some measurements, then there is no need
-                to pre-process it again.
+                to pre-process it again. In this case, pass in the path to an existing meta_information pickled file. 
 
         **KWARGS 
             freq_threshold:
@@ -103,19 +108,19 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         # Get the DL friendly representation, either by loading or building from scratch.
         if load is False:
             polars_dataset = PolarsDataset(path_to_db=path_to_db)
-            polars_dataset.fit(path=path_to_db + "polars/", 
+            polars_dataset.fit(path=path_to_ds,
                                overwrite_meta_information=overwrite_meta_information,
                                **kwargs)
 
         # Load meta information
-        meta_path = path_to_db + "polars/meta_information.pickle" if overwrite_meta_information is None else overwrite_meta_information
+        meta_path = path_to_ds + "meta_information.pickle" if overwrite_meta_information is None else overwrite_meta_information
         with open(meta_path, 'rb') as f:
             self.meta_information = pickle.load(f)
             logging.info(f"Using meta information from {meta_path}")
         # Load the file_row_count_dicts for each split
         file_row_count_dicts = {}
         for _key in ["train", "test", "val"]:
-            file_row_path = path_to_db + f"polars/file_row_count_dict_{_key}.pickle"
+            file_row_path = path_to_ds + f"file_row_count_dict_{_key}.pickle"
             with open(file_row_path, 'rb') as f:
                 file_row_count_dicts[_key] = pickle.load(f)
                 logging.info(f"Using {_key} file-row count dictionary from {file_row_path}")
@@ -127,11 +132,10 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         logging.info(f"Using {tokenizer} tokenizer, created from meta information and containing {self.tokenizer.vocab_size} tokens")
         
         # Train/test/validation GenerativeDatasets
-        parquet_path = path_to_db + "polars/"
         dataset_args = {"tokenizer": self.tokenizer, "meta_information": self.meta_information}
-        self.train_set = FoundationalDataset(parquet_path, "train", **dataset_args, file_row_count_dict=file_row_count_dicts["train"], **kwargs)
-        self.test_set = FoundationalDataset(parquet_path, "test", **dataset_args, file_row_count_dict=file_row_count_dicts["test"], **kwargs)
-        self.val_set = FoundationalDataset(parquet_path, "val", **dataset_args, file_row_count_dict=file_row_count_dicts["val"], **kwargs)
+        self.train_set = FoundationalDataset(path_to_ds, "train", **dataset_args, file_row_count_dict=file_row_count_dicts["train"], **kwargs)
+        self.test_set = FoundationalDataset(path_to_ds, "test", **dataset_args, file_row_count_dict=file_row_count_dicts["test"], **kwargs)
+        self.val_set = FoundationalDataset(path_to_ds, "val", **dataset_args, file_row_count_dict=file_row_count_dicts["val"], **kwargs)
 
     def standardise(self, event, value):
         # Standardise a single value and event

@@ -62,7 +62,7 @@ class PolarsDataset:
                 Whether to include measurements in the meta_information, and in the parquet dataset
             overwrite_meta_information:
                 If you want to overwrite the meta_information, for example using quantile bounds for some measurements, then there is no need
-                to pre-process it again.
+                to pre-process it again. In this case, pass in the path to an existing meta_information pickled file. 
 
         **KWARGS:
             drop_empty_dynamic: bool = True,
@@ -103,10 +103,10 @@ class PolarsDataset:
             # for debugging just create dataset on only first
             # split_ids = split_ids[:1]
             
-            path: pathlib.Path = self.save_path + f"split={split_name}"    # /{chunk_name}.parquet
+            path = pathlib.Path(self.save_path + f"split={split_name}")    # /{chunk_name}.parquet
 
             # Check directory is currently empty
-            assert not any(path.iterdir())
+            assert not any(path.iterdir()), [_ for _ in path.iterdir()]
             
             logging.info(f"Writing {split_name} split into a DL friendly .parquet dataset.")
             self._write_parquet_dl_dataset(save_path=path, 
@@ -194,8 +194,7 @@ class PolarsDataset:
         return 
 
     def _get_file_row_counts(self, parquet_path):
-
-        # Get all files at specified path, and calculate how many samples are in each file for faster reading during __getitem__
+        # Get all files at specified path, and extract from meta data how many samples are in each file. This allows for for faster reading during calls to dataset
         file_row_counts = {}
         desc = "Getting file row counts. This allows the creation of an index to file map, increasing read efficiency"
         for file in tqdm(pathlib.Path(parquet_path).rglob('*.parquet'), desc=desc):

@@ -18,7 +18,8 @@ def run(cfg : DictConfig):
     os.environ["HYDRA_FULL_ERROR"] = "1"
 
     # make dataloader
-    dm = FoundationalDataModule(path_to_db="/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/",
+    dm = FoundationalDataModule(path_to_db=cfg.data.path_to_db,
+                                path_to_ds=cfg.data.path_to_ds,
                                 load=True,
                                 tokenizer="tabular",
                                 batch_size=cfg.data.batch_size,
