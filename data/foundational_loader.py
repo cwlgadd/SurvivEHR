@@ -79,8 +79,8 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         **KWARGS 
             freq_threshold:
                 Value between 0 and 1, controlling at what level of frequency rare tokens are mapped to the UNK token. Used to reduce vocabulary size
-            inclusion_conditions:
-                The set of inclusion conditions to query against the collector. For example, only include patients from ["COUNTRY = 'E'"]
+            practice_inclusion_conditions:
+                The set of inclusion conditions to query against the collector. For example, only include patients from practices where ["COUNTRY = 'E'"]
             include_static:
                 Whether to include static information in the meta_information
             include_diagnoses:

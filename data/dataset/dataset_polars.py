@@ -30,12 +30,12 @@ class PolarsDataset:
         self.collector.connect()
         
     def fit(self,
-            path:                       str,
-            inclusion_conditions:       Optional[list[str]] = None,
-            include_static:             bool = True,
-            include_diagnoses:          bool = True,
-            include_measurements:       bool = True,
-            overwrite_meta_information: Optional[str] = None,                 
+            path:                                str,
+            practice_inclusion_conditions:       Optional[list[str]] = None,
+            include_static:                      bool = True,
+            include_diagnoses:                   bool = True,
+            include_measurements:                bool = True,
+            overwrite_meta_information:          Optional[str] = None,                 
             **kwargs
            ):
         r"""
@@ -52,8 +52,8 @@ class PolarsDataset:
                 Full path to folder where parquet files containing the Polars dataset, meta information, and file-look up pickles
             
         KWARGS:
-            inclusion_conditions:
-                The set of inclusion conditions to query against the collector. For example, only include patients from ["COUNTRY = 'E'"]
+            practice_inclusion_conditions:
+                The set of practice inclusion conditions to query against the collector. For example, only include patients from practices where ["COUNTRY = 'E'"]
             include_static:
                 Whether to include static information in the meta_information
             include_diagnoses:
@@ -81,7 +81,7 @@ class PolarsDataset:
         logging.info(f"Building Polars datasets and saving to {path}")     
     
         # Train, test, validation split
-        self.train_practice_ids, self.val_practice_ids, self.test_practice_ids = self._train_test_val_split(inclusion_conditions=inclusion_conditions)
+        self.train_practice_ids, self.val_practice_ids, self.test_practice_ids = self._train_test_val_split(practice_inclusion_conditions=practice_inclusion_conditions)
 
         # Collect meta information. 
         #    These are pre-calculations for torch loader len(), tokenization, and optionally for standardisation        
@@ -120,16 +120,16 @@ class PolarsDataset:
             with open(self.save_path + f'file_row_count_dict_{split_name}.pickle', 'wb') as handle:
                 pickle.dump(hashmap, handle, protocol=pickle.HIGHEST_PROTOCOL)
             
-    def _train_test_val_split(self, inclusion_conditions=None):
+    def _train_test_val_split(self, practice_inclusion_conditions=None):
         
         # get a list of practice IDs which are used to chunk the database
         #    We can optionally subset which practice IDs should be included in the study based on some criteria.
         #    For example, asserting that we only want practices in England can be achieved by adding an inclusion
         #    that applies to the static table
-        logging.info(f"Chunking by unique practice ID with {'no' if inclusion_conditions is None else inclusion_conditions} inclusion conditions")
+        logging.info(f"Chunking by unique practice ID with {'no' if practice_inclusion_conditions is None else practice_inclusion_conditions} practice inclusion conditions")
         practice_ids = self.collector._extract_distinct(table_names=["static_table"],
                                                         identifier_column="PRACTICE_ID",
-                                                        inclusion_conditions=inclusion_conditions
+                                                        inclusion_conditions=practice_inclusion_conditions
                                                        )
         
         # Create train/test/val splits, each is list of practice_id
@@ -154,16 +154,17 @@ class PolarsDataset:
         
         """
         
-        # Create the generator which we will chunk over
+        # Create the generator, which returns the table contents of qualifying practices one at a time
         # Can process entire list of IDs at once by changing to `distinct_values=[split_ids]`
         logging.debug(f"Generating over practices IDs")
-        generator = self.collector._generate_lazy_by_distinct(distinct_values=split_ids,                            
-                                                              identifier_column="PRACTICE_ID",
-                                                              include_diagnoses=include_diagnoses,
-                                                              include_measurements=include_measurements)
+        practice_generator = self.collector._generate_lazy_by_distinct(distinct_values=split_ids,                            
+                                                                       identifier_column="PRACTICE_ID",
+                                                                       include_diagnoses=include_diagnoses,
+                                                                       include_measurements=include_measurements,
+                                                                       )
 
         total_samples = 0
-        for _idx, (chunk_name, lazy_table_frames_dict) in enumerate(tqdm(generator, total=len(split_ids))):
+        for _idx, (chunk_name, lazy_table_frames_dict) in enumerate(tqdm(practice_generator, total=len(split_ids))):
             
             # Merge the lazy polars tables provided by the generator into one lazy polars frame
             lazy_batch = self.collector._collate_lazy_tables(lazy_table_frames_dict, **kwargs)
@@ -173,7 +174,7 @@ class PolarsDataset:
                 # TODO: make directories if they dont already exist
 
                 # include row count so we can filter when reading from file
-                df = lazy_batch.collect().with_row_count(offset=total_samples).to_pandas()   
+                df = lazy_batch.collect().with_row_count(offset=total_samples).to_pandas()
 
                 # convert row count to a lower cardinality bin which can be used in the hive partitioning for faster reading
                 # ... the smaller the window the more files created, storage space used, and the longer this takes to run, but 

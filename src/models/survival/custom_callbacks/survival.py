@@ -12,7 +12,6 @@ from pycox.evaluation import EvalSurv
 import pandas as pd
 import seaborn as sns
 import logging
-# from plotly import offline
 import copy
 
 class PerformanceMetrics(Callback, BaseCallback):

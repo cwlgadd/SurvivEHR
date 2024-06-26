@@ -2,7 +2,7 @@ import sqlite3
 import polars as pl
 import pandas as pd
 import numpy as np
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, Callable
 import logging
 from CPRD.data.database.build_static_db import Static
 from CPRD.data.database.build_diagnosis_db import Diagnoses
@@ -38,17 +38,18 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                           table_names:          list[str],
                           identifier_column:    str,
                           inclusion_conditions: Optional[list] = None,
+                          combine_approach:     str = "AND"
                           ) -> list[str]:
         """
         Get a list of distinct `identifier_column' values, contained in a collection of tables
         """
-        # Initialize an empty set to store unique prefixes
-        unique_prefixes = set()
+        # Initialize an empty set to store distinct values
+        unique_distinct = set()
         
         # Iterate over each table
         for idx_table, table in enumerate(table_names):
             
-            # Construct the SQL query to extract unique prefixes for each table
+            # Construct the SQL query to extract distinct `identifier_column` entries for each specified table
             query = f"SELECT DISTINCT {identifier_column} FROM {table}"
 
             # If we want to add a condition
@@ -60,11 +61,21 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
             logging.debug(f"Query: {query[:100] if len(query) > 100 else query}")
             self.cursor.execute(query)
             
-            # Fetch unique prefixes for the current table and update the set
-            prefixes = self.cursor.fetchall()
-            unique_prefixes.update([prefix[0] for prefix in prefixes])
+            # Fetch distinct query values for the current table
+            new_distinct_values = [_dv[0] for _dv in self.cursor.fetchall()]
 
-        return list(unique_prefixes)
+            # and update the set
+            if combine_approach == "OR":
+                # For example, can condition static table to get `identifier_column` values
+                #      based in England  OR  with condition X
+                unique_distinct.update(new_distinct_values)
+            elif combine_approach == "AND":
+                #      based in England  AND  with condition X
+                unique_distinct = unique_distinct & set(new_distinct_values) if idx_table != 0 else set(new_distinct_values)
+            else:
+                raise NotImplementedError
+
+        return list(unique_distinct)
 
     def _extract_AGG(self,
                      table_name:          str,
@@ -134,10 +145,20 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                                    conditions: Optional[list[str]] = None
                                    ) -> list[pl.LazyFrame]:
         """
-        practice_ids: is a list of practice identifiers that prefix the practice_patient_id column in every table
-        table_names:  is a list of table names from which you want to fetch data.
-        columns:      is a list of column names you want to retrieve from each table.
-        conditions:   is a list of conditions to filter the data, where each condition applies to a specific table.
+        ARGS:
+            distinct_values:
+                    is a list of distinct values on which to partition the identifier_column
+            identifier_column: 
+                    the identifier column to use for partioning (either PRACTICE_ID or PATIENT_ID. Default: PRACTICE_ID).
+
+        KWARGS:
+            include_diagnoses:      
+                    Whether to include diagnoses table values in the list of returned lazy frames
+            include_measurements:
+                    Whether to include measurement table values in the list of returned lazy frames
+            conditions:  
+                    is a list of conditions to filter the data (removing rows from sql tables), where each condition applies to a specific table. 
+                    Note, this is probably not required, as this does not remove entire patients, nor practices, based on criteria - but singular events.
         """
         
         table_names = ["static_table"]
@@ -155,17 +176,14 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                 # Construct query for fetching rows with the current prefix for the current table
                 if type(distinct_value) == list:
                     sep_list = ",".join([f"'{dv}'" for dv in distinct_value])
-                    chunk_size = len(sep_list)
-                    query = f"SELECT * FROM {table} WHERE {identifier_column} IN ({sep_list});"  # LIMIT {chunk_size}
+                    query = f"SELECT * FROM {table} WHERE {identifier_column} IN ({sep_list});"
                     
                 else:
-                    query = f"SELECT * FROM {table} WHERE {identifier_column} = '{distinct_value}'"  # LIMIT {chunk_size}
-                    chunk_size = 1 
+                    query = f"SELECT * FROM {table} WHERE {identifier_column} = '{distinct_value}'"
                 
                 if conditions is not None:
                     if conditions[idx_table] is not None:
-                        #  conditions for each table, e.g. a query asking for only certain diagnoses or measurements to be 
-                        #  included in the generator
+                        #  conditions for each table, e.g. a query asking for only certain diagnoses or measurements to be included in the generator
                         query += f"AND {conditions[idx_table]}"
                                   
                 logging.debug(f"Query: {query[:120] if len(query) > 120 else query}")
@@ -177,13 +195,15 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
             yield distinct_value, rows_by_table
                 
     def _collate_lazy_tables(self,
-                             lazy_frames: pl.LazyFrame,
-                             drop_empty_dynamic: bool = True,
-                             drop_missing_data: bool = True,
-                             exclude_pre_index_age: bool = False,
+                             lazy_frames,   
+                             study_inclusion_method              = None,
+                             drop_empty_dynamic:            bool = True,
+                             drop_missing_data:             bool = True,
+                             **kwargs
                              ) -> pl.LazyFrame:
         """
-
+        Merge each lazy frame from each, applying optional conditions.
+        
         ┌───────────┬──────────┬────────────┬────────────┬───┬───────────┬──────────┬──────────┬───────────┐
         │ PRACTICE_ ┆ PATIENT_ ┆ VALUE      ┆ EVENT      ┆ … ┆ HEALTH_AU ┆ INDEX_DA ┆ START_DA ┆ END_DATE  │
         │ ID        ┆ ID       ┆ ---        ┆ ---        ┆   ┆ TH        ┆ TE       ┆ TE       ┆ ---       │
@@ -216,47 +236,35 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         Notes:  The collection is applied after this function
                 We do not sort within the lazy operation, so the row order will not be deterministic
         """
-        # Static lazy frame
-        lazy_static = lazy_frames["lazy_static_table"]
-        # print(lazy_static.collect().head())
-
-        # Diagnosis lazy frame, optional
-        lazy_diagnosis = lazy_frames["lazy_diagnosis_table"] if "lazy_diagnosis_table" in lazy_frames.keys() else None
-        # print(lazy_diagnosis.collect().head())
-        # print(lazy_diagnosis.collect().tail())
-
-        # Measurement lazy frames, optional
-        measurement_keys = [key for key in lazy_frames if key.startswith("lazy_measurement_")]
-        measurement_lazy_frames = [lazy_frames[key] for key in measurement_keys]
-        lazy_measurement = pl.concat(measurement_lazy_frames)
-        # print(lazy_measurement.collect().head())
         
-        #################
-        # STATIC EVENTS #
-        #################
-        # Convert all dates to datetime format
+        ##############################
+        # GET THE LAZY POLARS FRAMES #
+        ##############################
+        
+        # Static lazy frame, converting all dates to datetime format
         lazy_static = (
-            lazy_static
+            lazy_frames["lazy_static_table"]
             .with_columns(pl.col("INDEX_DATE").str.to_datetime("%Y-%m-%d"))
             .with_columns(pl.col("START_DATE").str.to_datetime("%Y-%m-%d"))
             .with_columns(pl.col("END_DATE").str.to_datetime("%Y-%m-%d"))
-            .with_columns(pl.col("YEAR_OF_BIRTH").str.to_datetime("%Y-%m-%d"))                
+            .with_columns(pl.col("YEAR_OF_BIRTH").str.to_datetime("%Y-%m-%d"))  
         )
-        
-        ##################
-        # DYNAMIC EVENTS #
-        ##################
-        # Optionally drop missing measurements
-        if drop_missing_data:
-            if lazy_measurement is not None:
-                logging.debug("Dropping missing measurements")
-                lazy_measurement = lazy_measurement.drop_nulls()
-    
-        # Optionally drop events occurring before indexing
-        if exclude_pre_index_age:
-            logging.debug("Removing observations before index age")
-            raise NotImplementedError
 
+        # Diagnosis lazy frame
+        lazy_diagnosis = lazy_frames["lazy_diagnosis_table"] if "lazy_diagnosis_table" in lazy_frames.keys() else None
+
+        # Measurement lazy frames
+        measurement_keys = [key for key in lazy_frames if key.startswith("lazy_measurement_")]
+        measurement_lazy_frames = [lazy_frames[key] for key in measurement_keys]
+        lazy_measurement = pl.concat(measurement_lazy_frames) if len(measurement_lazy_frames) > 0 else None
+        #    and optionally drop missing measurements
+        if drop_missing_data and measurement_lazy_frames is not None:
+            logging.debug("Dropping missing measurements")
+            lazy_measurement = lazy_measurement.drop_nulls()
+
+        #####################################
+        # MERGE SOURCES OF TIME_SERIES DATA #
+        #####################################
         # Merge all frames containing time series data
         if lazy_diagnosis is not None and lazy_measurement is not None:
             # Stacking the frames vertically. Value column in diagnostic is filled with null
@@ -269,33 +277,46 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         else:
             raise NotImplementedError
 
-        # print(lazy_static.head().collect())
-        # print(lazy_combined_frame.head().collect())
+        # Dynamic lazy frame, converting all dates to datetime format
+        lazy_combined_frame = (
+            lazy_combined_frame
+            .with_columns(pl.col("DATE").str.to_datetime("%Y-%m-%d"))
+        )
         
+        #################
+        # FILTER FRAMES #
+        #################
+        
+        if study_inclusion_method is not None:
+            lazy_static, lazy_combined_frame = study_inclusion_method(lazy_static, lazy_combined_frame)
+
         # Convert event date to time since birth by linking the dynamic diagnosis and measurement frames to the static one
         # Subtract the dates and create a new column for the result            
         lazy_combined_frame = (
             lazy_combined_frame
-            .with_columns(pl.col("DATE").str.to_datetime("%Y-%m-%d"))
-            .join(lazy_static, on=["PRACTICE_ID", "PATIENT_ID"], how="inner")
+            .join(lazy_static.select(["PRACTICE_ID", "PATIENT_ID", "YEAR_OF_BIRTH"]),                     # Add birth year information to calculate relative event times
+                  on=["PRACTICE_ID", "PATIENT_ID"], how="inner")
             .select([
                   (pl.col("DATE") - pl.col("YEAR_OF_BIRTH")).dt.days().alias("DAYS_SINCE_BIRTH"), "*"
                 ])
+            .drop("YEAR_OF_BIRTH")
             )
-        # print(lazy_combined_frame.head().collect())
+
+        #############
+        # AGGREGATE #
+        #############
 
         # Remove entries before conception (negative to include pregnancy period)
-        agg_cols = ["VALUE", "EVENT", "DAYS_SINCE_BIRTH"]
+        agg_cols = ["VALUE", "EVENT", "DAYS_SINCE_BIRTH", "DATE"]
         lazy_combined_frame = (
             lazy_combined_frame
+            .filter(pl.col("DAYS_SINCE_BIRTH") > -365)   
             .sort("DAYS_SINCE_BIRTH")
-            .filter(pl.col("DAYS_SINCE_BIRTH") > -365)                                  
             .groupby(["PRACTICE_ID", "PATIENT_ID"])
             .agg(agg_cols)                                                # Turn into lists
             .sort(["PRACTICE_ID", "PATIENT_ID"])                                  # make lazy collection deterministic
         )
-        # print(lazy_combined_frame.head().collect())
-
+        
         if drop_empty_dynamic:
             logging.debug("Removing patients with no observed events")
             lazy_combined_frame = lazy_combined_frame.drop_nulls()
@@ -307,9 +328,6 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         #    If identifier exists in one but not the other, default behaviour is to fill with null, these are handled by filtering later
         #    All these operations are performed lazily
         lazy_combined_frame = lazy_combined_frame.join(lazy_static, on=["PRACTICE_ID", "PATIENT_ID"], how="left")
-
-        # with pl.Config(tbl_cols=-1):
-        #     print(lazy_combined_frame.head().collect())
 
         return lazy_combined_frame
 

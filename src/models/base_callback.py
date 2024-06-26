@@ -187,15 +187,15 @@ class Embedding(Callback, BaseCallback):
 #     """
 #     Callback on test epoch end to save outputs for plotting
 #     """
-#     def __init__(self, test_samples, file_path=None):
+#     def __init__(self, val_batch=None, test_batch=None, file_path=None):
 #         Callback.__init__(self)
-#         BaseCallback.__init__(self, test_samples=test_samples)
+#         BaseCallback.__init__(self, val_batch=val_batch, test_batch=test_batch)
 #         self.file_path = file_path if file_path is not None else "output.pkl"
 
 #     def run_callback(self, features, labels, _pl_module, **kwargs):
 #         # Push features through the model
-#         recon, meta_result = _pl_module(features, **kwargs)
-#         meta_result["labels"] = labels
+#         outputs, _, hidden_states = _pl_module(batch)
+#         # meta_result["labels"] = labels
 
 #         with open(self.file_path, 'wb') as file:
 #             pickle.dump(meta_result, file)
