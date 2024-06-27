@@ -1,7 +1,7 @@
 import sqlite3
 import polars as plr
 from CPRD.data.tokenizers.base import TokenizerBase
-
+import logging
 
 class NonTabular(TokenizerBase):
     r"""
@@ -34,12 +34,15 @@ class NonTabular(TokenizerBase):
         """
         # From the meta information extract the tokens, their total counts, and their frequency
         event_counts = self.event_frequency(meta_information, include_measurements=include_measurements, include_diagnoses=include_diagnoses)
-        
+        logging.debug(f"_event_counts: {event_counts}")
+
         # Given some threshold, map low frequency tokens to unk token
         self._event_counts = self._map_to_unk(event_counts, freq_threshold=freq_threshold)
-        
+        logging.debug(f"_event_counts: {self._event_counts}")
+
         # Tokens for each event, excluding numeric related tokens
         event_tokens = self._event_counts.select('EVENT').to_series().to_list()
+        logging.debug(f"num_event_tokens: {len(event_tokens)}")
         
         # Combine with special tokens (padding; unknown=low frequency, masked, or unobsered in training set; and numeric digits)
         all_tokens = ["PAD", "UNK"] + [str(i) for i in range(10)] + ["."] + event_tokens[1:]
@@ -61,7 +64,7 @@ class Tabular(TokenizerBase):
         
     def fit(self,
             meta_information,
-            freq_threshold:float = 0.00001,
+            freq_threshold:float = 0,
             include_measurements: bool = True,
             include_diagnoses: bool = True,
             **kwargs
@@ -72,12 +75,15 @@ class Tabular(TokenizerBase):
         """
         # 
         event_counts = self.event_frequency(meta_information, include_measurements=include_measurements, include_diagnoses=include_diagnoses)
-        
+        logging.debug(f"_event_counts: {event_counts}")
+
         # Given some threshold, map low frequency tokens to unk token
         self._event_counts = self._map_to_unk(event_counts, freq_threshold=freq_threshold)
-        
+        logging.debug(f"_event_counts: {self._event_counts}")
+
         # Tokens for each event, excluding numeric related tokens
         event_tokens = self._event_counts.select('EVENT').to_series().to_list()
+        logging.debug(f"num_event_tokens: {len(event_tokens)}")
         
         # Combine with special tokens (padding; unknown=low frequency, masked, or unobsered in training set)
         all_tokens = ["PAD", "UNK"] + event_tokens[1:]

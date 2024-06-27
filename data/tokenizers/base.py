@@ -37,6 +37,11 @@ class TokenizerBase():
         │ …                        ┆ …       ┆ …         │
         └──────────────────────────┴─────────┴───────────┘
         """
+        _num_table_categories = meta_information["measurement_tables"].shape[0] + meta_information["diagnosis_table"].shape[0]
+        logging.debug(f"_num_table_categories: {_num_table_categories}")
+        _non_empty_table_categories = sum(meta_information["measurement_tables"]["count"] > 0) + sum(meta_information["diagnosis_table"]["count"] > 0)
+        logging.debug(f"_non_empty_table_categories: {_non_empty_table_categories}")
+        
         # Stack all the tokens that will be used. This requires that the tokens used have been pre-processed in the meta_information
         schema={"EVENT": str, "COUNT": pl.UInt32}
         counts = pl.DataFrame(schema=schema)
