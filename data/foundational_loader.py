@@ -51,6 +51,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
                  tokenizer: str = "tabular",
                  batch_size: int = 64,
                  min_workers:int = 1,
+                 overwrite_practice_ids:     Optional[str] = None,
                  overwrite_meta_information: Optional[str] = None,                 
                  **kwargs   
                 ):
@@ -72,6 +73,10 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
 
             min_workers:
 
+            overwrite_practice_ids:
+                If you want to overwrite the practice ID allocations to train/test/validation splits, for example if you are building a fine-tuning dataset
+                from within the foundation model dataset you will need to ensure information is not leaked into the test/validation from the pre-trained model's
+                training set.
             overwrite_meta_information:
                 If you want to overwrite the meta_information, for example using quantile bounds for some measurements, then there is no need
                 to pre-process it again. In this case, pass in the path to an existing meta_information pickled file. 
@@ -109,6 +114,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         if load is False:
             polars_dataset = PolarsDataset(path_to_db=path_to_db)
             polars_dataset.fit(path=path_to_ds,
+                               overwrite_practice_ids=overwrite_practice_ids,
                                overwrite_meta_information=overwrite_meta_information,
                                **kwargs)
 

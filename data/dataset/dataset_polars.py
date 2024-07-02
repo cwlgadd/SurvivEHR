@@ -35,7 +35,8 @@ class PolarsDataset:
             include_static:                      bool = True,
             include_diagnoses:                   bool = True,
             include_measurements:                bool = True,
-            overwrite_meta_information:          Optional[str] = None,                 
+            overwrite_practice_ids:              Optional[tuple] = None,    
+            overwrite_meta_information:          Optional[str] = None,    
             **kwargs
            ):
         r"""
@@ -60,6 +61,10 @@ class PolarsDataset:
                 Whether to include diagnoses in the meta_information, and in the parquet dataset
             include_measurements
                 Whether to include measurements in the meta_information, and in the parquet dataset
+            overwrite_practice_ids:
+                If you want to overwrite the practice ID allocations to train/test/validation splits, for example if you are building a fine-tuning dataset
+                from within the foundation model dataset you will need to ensure information is not leaked into the test/validation from the pre-trained model's
+                training set.
             overwrite_meta_information:
                 If you want to overwrite the meta_information, for example using quantile bounds for some measurements, then there is no need
                 to pre-process it again. In this case, pass in the path to an existing meta_information pickled file. 
@@ -81,7 +86,20 @@ class PolarsDataset:
         logging.info(f"Building Polars datasets and saving to {path}")     
     
         # Train, test, validation split
-        self.train_practice_ids, self.val_practice_ids, self.test_practice_ids = self._train_test_val_split(practice_inclusion_conditions=practice_inclusion_conditions)
+        if overwrite_practice_ids is None:
+            self.train_practice_ids, self.val_practice_ids, self.test_practice_ids = self._train_test_val_split(practice_inclusion_conditions=practice_inclusion_conditions)
+            splits = {"train": self.train_practice_ids,
+                      "val": self.val_practice_ids,
+                      "test": self.test_practice_ids}
+            with open(self.save_path + f'practice_id_splits.pickle', 'wb') as handle:
+                    pickle.dump(splits, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        else:
+            with open(overwrite_practice_ids, 'rb') as f:
+                splits = pickle.load(f)
+                self.train_practice_ids = splits["train"]
+                self.val_practice_ids = splits["val"]
+                self.test_practice_ids = splits["test"]
+                logging.info(f"Using train/test/val splits from {overwrite_practice_ids}")
 
         # Collect meta information. 
         #    These are pre-calculations for torch loader len(), tokenization, and optionally for standardisation        
