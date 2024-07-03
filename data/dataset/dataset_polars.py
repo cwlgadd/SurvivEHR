@@ -197,7 +197,7 @@ class PolarsDataset:
                 # convert row count to a lower cardinality bin which can be used in the hive partitioning for faster reading
                 # ... the smaller the window the more files created, storage space used, and the longer this takes to run, but 
                 # ... the faster the read efficiency.
-                df = df.assign(CHUNK = [int(_v / 500) for _v in df['row_nr']])                  
+                df = df.assign(CHUNK = [int(_v / 250) for _v in df['row_nr']])                  
                 
                 total_samples += len(df.index)
                 

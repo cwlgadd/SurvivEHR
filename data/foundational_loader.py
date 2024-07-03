@@ -241,6 +241,7 @@ class FoundationalDataset(Dataset):
         for _key in static:
             print(f"{_key}".ljust(20) + f"| {static[_key][0]}")
         # dynamic
+        print(f"Sequence of {len(batch['ages'])} events")
         print("\nToken".ljust(76) + "| Age".ljust(20) + "| Standardised value".ljust(20) + "\n" + "="*115)
         for idx_event, (token, age, value) in enumerate(zip(self.tokenizer.decode(batch["tokens"].tolist()).split(" "), batch["ages"], batch["values"])):
             print(f"{token}".ljust(75) + f"| {age}".ljust(20) + f"| {value:.2f}".ljust(20))
@@ -256,6 +257,7 @@ class FoundationalDataset(Dataset):
                  max_seq_length:               int = 256,
                  standardise_values:           bool = True,
                  global_diagnoses:             bool = False,
+                 random_context_window:        bool = False,
                  **kwargs
                 ):
         """
@@ -277,6 +279,9 @@ class FoundationalDataset(Dataset):
             standardise_values
 
             global_diagnoses:
+                Whether to enforce all diagnoses are included in the context window
+            random_context_window:
+                Whether to randomly sample context window (True) or use latest events (False)
 
         **KWARGS:
             None
@@ -289,6 +294,7 @@ class FoundationalDataset(Dataset):
         self.max_seq_length = max_seq_length
         self.standardise_values = standardise_values
         self.global_diagnoses = global_diagnoses 
+        self.random_context_window = random_context_window
         self.meta_information = meta_information
 
         # Create a PyArrow dataset directly from the PolarsDataset saved hive partitioned dataset
@@ -421,8 +427,11 @@ class FoundationalDataset(Dataset):
         # Then encode the sequence
         ##########################
         encoded_tokens = self.tokenizer.encode(sequence_tokens)
-        # Get a windowed sub-block from the patient's history if context length exceeds block size
-        start_pos = np.random.randint(low=0, high=len(encoded_tokens)-self.max_seq_length, size=1)[0] if len(encoded_tokens) > self.max_seq_length else 0
+        # Get a windowed sub-block from the patient's history if context length exceeds block size        
+        if self.random_context_window:
+            start_pos = np.random.randint(low=0, high=len(encoded_tokens)-self.max_seq_length, size=1)[0] if len(encoded_tokens) > self.max_seq_length else 0
+        else:
+            start_pos = len(encoded_tokens)-self.max_seq_length if len(encoded_tokens) > self.max_seq_length else 0
         end_pos = start_pos + self.max_seq_length
         # Get the diagnoses that we will (optionally) not be dropping, as these have life long implications        
         if self.global_diagnoses:
