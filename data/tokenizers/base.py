@@ -38,9 +38,9 @@ class TokenizerBase():
         └──────────────────────────┴─────────┴───────────┘
         """
         _num_table_categories = meta_information["measurement_tables"].shape[0] + meta_information["diagnosis_table"].shape[0]
-        logging.debug(f"_num_table_categories: {_num_table_categories}")
+        logging.debug(f"number of table categories: {_num_table_categories}")
         _non_empty_table_categories = sum(meta_information["measurement_tables"]["count"] > 0) + sum(meta_information["diagnosis_table"]["count"] > 0)
-        logging.debug(f"_non_empty_table_categories: {_non_empty_table_categories}")
+        logging.debug(f"none empty table categories: {_non_empty_table_categories}")
         
         # Stack all the tokens that will be used. This requires that the tokens used have been pre-processed in the meta_information
         schema={"EVENT": str, "COUNT": pl.UInt32}
@@ -49,14 +49,18 @@ class TokenizerBase():
             assert "measurement_tables" in meta_information.keys(), meta_information.keys()
             counts_measurements = pl.DataFrame(meta_information["measurement_tables"][["event", "count"]], schema=schema)
             counts = counts.vstack(counts_measurements)
+            logging.debug(f"counts of measurements {counts_measurements}")
+            logging.debug(f"sum of counts of measurements {sum(counts_measurements['COUNT'])}")
         if include_diagnoses:
             assert "diagnosis_table" in meta_information.keys(), meta_information.keys()
             counts_diagnosis = pl.DataFrame(meta_information["diagnosis_table"][["event", "count"]], schema=schema)
             counts = counts.vstack(counts_diagnosis)
+            logging.debug(f"counts of diagnoses {counts_diagnosis}")
+            logging.debug(f"sum of counts of diagnoses {sum(counts_diagnosis['COUNT'])}")
 
         # the total number of event tokens (WITHOUT MISSING DATA)
-        total_number_of_tokens = counts.select(pl.sum("COUNT")).item()
-        logging.info(f"Tokenzier created based on {total_number_of_tokens/1e6:.2f}M tokens")
+        total_number_of_tokens = sum(counts["COUNT"])
+        logging.info(f"Tokenzier created based on {total_number_of_tokens:,} tokens")
 
         # Get the frequency of each as a new column, which will be used for mapping low frequency tokens to the UNK token
         counts = (counts

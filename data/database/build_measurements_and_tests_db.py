@@ -22,7 +22,8 @@ class Measurements():
         
         # depending on DEXTER output version there are prefixes on filenames which we can remove
         prefixes = ["AVF2_masterDataOptimal_v3_fullDB20231112045951_",
-                    "AVF2_masterDataOptimal_v220230327110229_"]
+                    "AVF2_masterDataOptimal_v220230327110229_",
+                    "AVF1_masterDataOptimal_v3_fullDB20231112044822_"]
         for prefix in prefixes:
             if mname.startswith(prefix):
                 mname = mname[len(prefix):]
@@ -106,7 +107,8 @@ class Measurements():
         self.disconnect()
     
     def _create_measurement_partition(self, measurement_name):
-                
+        
+        self.cursor.execute("""DROP TABLE IF EXISTS measurement_""" + measurement_name)
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS measurement_""" + measurement_name + """ ( 
                                         PRACTICE_ID int,
                                         PATIENT_ID int,
@@ -140,15 +142,20 @@ class Measurements():
                 # get the column name which contains the value, checking across all the column names used by DEXTER
                 if colname.lower().endswith("value"):
                     event_value_col = colname
-                elif colname.lower().endswith(measurement_name.lower()):
-                    event_value_col = colname
+                # elif colname.lower().endswith(measurement_name.lower()):
+                #     event_value_col = colname
     
                 # get the column name which contains the date, checking across all the column names used by DEXTER
                 if colname.lower().endswith("event_date"):
                     event_date_col = colname
                 if colname.lower().endswith("event_date)"):
                     event_date_col = colname
-            assert event_date_col is not None and event_value_col is not None
+            assert event_date_col is not None #and event_value_col is not None
+
+            # if there is no value column then create one and fill with np.nans
+            if event_value_col is None:
+                event_value_col = "value"
+                df.insert(1, event_value_col, None)
 
             # Add practice ID column
             split = df['PRACTICE_PATIENT_ID'].str.split('_')
@@ -169,8 +176,8 @@ class Measurements():
                                     #     }
                                     )
             if chunk_idx == 0:
-                logging.debug(f"Used event_date_col {event_date_col}, and event_value_col {event_value_col}")
-                logging.debug(f"Selected from available columns {file_columns.tolist()}")
+                logging.info(f"Used event_date_col {event_date_col}, and event_value_col {event_value_col}")
+                logging.info(f"Selected from available columns {file_columns.tolist()}")
                 # logging.debug(records)
                           
             self._records_to_table_measurement(records, measurement_name)

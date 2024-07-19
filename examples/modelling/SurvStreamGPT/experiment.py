@@ -35,8 +35,10 @@ def run(cfg : DictConfig):
     logging.info(f"{vocab_size} vocab elements")
     # ... Extract the measurements, using the fact that the diagnoses are all up upper case. This is needed for automatically setting the configuration below
     #     encode into the list of univariate measurements to model with Normal distribution
-    measurements_for_univariate_regression = [record for record in dm.tokenizer._event_counts["EVENT"] if record.upper() != record]
-    cfg.head.tokens_for_univariate_regression = dm.encode(measurements_for_univariate_regression) 
+    # measurements_for_univariate_regression = [record for record in dm.tokenizer._event_counts["EVENT"] if record.upper() != record]
+    # cfg.head.tokens_for_univariate_regression = dm.encode(measurements_for_univariate_regression) #
+    measurements_for_univariate_regression = dm.train_set.meta_information["measurement_tables"][dm.train_set.meta_information["measurement_tables"]["count_obs"] > 0]["event"].to_list()
+    cfg.head.tokens_for_univariate_regression = dm.encode(measurements_for_univariate_regression)
     logging.debug(OmegaConf.to_yaml(cfg))
     
     # Create experiment

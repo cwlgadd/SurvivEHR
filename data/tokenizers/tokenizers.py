@@ -75,19 +75,20 @@ class Tabular(TokenizerBase):
         """
         # 
         event_counts = self.event_frequency(meta_information, include_measurements=include_measurements, include_diagnoses=include_diagnoses)
-        logging.debug(f"_event_counts: {event_counts}")
+        logging.debug(f"event counts: {event_counts}")
 
         # Given some threshold, map low frequency tokens to unk token
         self._event_counts = self._map_to_unk(event_counts, freq_threshold=freq_threshold)
-        logging.debug(f"_event_counts: {self._event_counts}")
+        logging.debug(f"thresholded event counts: {self._event_counts}")
 
         # Tokens for each event, excluding numeric related tokens
         event_tokens = self._event_counts.select('EVENT').to_series().to_list()
-        logging.debug(f"num_event_tokens: {len(event_tokens)}")
+        logging.debug(f"number of event tokens: {len(event_tokens)}")
         
         # Combine with special tokens (padding; unknown=low frequency, masked, or unobsered in training set)
         all_tokens = ["PAD", "UNK"] + event_tokens[1:]
         self._vocab_size = len(all_tokens)
+        logging.debug(f"vocab size {self._vocab_size}")
                 
         # Create a mapping from strings to integers, and vice versa
         self._stoi = { ch:i for i,ch in enumerate(all_tokens) }

@@ -43,19 +43,19 @@ class SurvivalExperiment(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         _, loss_dict, _ = self(batch)        
         for _key in loss_dict.keys():
-            self.log(f"train_" + _key, loss_dict[_key], prog_bar=False, logger=True)
+            self.log(f"train_" + _key, loss_dict[_key], prog_bar=False, logger=True, sync_dist=True)
         return loss_dict['loss'] 
 
     def validation_step(self, batch, batch_idx):
         _, loss_dict, _ = self(batch)        
         for _key in loss_dict.keys():
-            self.log(f"val_" + _key, loss_dict[_key], prog_bar=False, logger=True)
+            self.log(f"val_" + _key, loss_dict[_key], prog_bar=False, logger=True, sync_dist=True)
         return loss_dict['loss'] 
 
     def test_step(self, batch, batch_idx):
         _, loss_dict, _ = self(batch)        
         for _key in loss_dict.keys():
-            self.log(f"test_" + _key, loss_dict[_key], prog_bar=False, logger=True)
+            self.log(f"test_" + _key, loss_dict[_key], prog_bar=False, logger=True, sync_dist=True)
         return loss_dict['loss'] 
 
     def configure_optimizers(self):
@@ -160,7 +160,7 @@ def setup_survival_experiment(cfg, dm, vocab_size):
         val_check_interval=cfg.optim.val_check_interval,
         limit_val_batches=cfg.optim.limit_val_batches,
         limit_test_batches=cfg.optim.limit_test_batches,
-        devices=torch.cuda.device_count(),
+        # devices=torch.cuda.device_count(),
         # gradient_clip_val=0.5
     )
 

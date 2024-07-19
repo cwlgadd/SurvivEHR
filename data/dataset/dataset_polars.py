@@ -94,6 +94,7 @@ class PolarsDataset:
             with open(self.save_path + f'practice_id_splits.pickle', 'wb') as handle:
                     pickle.dump(splits, handle, protocol=pickle.HIGHEST_PROTOCOL)
         else:
+            # If fine-tuning then we want to use existing splits to avoid data leakage
             with open(overwrite_practice_ids, 'rb') as f:
                 splits = pickle.load(f)
                 self.train_practice_ids = splits["train"]
@@ -109,6 +110,7 @@ class PolarsDataset:
                                                                    diagnoses    = include_diagnoses,
                                                                    measurement  = include_measurements
                                                                    )
+            print(meta_information)
             with open(self.save_path + f'meta_information.pickle', 'wb') as handle:
                 pickle.dump(meta_information, handle, protocol=pickle.HIGHEST_PROTOCOL)
 

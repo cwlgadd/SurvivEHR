@@ -132,9 +132,13 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                 # exit loop when no more records to fetch, or we reach some approximating limit 
                 break 
             values = np.array([_record[0] for _record in records if _record[0] is not None])
-            digest.batch_update(values)
-            fetches_count += 1
-        
+            try:
+                digest.batch_update(values)
+                fetches_count += 1
+            except:
+                logging.warning(f"Unable to batch update t-digest for values {values} from {table_name}, skipping batch")
+                pass 
+                
         return digest
     
     def _generate_lazy_by_distinct(self,
@@ -377,23 +381,33 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
             counts, obs_counts = [], []                                      # List of measurement counts, and how many of those have observed values
             obs_digest, obs_mins, obs_maxes, obs_means = [], [], [], []      # T-digest data structure for approximate quantiles, and exact statistics for observed values
             cutoff_lower, cutoff_upper = [], []                              # Cut-off values based on approximate quantiles, used for filtering and standardisation
-            
+
             for table in tqdm(self.measurement_table_names, desc="Measurements".rjust(50), total=len(self.measurement_table_names)):
 
                 # Get the measurement name from the table's name
                 measurement = table[12:]
 
-                # Online accumulation to approximate quantiles which will then be used for standardisation and outlier removal.
-                digest = self._t_digest_values(table)
-                # From summary statistics get the standardisation limits
-                iqr = digest.percentile(75) - digest.percentile(25)
-                cutoff_lower.append(digest.percentile(25) - 1.5*iqr)
-                cutoff_upper.append(digest.percentile(75) + 1.5*iqr)
-                
-                # Get total number of entries, number of observed values, and statistics, for each unique event in measurement table
-                result = self._extract_AGG(table, aggregations=f"COUNT(*), COUNT(VALUE), MIN(VALUE), MAX(VALUE), AVG(VALUE)")  #  condition=condition
-                table_counts, table_counts_obs, table_min_obs, table_max_obs, table_mean_obs = result[0]
+                result = self._extract_AGG(table, aggregations=f"COUNT(*), COUNT(VALUE)")  #  condition=condition
+                table_counts, table_counts_obs = result[0]
 
+                if table_counts_obs > 0:
+                    # Online accumulation to approximate quantiles which will then be used for standardisation and outlier removal.
+                    digest = self._t_digest_values(table)
+                    # From summary statistics get the standardisation limits
+                    iqr = digest.percentile(75) - digest.percentile(25)
+                    digest_lower = digest.percentile(25) - 1.5*iqr
+                    digest_upper = digest.percentile(75) + 1.5*iqr
+                    
+                    # Get total number of entries, number of observed values, and statistics, for each unique event in measurement table
+                    result = self._extract_AGG(table, aggregations=f"MIN(VALUE), MAX(VALUE), AVG(VALUE)")  #  condition=condition
+                    table_min_obs, table_max_obs, table_mean_obs = result[0]
+                else:
+                    # Catch cases where there are no values for this measurement
+                    digest = None
+                    digest_lower, digest_upper = None, None
+                    # Get total number of entries, number of observed values, and statistics, for each unique event in measurement table
+                    table_min_obs, table_max_obs, table_mean_obs = None, None, None
+                    
                 # Collate each tables summary statistics, here we have assumed that each measurement table contains a unique event
                 measurements.append(measurement)
                 counts.append(table_counts)
@@ -402,7 +416,9 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                 obs_mins.append(table_min_obs)
                 obs_maxes.append(table_max_obs)
                 obs_means.append(table_mean_obs)
-                
+                cutoff_lower.append(digest_lower)
+                cutoff_upper.append(digest_upper)
+
             measurement_meta = pd.DataFrame({"event": measurements,
                                              "count": counts,
                                              "count_obs": obs_counts,
