@@ -175,7 +175,7 @@ class Embedding(Callback, BaseCallback):
                               )
 
     def on_test_epoch_end(self, trainer, pl_module):
-        if self.do_testation is True:
+        if self.test is True:
             # Run callback
             self.run_callback(_trainer=trainer, 
                               _pl_module = pl_module,
