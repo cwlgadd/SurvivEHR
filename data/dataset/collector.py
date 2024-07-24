@@ -23,7 +23,7 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
 
     def connect(self):
         try:
-            self.connection = sqlite3.connect(self.db_path)
+            self.connection = sqlite3.connect(self.db_path, timeout=2000)
             self.cursor = self.connection.cursor()
             logging.debug("Connected to SQLite database")
         except sqlite3.Error as e:
@@ -192,6 +192,7 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                                   
                 logging.debug(f"Query: {query[:120] if len(query) > 120 else query}")
                 df = pl.read_database(query=query, connection_uri=self.connection_token)
+
                 if len(df) > 0:
                     rows_by_table["lazy_" + table] = df.lazy()
 

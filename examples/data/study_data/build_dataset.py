@@ -1,0 +1,57 @@
+import os
+from pathlib import Path
+import sys
+node_type = os.getenv('BB_CPU')
+venv_dir = f'/rds/homes/g/gaddcz/Projects/CPRD/virtual-env-{node_type}'
+venv_site_pkgs = Path(venv_dir) / 'lib' / f'python{sys.version_info.major}.{sys.version_info.minor}' / 'site-packages'
+if venv_site_pkgs.exists():
+    sys.path.insert(0, str(venv_site_pkgs))
+    print(f"Added path '{venv_site_pkgs}' at start of search paths.")
+else:
+    print(f"Path '{venv_site_pkgs}' not found. Check that it exists and/or that it exists for node-type '{node_type}'.")
+
+
+import torch
+from hydra import compose, initialize
+from omegaconf import OmegaConf
+from CPRD.data.foundational_loader import FoundationalDataModule
+import logging
+import time
+from CPRD.examples.data.study_data.study_criteria import cvd_inclusion_method
+
+
+if __name__ == "__main__":
+
+    torch.manual_seed(1337)
+    logging.basicConfig(level=logging.INFO)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f"Using device: {device}.")
+
+    # load the configuration file, override any settings 
+    with initialize(version_base=None, config_path="../../modelling/SurvStreamGPT/confs", job_name="dataset_creation_notebook"):
+        cfg = compose(config_name="config_CompetingRisk129M", overrides=[])
+    cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/"
+    print(OmegaConf.to_yaml(cfg))
+
+    # Build 
+    dm = FoundationalDataModule(path_to_db=cfg.data.path_to_db,
+                                path_to_ds=cfg.data.path_to_ds,
+                                load=False,
+                                include_diagnoses=True,                            
+                                include_measurements=True,
+                                drop_missing_data=False,
+                                drop_empty_dynamic=True,
+                                tokenizer="tabular",
+                                overwrite_practice_ids = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/practice_id_splits.pickle",
+                                overwrite_meta_information=cfg.data.meta_information_path,
+                                study_inclusion_method=cvd_inclusion_method(),
+                               )
+    
+    vocab_size = dm.train_set.tokenizer.vocab_size
+    
+    print(f"{len(dm.train_set)} training patients")
+    print(f"{len(dm.val_set)} validation patients")
+    print(f"{len(dm.test_set)} test patients")
+    print(f"{vocab_size} vocab elements")
+    
+    
