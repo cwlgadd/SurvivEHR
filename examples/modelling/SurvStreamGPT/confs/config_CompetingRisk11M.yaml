@@ -7,10 +7,12 @@ data:
   global_diagnoses: False           # Whether we enforce diagnoses which occurred before context block to prepend the block
   path_to_db: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/                         # Path to SQL database
   path_to_ds: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/                # Path to Polars dataset
-  # Path to meta_information. For example if we want to update outlier bounds to custom values
-  meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information.pickle  
+  # Path to meta_information. This is created when building datasets. It can then be modified, for example here we updated the default outlier bounds to custom values
+  meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle
+  
 
 experiment:
+  type: 'pre-train'                  # Options: ['pre-train', 'zero-shot', 'fine-tune']
   project_name: SurvStreamGPT_${head.SurvLayer}
   run_id: PreTrain_${head.SurvLayer}_11M_${experiment.seed}
   train: True
@@ -18,8 +20,10 @@ experiment:
   verbose: True
   seed: 1337
   log: True
-  log_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/                   # Where to place any log files
-  ckpt_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/      # Where to save checkpoints during training  
+  log_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/                    # Where to place any log files
+  ckpt_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/       # Where to save checkpoints during training 
+  # If we are evaluating the pre-trained model (with zero-shot,or fine-tuning), which outcomes do we consider
+  fine_tune_outcomes: None                                                     
   
 optim: 
   num_epochs: 1                      # Number of batches. By default we train on each patient one time

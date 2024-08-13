@@ -270,11 +270,13 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         #####################################
         # MERGE SOURCES OF TIME_SERIES DATA #
         #####################################
+        
         # Merge all frames containing time series data
         if lazy_diagnosis is not None and lazy_measurement is not None:
             # Stacking the frames vertically. Value column in diagnostic is filled with null
             lazy_combined_frame = pl.concat([lazy_measurement, lazy_diagnosis], how="diagonal")
         elif lazy_measurement is not None:
+            #
             lazy_combined_frame = lazy_measurement            
         elif lazy_diagnosis is not None:
             # Note: if we load diagnoses with no measurements, we are not concating values, so add this missing column
@@ -287,13 +289,6 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
             lazy_combined_frame
             .with_columns(pl.col("DATE").str.to_datetime("%Y-%m-%d"))
         )
-        
-        #################
-        # FILTER FRAMES #
-        #################
-        
-        if study_inclusion_method is not None:
-            lazy_static, lazy_combined_frame = study_inclusion_method(lazy_static, lazy_combined_frame)
 
         # Convert event date to time since birth by linking the dynamic diagnosis and measurement frames to the static one
         # Subtract the dates and create a new column for the result            
@@ -307,19 +302,42 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
             .drop("YEAR_OF_BIRTH")
             )
 
+        # Drop events which occur at unrealistic ages
+        lazy_combined_frame = (
+            lazy_combined_frame
+            .filter(pl.col("DAYS_SINCE_BIRTH") > -365)
+            .filter(pl.col("DAYS_SINCE_BIRTH") < 125*365)
+        )
+        
+        #################
+        # FILTER FRAMES #
+        #################
+
+        # Reduce based on study criteria. You may pass your own custom criteria method
+        if study_inclusion_method is not None:
+            lazy_static, lazy_combined_frame = study_inclusion_method(lazy_static, lazy_combined_frame)
+
+        # Remove patients without multiple events
+        lazy_combined_frame = (
+            lazy_combined_frame.groupby("PATIENT_ID")
+                .agg(pl.count("PATIENT_ID").alias("count"))
+                .filter(pl.col("count") > 1)
+                .join(lazy_combined_frame, on="PATIENT_ID", how="inner")
+                .select(lazy_combined_frame.columns)
+        )
+        
         #############
         # AGGREGATE #
         #############
 
-        # Remove entries before conception (negative to include pregnancy period)
+        # Remove entries before conception (negative to include pregnancy period, e.g. diagnosed with genetic condition pre-birth)
         agg_cols = ["VALUE", "EVENT", "DAYS_SINCE_BIRTH", "DATE"]
         lazy_combined_frame = (
             lazy_combined_frame
-            .filter(pl.col("DAYS_SINCE_BIRTH") > -365)   
             .sort("DAYS_SINCE_BIRTH")
             .groupby(["PRACTICE_ID", "PATIENT_ID"])
             .agg(agg_cols)                                                # Turn into lists
-            .sort(["PRACTICE_ID", "PATIENT_ID"])                                  # make lazy collection deterministic
+            .sort(["PRACTICE_ID", "PATIENT_ID"])                          # make lazy collection output deterministic
         )
         
         if drop_empty_dynamic:
@@ -332,7 +350,7 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         # Align the polars frames, linking on patient idenfitifer, then concatentate into a single frame (dropping repeated identifier)
         #    If identifier exists in one but not the other, default behaviour is to fill with null, these are handled by filtering later
         #    All these operations are performed lazily
-        lazy_combined_frame = lazy_combined_frame.join(lazy_static, on=["PRACTICE_ID", "PATIENT_ID"], how="left")
+        lazy_combined_frame = lazy_combined_frame.join(lazy_static, on=["PRACTICE_ID", "PATIENT_ID"], how="inner")
 
         return lazy_combined_frame
 

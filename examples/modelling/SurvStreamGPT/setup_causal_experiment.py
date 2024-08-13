@@ -4,12 +4,11 @@ import logging
 from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlateau, CosineAnnealingLR, LambdaLR, SequentialLR, ChainedScheduler
 from CPRD.src.models.base_callback import Embedding
-from CPRD.src.models.survival.custom_callbacks.survival import PerformanceMetrics
 
 import os
 # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
-class SurvivalExperiment(pl.LightningModule):
+class CausalExperiment(pl.LightningModule):
 
     def __init__(self,
                  cfg,
@@ -19,7 +18,6 @@ class SurvivalExperiment(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.cfg = cfg
-        
         self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size)
 
     def forward(self, batch, is_generation=False, return_cdf=False):
@@ -97,10 +95,10 @@ class SurvivalExperiment(pl.LightningModule):
             "lr_scheduler": lr_scheduler_config
         }
 
-def setup_survival_experiment(cfg, dm, vocab_size):
+def setup_causal_experiment(cfg, dm, vocab_size):
 
-    _model = SurvivalExperiment(cfg=cfg, vocab_size=vocab_size)
-    logging.debug(_model)
+    causal_experiment = CausalExperiment(cfg=cfg, vocab_size=vocab_size)
+    logging.debug(causal_experiment)
 
     # Initialize wandb logger
     if cfg.experiment.log == True:
@@ -134,13 +132,7 @@ def setup_survival_experiment(cfg, dm, vocab_size):
     embedding_callback = Embedding(val_batch=val_batch,
                                    test_batch=test_batch
                                   )
-    callbacks.append(embedding_callback)
-
-    # # Metrics
-    # metric_callback = PerformanceMetrics(val_batch=val_batch,
-    #                                      test_batch=test_batch
-    #                                      )
-    # callbacks.append(metric_callback)
+    # callbacks.append(embedding_callback)
 
     # ... optional callbacks
     if cfg.optim.early_stop:
@@ -164,4 +156,4 @@ def setup_survival_experiment(cfg, dm, vocab_size):
         # gradient_clip_val=0.5
     )
 
-    return _model, _trainer
+    return causal_experiment, CausalExperiment, _trainer

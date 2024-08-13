@@ -11,6 +11,7 @@ data:
   meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information.pickle  
   
 experiment:
+  type: 'pre-train'                  # Options: ['pre-train', 'zero-shot', 'fine-tune']
   project_name: SurvStreamGPT_${head.SurvLayer}
   run_id: PreTrain_${head.SurvLayer}_11M_${experiment.seed}
   train: True
@@ -20,6 +21,8 @@ experiment:
   log: True
   log_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/                   # Where to place any log files
   ckpt_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/      # Where to save checkpoints during training  
+  # If we are evaluating the pre-trained model with zero-shot,or fine-tuning, which outcomes do we consider
+  fine_tune_outcomes: None
   
 optim: 
   num_epochs: 1                      # Number of batches. By default we train on each patient one time

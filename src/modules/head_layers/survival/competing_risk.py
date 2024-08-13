@@ -28,7 +28,7 @@ class ODESurvCompetingRiskLayer(nn.Module):
         logging.info(f"Using Competing-Risk DeSurv head.")
         logging.info(f"Internally scaling time in survival head by {self._time_scale} days")
         logging.info(f"In generation forwarding DeSurv on the grid between [{self.t_eval.min()}, {self.t_eval.max()}]" \
-                     f" with {len(self.t_eval)} intervals of delta={self.t_eval[1]-self.t_eval[0]}")
+                     f" with {len(self.t_eval)} time-points of delta={self.t_eval[1]-self.t_eval[0]}")
 
     def predict(self,
                 hidden_states: torch.tensor,                    # shape: torch.Size([bsz, seq_len, n_embd])
@@ -118,7 +118,7 @@ class ODESurvCompetingRiskLayer(nn.Module):
         H_test = hidden_states.repeat_interleave(self.t_eval.size, 0).to(self.device, torch.float32)
 
         # Batched predict: Cannot make all predictions at once due to memory constraints
-        pred_bsz = 256                                                        # Predict in batches
+        pred_bsz = 512                                                        # Predict in batches
         pred = []
         for H_test_batched, t_test_batched in zip(torch.split(H_test, pred_bsz), torch.split(t_test, pred_bsz)):
             pred.append(self.sr_ode(H_test_batched, t_test_batched)[0])

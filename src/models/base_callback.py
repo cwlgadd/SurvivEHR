@@ -50,9 +50,9 @@ class BaseCallback(object):
             color = next(col_iterator)
             c = label_dict[lbl] if label_dict is not None else lbl
             if z.shape[1] == 3:
-                ax.scatter(z[mask, 0], z[mask, 1], z[mask,2], c=np.array([color]), label=c, alpha=0.5, edgecolors='none')
+                ax.scatter(z[mask, 0], z[mask, 1], z[mask,2], c=np.array([color]), label=c, alpha=0.25, edgecolors='none')
             else:
-                ax.scatter(z[mask, 0], z[mask, 1], c=np.array([color]), label=c, alpha=0.5, edgecolors='none')
+                ax.scatter(z[mask, 0], z[mask, 1], c=np.array([color]), label=c, alpha=0.25, edgecolors='none')
 
         ax.legend()
         ax.set_xlabel("Embed dim $1$")
@@ -175,7 +175,7 @@ class Embedding(Callback, BaseCallback):
                               )
 
     def on_test_epoch_end(self, trainer, pl_module):
-        if self.test is True:
+        if self.do_test is True:
             # Run callback
             self.run_callback(_trainer=trainer, 
                               _pl_module = pl_module,

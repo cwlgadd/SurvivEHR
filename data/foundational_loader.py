@@ -52,7 +52,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
                  batch_size: int = 64,
                  min_workers:int = 1,
                  overwrite_practice_ids:     Optional[str] = None,
-                 overwrite_meta_information: Optional[str] = None,                 
+                 overwrite_meta_information: Optional[str] = None,
                  **kwargs   
                 ):
         """
@@ -106,7 +106,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
 
         """
         super().__init__()
-        
+
         self.batch_size = batch_size
         self.min_workers = min_workers 
         
@@ -191,7 +191,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
             "values": pad_sequence(batch_dict["values"], padding_value=torch.nan).T,
             "attention_mask": pad_sequence(batch_dict["attention_mask"]).T
             }
-
+        
         return worker_batch
 
     def train_dataloader(self):
@@ -338,6 +338,9 @@ class FoundationalDataset(Dataset):
             
             tokenized and padded event stream and static variables
         """
+        return self.getitem(idx)
+
+    def getitem(self, idx):
         
         if torch.is_tensor(idx):
             idx = idx.tolist()
@@ -354,11 +357,9 @@ class FoundationalDataset(Dataset):
                 
         # Read the corresponding row from the Parquet dataset
         try:
-            # row_df = self.dataset.take([idx]).to_pandas().loc[0]
-            row_df = pq.read_table(file).to_pandas().loc[idx]
-            # row_df = pq.read_table(file, filters=[('row_nr','=', idx)]).to_pandas().loc[0]
+            row_df = pq.read_table(self.parquet_path + self.sub_dir + file).to_pandas().loc[idx]
         except:
-            raise ValueError(f"No data found for index {idx}")
+            raise ValueError(f"No data found for index {idx} from file {self.parquet_path + self.sub_dir + file}")
 
         # Static variables
         ##################
@@ -467,7 +468,7 @@ class FoundationalDataset(Dataset):
 
         # one-hot covariates
         for _key in self.meta_information["static_table"].keys():
-            # print(_key)
+            
             # Dummy variable warning 
             #    Currently we include a third category for gender (I), which (TODO: double check this..) as an intersex gender. 
             #    If we drop this we need to be careful of dummy variables as SEX becomes binary.
@@ -482,8 +483,6 @@ class FoundationalDataset(Dataset):
         covariates.append(np.asarray(yob_standardised).reshape((1,-1)))
 
         covariates = np.hstack(covariates).squeeze()
-        # print(covariates)
-        # print(covariates.shape)
 
         return covariates
 
@@ -528,4 +527,94 @@ class FoundationalDataset(Dataset):
         features["birth_year"] = yob[:, 0]
 
         return features
+        
+
+def convert_batch_to_none_causal(batch):
+    """
+    Utilty method which can be combined with FoundationalDataModule produced batches for none-causal tasks
+    
+    Replace the last non-padding token in each row with a padding token (0)
+    and create new vectors containing the removed tokens and their corresponding values.
+    
+    Parameters:
+    batch (dict): Containing the keys
+        token_matrix (torch.Tensor): The input tensor with padded sequences.
+        age_matrix (torch.Tensor): The tensor containing ages corresponding to each token in the matrix.
+        value_matrix (torch.Tensor): The tensor containing values corresponding to each token in the matrix.
+        masking_matrix (torch.Tensor): The tensor containing masks corresponding to each token in the matrix.
+    
+    Returns:
+    torch.Tensor: The modified matrix with the last non-padding token replaced with padding.
+    torch.Tensor: The modified value matrix with the last non-padding value replaced with np.nan.
+    torch.Tensor: The vector containing the removed tokens.
+    torch.Tensor: The vector containing the values that were removed from the value_matrix.
+    """
+
+    # Check if conversion has already happened
+    if "target_token" in batch.keys():
+        # Lightning automatically forwards the batches in the training/test/val loops. 
+        #   This will use the default forward kwargs, which may not be correct for
+        #   different callbacks (for example, if we want to set is_generation=True).
+        #   Consequently, we may need to re-pass the batch through the forward. As we 
+        #   call this inside the forward in an experiment, then we do not want to repeat this
+        #   operation, and so we return early.
+        # TODO: a cleaner structure is possible?
+        logging.warning("""This batch has already been converted to none-causal. Skipping conversion.""")
+        return batch
+
+    # Check if conversion is possible. If not, raise warning and reduce to samples which can be converted
+    two_events_per_sample = [len(batch["tokens"][i,:].nonzero(as_tuple=False)) >= 2 for i in range(batch["tokens"].shape[0])]
+    total_bad_samples = len(two_events_per_sample) - sum(two_events_per_sample)
+    if not all(two_events_per_sample):
+        logging.warning(f"Fine-tuning batch has {total_bad_samples} samples without at least two events.")
+        if True:
+            not_two_events_per_sample = [not _a for _a in two_events_per_sample]
+            logging.warning(f"""\tContinuing by removing singular samples, but these should be removed from the dataset.
+                                \t\t Bad sample tokens: {batch["tokens"][not_two_events_per_sample, :5]}
+                                \t\t and corresponding ages {batch["ages"][not_two_events_per_sample, :5]}""")
             
+            for key in batch.keys():
+                batch[key] = batch[key][two_events_per_sample]
+        else:
+            raise NotImplementedError
+
+    token_matrix = batch["tokens"]
+    age_matrix = batch["ages"]
+    value_matrix = batch["values"]
+    masking_matrix = batch["attention_mask"]
+    
+    # Create tensors to hold the removed tokens and values
+    removed_tokens = torch.zeros(token_matrix.size(0), dtype=token_matrix.dtype)
+    removed_ages = torch.zeros(token_matrix.size(0), dtype=value_matrix.dtype)
+    removed_values = torch.zeros(token_matrix.size(0), dtype=value_matrix.dtype)
+    
+    # Iterate over each row
+    for i in range(token_matrix.size(0)):
+        # 
+        token_row = token_matrix[i]
+        age_row = age_matrix[i]
+        value_row = value_matrix[i]
+        # Find the index of the last non-zero element in the token_matrix
+        last_non_pad_index = (token_row != 0).nonzero(as_tuple=False)[-1].item()
+        # Save the token and value that will be replaced
+        removed_tokens[i] = token_row[last_non_pad_index]
+        removed_ages[i] = age_row[last_non_pad_index] - age_row[last_non_pad_index-1]
+        removed_values[i] = value_row[last_non_pad_index]
+        # Replace the token in the token_matrix with padding (0)
+        token_matrix[i, last_non_pad_index] = 0
+        # Replace the age in the age_matrix with padding (0)
+        age_matrix[i, last_non_pad_index] = 0
+        # Replace the value in the value_matrix with padding (np.nan)
+        value_matrix[i, last_non_pad_index] = torch.tensor(np.nan, dtype=value_row.dtype)
+        # Replace the mask in the mask_matrix with padding (0)
+        masking_matrix[i, last_non_pad_index] = 0
+
+    batch["tokens"] = token_matrix
+    batch["ages"] = age_matrix
+    batch["values"] = value_matrix
+    batch["attention_mask"] = masking_matrix
+    batch["target_token"] = removed_tokens
+    batch["target_age_delta"] = removed_ages
+    batch["target_value"] = removed_values
+
+    return batch
