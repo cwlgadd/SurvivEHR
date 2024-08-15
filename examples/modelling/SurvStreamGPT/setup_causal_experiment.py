@@ -20,7 +20,7 @@ class CausalExperiment(pl.LightningModule):
         self.cfg = cfg
         self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size)
 
-    def forward(self, batch, is_generation=False, return_cdf=False):
+    def forward(self, batch, is_causal=True, return_loss=True, return_generation=False):
         # Because of how DeSurv is coded we have the loss returned in the forward, so we have some redundancy
 
         tokens = batch['tokens'].to(self.device)
@@ -34,8 +34,9 @@ class CausalExperiment(pl.LightningModule):
                           values,
                           covariates,
                           attention_mask,
-                          is_generation=is_generation,
-                          return_cdf=return_cdf
+                          is_causal=is_causal,
+                          return_loss=return_loss,
+                          return_generation=return_generation
                           )
 
     def training_step(self, batch, batch_idx):

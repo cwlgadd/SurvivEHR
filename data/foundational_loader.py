@@ -305,6 +305,7 @@ class FoundationalDataset(Dataset):
         # Then the APIs for taking items is also really slow:
         #    e.g. `self.dataset.take([idx]).to_pandas().loc[0]` for `ds.dataset`                                
         #     or   filtering predicates `filter=(ds.field('CHUNK') == chunk ) & (ds.field('row_nr') == index)`  -> 0.5 sec/read
+        #    NOTE: row_nr is now the number within a practice ID, so this may not work now
         #    TODO: is there a way to simplify code using PyArrow that retains speed?
         self.file_row_count_dict = file_row_count_dict
         # Pre-calculate total number of samples (patients) on initialisation        
@@ -359,7 +360,7 @@ class FoundationalDataset(Dataset):
         try:
             row_df = pq.read_table(self.parquet_path + self.sub_dir + file).to_pandas().loc[idx]
         except:
-            raise ValueError(f"No data found for index {idx} from file {self.parquet_path + self.sub_dir + file}")
+            raise ValueError(f"No data found for index {idx} from file {self.parquet_path}{self.sub_dir}{file}")
 
         # Static variables
         ##################

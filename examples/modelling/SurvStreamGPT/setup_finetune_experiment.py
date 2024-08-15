@@ -10,7 +10,7 @@ from CPRD.src.models.survival.custom_callbacks.clinical_prediction_model import 
 import os
 # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
-class ZeroShotExperiment(pl.LightningModule):
+class FineTuneExperiment(pl.LightningModule):
 
     def __init__(self,
                  cfg,
@@ -22,11 +22,10 @@ class ZeroShotExperiment(pl.LightningModule):
         self.cfg = cfg
         self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size)
 
-    def forward(self, batch, is_causal=True, return_loss=True, return_generation=False):
+    def forward(self, batch, is_generation=False, return_cdf=False):
         # Because of how DeSurv is coded we have the loss returned in the forward, so we have some redundancy
 
-        # Convert the batch from causal to supervised (if not already converted. 
-        # ... If we call this _pl_module from inside a callback, we will duplicate conversion, this is supressed inside of the method
+        # Convert the batch from causal to supervised (if not already converted)
         batch = convert_batch_to_none_causal(batch)
         
         tokens = batch['tokens'].to(self.device)
@@ -35,14 +34,15 @@ class ZeroShotExperiment(pl.LightningModule):
         covariates = batch["static_covariates"].to(self.device)
         attention_mask = batch['attention_mask'].to(self.device)   
 
+        raise NotImplementedError
+
         return self.model(tokens,
                           ages,
                           values,
                           covariates,
                           attention_mask,
-                          is_causal=is_causal,
-                          return_loss=return_loss,
-                          return_generation=return_generation
+                          is_generation=is_generation,
+                          return_cdf=return_cdf
                           )
 
     def training_step(self, batch, batch_idx):
@@ -102,10 +102,10 @@ class ZeroShotExperiment(pl.LightningModule):
             "lr_scheduler": lr_scheduler_config
         }
 
-def setup_zeroshot_experiment(cfg, dm, vocab_size):
+def setup_finetune_experiment(cfg, dm, vocab_size):
 
-    zero_shot_experiment = ZeroShotExperiment(cfg=cfg, vocab_size=vocab_size)
-    logging.debug(zero_shot_experiment)
+    fine_tune_experiment = FineTuneExperiment(cfg=cfg, vocab_size=vocab_size)
+    logging.debug(fine_tune_experiment)
 
     # Initialize wandb logger
     if cfg.experiment.log == True:
@@ -155,4 +155,4 @@ def setup_zeroshot_experiment(cfg, dm, vocab_size):
         # gradient_clip_val=0.5
     )
 
-    return zero_shot_experiment, ZeroShotExperiment, _trainer
+    return fine_tune_experiment, FineTuneExperiment, _trainer

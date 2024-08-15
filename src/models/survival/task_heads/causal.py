@@ -52,8 +52,10 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                 values:                 torch.tensor,
                 covariates:             Optional[torch.tensor] = None,
                 attention_mask:         Optional[torch.tensor] = None,
-                is_generation:          bool = False,
-                return_cdf:             bool = False,
+                is_causal:              bool = True,
+                return_generation:      bool = False,
+                return_loss:            bool = True,
+                is_generation:          Optional[bool] = None,   
                 ):
         r"""
         ARGS:
@@ -90,6 +92,15 @@ class SurvStreamGPTForCausalModelling(nn.Module):
           This is true even for the survival head, as even though we could censor the target token, we do not have a time delta.
 
         """
+        if is_generation is not None:
+            logging.warning("In SurvStreamGPTForCausalModelling and subsequent heads, `is_generation` is now deprecated.")
+            if is_generation:
+                logging.warning("Handling by assuming generation, none-causal, no loss returned, and return generating assets")
+            else:
+                logging.warning("Handling by assuming not generation, causal, loss returned, and not returning generating assets")
+            is_causal = not is_generation
+            return_loss = not is_generation
+            return_generation = is_generation
         
         hidden_states = self.transformer(tokens=tokens, 
                                          ages=ages, 
@@ -102,27 +113,27 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                                                            target_tokens=tokens,
                                                            target_ages=ages, 
                                                            attention_mask=attention_mask,
-                                                           is_generation=is_generation,
-                                                           return_cdf=return_cdf)
+                                                           is_causal=is_causal,
+                                                           return_loss=return_loss,
+                                                           return_cdf=return_generation,
+                                                          )
             
         # regression head (values of next token if applicable)
         values_dist, loss_values = self.value_layer.predict(hidden_states,
                                                             target_tokens=tokens,
                                                             target_values=values,
                                                             attention_mask=attention_mask,
-                                                            is_generation=is_generation,
+                                                            is_causal=is_causal,
+                                                            return_loss=return_loss,
+                                                            return_value_dist=return_generation,
                                                             )
 
-        if not is_generation:
-            # DeSurv losses are returned as a list, as the Single-Risk head is many DeSurv models in parallel, combine
-            loss_desurv = torch.sum(torch.stack(losses_desurv))
-            # Weight the loss
-            loss = (self.surv_weight * loss_desurv) + (self.value_weight * loss_values)
-            # If we want to look at individual single risk losses in the future...
-            # **{f"losses_desurv_{idx}": desurv_loss for idx, desurv_loss in enumerate(losses_desurv)},
+        if return_loss:
+            loss_desurv = torch.sum(torch.stack(losses_desurv))                                  # losses are returned as a list, as the Single-Risk head is many DeSurv models in parallel, combine
+            loss = (self.surv_weight * loss_desurv) + (self.value_weight * loss_values)          # Weight the loss
         else:
-            loss = None
             loss_desurv = None
+            loss = None
 
         outputs = {"surv": surv_dict,
                    "values_dist": values_dist}
@@ -138,7 +149,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                  ages: torch.tensor,
                  values: torch.tensor,
                  covariates: Optional[torch.tensor] = None,
-                 # eos_token: Optional[int] = None,               # add this later?
+                 # eos_token: Optional[int] = None,               # add DEATH to determine EOS later?
                  max_new_tokens: int = 50,
                  ):
         """ Generate future samples for the single-risk
@@ -149,9 +160,8 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         for _ in range(max_new_tokens):
             # crop tokens to the last block_size tokens 
             if tokens.shape[1] > self.block_size:
-                logging.warning(r"""Context window is greater than block size. 
-                                    This is not compatible with `FoundationalDataset()` which 
-                                    enforces earlier diagnoses are prepended to batch windows.
+                logging.warning(r"""Context window is greater than block size. This is not compatible with the `sparse` setting of
+                                    `FoundationalDataset()` which enforces earlier diagnoses are prepended to batch windows.
                                     """)
             tokens_window = tokens[:, -self.block_size:]
             ages_window = ages[:, -self.block_size:] 
@@ -162,7 +172,10 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                                  ages=ages_window,
                                  values=values_window, 
                                  covariates=covariates,
-                                 is_generation=True)
+                                 is_causal=False,
+                                 return_generation=True,
+                                 return_loss=False,
+                                )
 
             # sample survival 
             surv = outputs["surv"]["surv_CDF"]

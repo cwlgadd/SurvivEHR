@@ -16,6 +16,7 @@ import logging
 from tqdm import tqdm
 import psutil
 import os
+from joblib import Parallel, delayed
 
 class PolarsDataset:
     
@@ -36,7 +37,8 @@ class PolarsDataset:
             include_diagnoses:                   bool = True,
             include_measurements:                bool = True,
             overwrite_practice_ids:              Optional[tuple] = None,    
-            overwrite_meta_information:          Optional[str] = None,    
+            overwrite_meta_information:          Optional[str] = None,
+            num_threads:                         int = 1,
             **kwargs
            ):
         r"""
@@ -133,6 +135,7 @@ class PolarsDataset:
                                            split_ids=split_ids, 
                                            include_diagnoses = include_diagnoses,
                                            include_measurements = include_measurements,
+                                           num_threads = num_threads,
                                            **kwargs)
             
             logging.info(f"Creating file_row_count_dicts for file-index look-ups")
@@ -157,12 +160,47 @@ class PolarsDataset:
         train_practice_ids, test_practice_ids = sk_split(practice_ids, test_size=0.1)       
         test_practice_ids, val_practice_ids = sk_split(test_practice_ids, test_size=0.5)
         return train_practice_ids, val_practice_ids, test_practice_ids
+
+    def _write_lazy_to_parquet_dl(self,
+                                  lazy_table_frames_dict,
+                                  chunk_name,
+                                  save_path:               str,
+                                  **kwargs,
+                                 ):
+        logging.debug(f"processing {chunk_name}")
+        
+        # Merge the lazy polars tables provided by the generator into one lazy polars frame
+        lazy_batch = self.collector._collate_lazy_tables(lazy_table_frames_dict, **kwargs)
+
+        if save_path is not None:
+            # save splits `hive` style partitioning using parquet which is a columnal format, but gives efficient compression
+            # TODO: make directories if they dont already exist
+
+            # include row count so we can filter when reading from file
+            df = lazy_batch.collect().with_row_count().to_pandas()  # offset=total_samples
+
+            # convert row count to a lower cardinality bin which can be used in the hive partitioning for faster reading
+            # ... the smaller the window the more files created, storage space used, and the longer this takes to run, but 
+            # ... the faster the read efficiency.
+            df = df.assign(CHUNK = [int(_v / 250) for _v in df['row_nr']])                  
+            
+            total_samples = len(df.index)
+            
+            table = pa.Table.from_pandas(df)
+            pq.write_to_dataset(table, root_path=save_path, 
+                                partition_cols=['COUNTRY', 'HEALTH_AUTH', 'PRACTICE_ID', 'CHUNK'],
+                               )
+            
+            logging.debug(f'{df.iloc[0]["COUNTRY"]}, {df.iloc[0]["HEALTH_AUTH"]}, {df.iloc[0]["PRACTICE_ID"]}')
+            
+        return total_samples
     
     def _write_parquet_dl_dataset(self,
                                   save_path:               str,
                                   split_ids:               list[str],
                                   include_diagnoses:       bool = True,
                                   include_measurements:    bool = True,
+                                  num_threads:             int = 1,
                                   **kwargs,
                                  ) -> pl.LazyFrame:
         r"""
@@ -183,34 +221,24 @@ class PolarsDataset:
                                                                        include_measurements=include_measurements,
                                                                        )
 
-        total_samples = 0
-        for _idx, (chunk_name, lazy_table_frames_dict) in enumerate(tqdm(practice_generator, total=len(split_ids))):
-            
-            # Merge the lazy polars tables provided by the generator into one lazy polars frame
-            lazy_batch = self.collector._collate_lazy_tables(lazy_table_frames_dict, **kwargs)
-
-            if save_path is not None:
-                # save splits `hive` style partitioning using parquet which is a columnal format, but gives efficient compression
-                # TODO: make directories if they dont already exist
-
-                # include row count so we can filter when reading from file
-                df = lazy_batch.collect().with_row_count(offset=total_samples).to_pandas()
-
-                # convert row count to a lower cardinality bin which can be used in the hive partitioning for faster reading
-                # ... the smaller the window the more files created, storage space used, and the longer this takes to run, but 
-                # ... the faster the read efficiency.
-                df = df.assign(CHUNK = [int(_v / 250) for _v in df['row_nr']])                  
-                
-                total_samples += len(df.index)
-                
-                table = pa.Table.from_pandas(df)
-                pq.write_to_dataset(table, root_path=save_path, 
-                                    partition_cols=['COUNTRY', 'HEALTH_AUTH', 'PRACTICE_ID', 'CHUNK'],
-                                   )
-                
-                logging.debug(f'{df.iloc[0]["COUNTRY"]}, {df.iloc[0]["HEALTH_AUTH"]}, {df.iloc[0]["PRACTICE_ID"]}')
-
-        logging.info(f"Created dataset at {save_path} with {total_samples:,} samples")
+        if num_threads > 1:
+            Parallel(n_jobs=num_threads, prefer="threads", verbose=10)(delayed(self._write_lazy_to_parquet_dl)(lazy_table_frames_dict,
+                                                                                                               chunk_name,
+                                                                                                               save_path=save_path,
+                                                                                                               **kwargs
+                                                                                                               ) 
+                                                                       for chunk_name, lazy_table_frames_dict in practice_generator)  # zip(range(10), range(10))
+        elif num_threads == 1:
+            total_samples = 0
+            for _idx, (chunk_name, lazy_table_frames_dict) in enumerate(tqdm(practice_generator, total=len(split_ids))):
+                total_samples += self._write_lazy_to_parquet_dl(lazy_table_frames_dict,
+                                               chunk_name, 
+                                               save_path=save_path,
+                                               **kwargs)
+    
+            logging.info(f"Created dataset at {save_path} with {total_samples:,} samples")
+        else:
+            raise NotImplementedError
         
         return 
 
@@ -218,7 +246,14 @@ class PolarsDataset:
         # Get all files at specified path, and extract from meta data how many samples are in each file. This allows for for faster reading during calls to dataset
         file_row_counts = {}
         desc = "Getting file row counts. This allows the creation of an index to file map, increasing read efficiency"
+        total_count = 0
         for file in tqdm(pathlib.Path(parquet_path).rglob('*.parquet'), desc=desc):
-            file_row_counts[file] = pq.ParquetFile(file).metadata.num_rows   # update hash map
+            num_rows =  pq.ParquetFile(file).metadata.num_rows
+            relative_file_path = str(file)[len(str(parquet_path)):]               # remove the root of the file path
+            logging.warning(f"relative_file_path: {relative_file_path}  -  manually done last dataset build, verify this is correct on next run and delete.")
+            file_row_counts[file] = num_rows                                      # update hash map
+            total_count += num_rows
+
+        logging.info(f"\t Obtained with a total of {total_count} samples")
     
         return file_row_counts

@@ -25,7 +25,9 @@ if __name__ == "__main__":
     torch.manual_seed(1337)
     logging.basicConfig(level=logging.INFO)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    num_threads = 3
     print(f"Using device: {device}.")
+    print(f"Fitting dataset over {num_threads} threads")
 
     # load the configuration file, override any settings 
     with initialize(version_base=None, config_path="../../modelling/SurvStreamGPT/confs", job_name="dataset_creation_notebook"):
@@ -45,6 +47,7 @@ if __name__ == "__main__":
                                 overwrite_practice_ids = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/practice_id_splits.pickle",
                                 overwrite_meta_information=cfg.data.meta_information_path,
                                 study_inclusion_method=cvd_inclusion_method(),
+                                num_threads=num_threads
                                )
     
     vocab_size = dm.train_set.tokenizer.vocab_size
