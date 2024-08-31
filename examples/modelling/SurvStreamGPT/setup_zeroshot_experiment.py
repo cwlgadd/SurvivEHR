@@ -11,6 +11,12 @@ import os
 # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 class ZeroShotExperiment(pl.LightningModule):
+    """
+
+    Note:
+        - The losses returned by this experiment class are those of each sequence transition, with the outcome removed.
+             This may be useful for assessing distributional shift, but it is not a test of outcome prediction performance.
+    """
 
     def __init__(self,
                  cfg,
@@ -22,7 +28,7 @@ class ZeroShotExperiment(pl.LightningModule):
         self.cfg = cfg
         self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size)
 
-    def forward(self, batch, is_causal=True, return_loss=True, return_generation=False):
+    def forward(self, batch, is_generation=False, return_loss=True, return_generation=False):
         # Because of how DeSurv is coded we have the loss returned in the forward, so we have some redundancy
 
         # Convert the batch from causal to supervised (if not already converted. 
@@ -40,7 +46,7 @@ class ZeroShotExperiment(pl.LightningModule):
                           values,
                           covariates,
                           attention_mask,
-                          is_causal=is_causal,
+                          is_generation=is_generation,
                           return_loss=return_loss,
                           return_generation=return_generation
                           )
@@ -102,9 +108,9 @@ class ZeroShotExperiment(pl.LightningModule):
             "lr_scheduler": lr_scheduler_config
         }
 
-def setup_zeroshot_experiment(cfg, dm, vocab_size):
+def setup_zeroshot_experiment(checkpoint, cfg, dm):
 
-    zero_shot_experiment = ZeroShotExperiment(cfg=cfg, vocab_size=vocab_size)
+    zero_shot_experiment = ZeroShotExperiment.load_from_checkpoint(checkpoint)
     logging.debug(zero_shot_experiment)
 
     # Initialize wandb logger
@@ -123,7 +129,7 @@ def setup_zeroshot_experiment(cfg, dm, vocab_size):
     
     # Hidden state embedding
     if True:
-        logging.info("Creating Embedding callback")
+        logging.info("Creating hidden state embedding callback")
         embedding_callback = Embedding(val_batch=val_batch,
                                        test_batch=test_batch
                                       )
@@ -139,7 +145,7 @@ def setup_zeroshot_experiment(cfg, dm, vocab_size):
                                              log_ibs=True,
                                              log_inbll=True
                                              )
-        callbacks.append(metric_callback)
+        # callbacks.append(metric_callback)
     else:
         logging.warning("To do zero-shot evaluation you must supply the outcomes, and set logging to be true")
 

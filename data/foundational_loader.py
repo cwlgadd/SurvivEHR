@@ -21,6 +21,7 @@ import logging
 from pathlib import Path
 from tqdm import tqdm
 import pickle
+import copy
 
 # Testing modules
 from CPRD.data.database import queries
@@ -550,6 +551,8 @@ def convert_batch_to_none_causal(batch):
     torch.Tensor: The vector containing the removed tokens.
     torch.Tensor: The vector containing the values that were removed from the value_matrix.
     """
+    
+    # batch = copy.deepcopy(batch)
 
     # Check if conversion has already happened
     if "target_token" in batch.keys():
@@ -560,7 +563,7 @@ def convert_batch_to_none_causal(batch):
         #   call this inside the forward in an experiment, then we do not want to repeat this
         #   operation, and so we return early.
         # TODO: a cleaner structure is possible?
-        logging.warning("""This batch has already been converted to none-causal. Skipping conversion.""")
+        logging.info("""This batch has already been converted to none-causal. Skipping conversion.""")
         return batch
 
     # Check if conversion is possible. If not, raise warning and reduce to samples which can be converted
@@ -614,8 +617,8 @@ def convert_batch_to_none_causal(batch):
     batch["ages"] = age_matrix
     batch["values"] = value_matrix
     batch["attention_mask"] = masking_matrix
-    batch["target_token"] = removed_tokens
-    batch["target_age_delta"] = removed_ages
-    batch["target_value"] = removed_values
+    batch["target_token"] = removed_tokens #
+    batch["target_age_delta"] = removed_ages #.reshape((-1,1))
+    batch["target_value"] = removed_values #.reshape((-1,1))
 
     return batch

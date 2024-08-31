@@ -43,7 +43,7 @@ class GaussianRegressionLayer(torch.nn.Module):
                 target_tokens: Optional[torch.tensor] = None,
                 target_values: Optional[torch.tensor] = None, 
                 attention_mask: Optional[torch.tensor] = None,
-                is_causal: bool = True,                         # Whether we forward every step (True) of seq_len, or just the final step (False)
+                is_generation: bool = False,                         # Whether we forward every step (True) of seq_len, or just the final step (False)
                 return_value_dist: bool = False,
                 return_loss: bool = True,
                 ):
@@ -62,7 +62,7 @@ class GaussianRegressionLayer(torch.nn.Module):
                 regression layers at those hidden states.
         """
         
-        if is_causal:
+        if not is_generation:
             
             if return_loss:
 
@@ -130,7 +130,7 @@ class GaussianRegressionLayer(torch.nn.Module):
                 assert attention_mask is not None
                 
                 # Forward the last (non-padded?) state. This will be used for fine-tuning a clinical prediction model, 
-                # but another use case for is_causal = False is that we are simply generating future trajectories. 
+                # but another use case for is_generation = True is that we are simply generating future trajectories. 
                 # In this case we want to just forward the last hidden state, irrespective of any potential padding
                 raise NotImplementedError
 

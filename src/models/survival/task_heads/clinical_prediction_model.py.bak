@@ -10,13 +10,13 @@ from CPRD.src.modules.head_layers.value_layers import GaussianRegressionLayer
 from typing import Optional
 import logging
 
-class SurvStreamGPTForCausalModelling(nn.Module):
+class SurvStreamGPTForClinicalPredictionModelling(nn.Module):
     r"""    
     """
     
     def __init__(self, 
                  cfg,
-                 vocab_size):
+                 number_of_outcomes):
         super().__init__()
         
         total_weight = cfg.head.surv_weight + cfg.head.value_weight
@@ -29,9 +29,9 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         match cfg.head.SurvLayer.lower():
             # Removing padding token from vocab size as this is not considered an event in either case
             case "single-risk" | "sr":
-                self.surv_layer = ODESurvSingleRiskLayer(cfg.transformer.n_embd, [], num_risks=vocab_size - 1, device="cuda")
+                self.surv_layer = ODESurvSingleRiskLayer(cfg.transformer.n_embd, [], num_risks=number_of_outcomes, device="cuda")
             case "competing-risk" | "cr":
-                self.surv_layer = ODESurvCompetingRiskLayer(cfg.transformer.n_embd, [], num_risks=vocab_size - 1, device="cuda")
+                self.surv_layer = ODESurvCompetingRiskLayer(cfg.transformer.n_embd, [], num_risks=number_of_outcomes, device="cuda")
             case _:
                 raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
 
@@ -52,7 +52,6 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                 values:                 torch.tensor,
                 covariates:             Optional[torch.tensor] = None,
                 attention_mask:         Optional[torch.tensor] = None,
-                is_generation:          bool = True,
                 return_generation:      bool = False,
                 return_loss:            bool = True,
                 ):
@@ -74,9 +73,6 @@ class SurvStreamGPTForCausalModelling(nn.Module):
             attention_mask:     (`torch.Tensor` of shape `torch.Size([batch_size, sequence_length])`):
                 The padding attention mask
                 
-            is_generation:
-                Whether GPT model is in generation or training mode
-
             return_cdf:
                 Whether (when is_generation=False) to also return the survival predicted CDF
 
@@ -103,7 +99,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                                                            target_tokens=tokens,
                                                            target_ages=ages, 
                                                            attention_mask=attention_mask,
-                                                           is_generation=is_generation,
+                                                           is_causal=is_causal,
                                                            return_loss=return_loss,
                                                            return_cdf=return_generation,
                                                           )
@@ -113,7 +109,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                                                             target_tokens=tokens,
                                                             target_values=values,
                                                             attention_mask=attention_mask,
-                                                            is_generation=is_generation,
+                                                            is_causal=is_causal,
                                                             return_loss=return_loss,
                                                             return_value_dist=return_generation,
                                                             )
@@ -139,7 +135,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                  ages: torch.tensor,
                  values: torch.tensor,
                  covariates: Optional[torch.tensor] = None,
-                 eos_token: Optional[int] = None,               # add DEATH to determine EOS later?
+                 # eos_token: Optional[int] = None,               # add DEATH to determine EOS later?
                  max_new_tokens: int = 50,
                  ):
         """ Generate future samples for the single-risk
@@ -150,8 +146,9 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         for _ in range(max_new_tokens):
             # crop tokens to the last block_size tokens 
             if tokens.shape[1] > self.block_size:
-                logging.debug(r"Context window is greater than block size." + \
-                              " This is not compatible with the `sparse` setting of `FoundationalDataset()` which enforces earlier diagnoses are prepended to batch windows.")
+                logging.warning(r"""Context window is greater than block size. This is not compatible with the `sparse` setting of
+                                    `FoundationalDataset()` which enforces earlier diagnoses are prepended to batch windows.
+                                    """)
             tokens_window = tokens[:, -self.block_size:]
             ages_window = ages[:, -self.block_size:] 
             values_window = values[:, -self.block_size:] 
@@ -161,7 +158,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                                  ages=ages_window,
                                  values=values_window, 
                                  covariates=covariates,
-                                 is_generation=True,
+                                 is_causal=False,
                                  return_generation=True,
                                  return_loss=False,
                                 )
@@ -189,8 +186,9 @@ class SurvStreamGPTForCausalModelling(nn.Module):
             values = torch.cat((values, values_next), dim=1) 
 
             # TODO: add death token as EOS token
-            if token_next == eos_token:
-                break
+            # if token_next == eos_token:
+            #     raise NotImplementedError
+            #     break
 
             if ages_next > 120*365:
                 logging.warning("Breaking generation due to implausible age")

@@ -8,6 +8,7 @@ import umap
 import wandb
 import matplotlib.pyplot as plt
 from CPRD.src.models.base_callback import BaseCallback
+from CPRD.data.foundational_loader import convert_batch_to_none_causal
 from pycox.evaluation import EvalSurv
 import pandas as pd
 import seaborn as sns
@@ -74,13 +75,15 @@ class PerformanceMetrics(Callback):
                  outcome_tokens,
                  log_ctd=True, 
                  log_ibs=True, 
-                 log_inbll=True):
+                 log_inbll=True,
+                 plot_outcome_curves=False):
         
         Callback.__init__(self)
         self.outcome_tokens = outcome_tokens
         self.log_ctd = log_ctd
         self.log_ibs = log_ibs
         self.log_inbll = log_inbll
+        self.plot_outcome_curves = plot_outcome_curves
 
     def plot_outcome_curve(self, cdf, lbls, _trainer):
         
@@ -93,7 +96,7 @@ class PerformanceMetrics(Callback):
         for i in range(cdf_true.shape[0]):
             plt.plot(np.linspace(1,1826,1826), cdf_true[i,:], c="r", label="outcome occurred next" if i == 0 else None, alpha=1)
         for i in range(cdf_false.shape[0]):
-            plt.plot(np.linspace(1,1826,1826), cdf_false[i,:], c="k", label="outcome did not occur next" if i == 0 else None, alpha=0.3)
+            plt.plot(np.linspace(1,1826,1826), cdf_false[i,:], c="k", label="outcome did not occur next" if i == 0 else None, alpha=0.1)
         
         plt.legend(loc=2)
         plt.xlabel("days")
@@ -109,15 +112,16 @@ class PerformanceMetrics(Callback):
                      batch,
                      log_name:               str='Embedding',
                     ):
-
-        #  
         
+        #  The zero_shot and fine_tuning _pl_modules already 
+        # batch = convert_batch_to_none_causal(batch)
+
+        all_outputs, _, _ = _pl_module(batch, is_generation=True, return_loss=False, return_generation=True)
+        pred_surv_CDFs = all_outputs["surv"]["surv_CDF"]
+
         target_tokens = batch['target_token']
         target_ages = batch['target_age_delta'].numpy()
         target_values = batch['target_value']
-
-        all_outputs, _, _ = _pl_module(batch, is_causal=False, return_loss=False, return_generation=True)
-        pred_surv_CDFs = all_outputs["surv"]["surv_CDF"]
 
         # Merge (additively) each outcome risk curve into a single CDF, and make a label for if one of the outcomes occurred or not
         cdf = np.zeros_like(pred_surv_CDFs[0])
@@ -135,15 +139,15 @@ class PerformanceMetrics(Callback):
         ev = EvalSurv(surv, target_ages, lbls, censor_surv='km')
 
         # Plot the outcome curves
-        if True:
+        if self.plot_outcome_curves:
             # Internal plot
             self.plot_outcome_curve(cdf, lbls, _trainer)
 
             # EvSurv's view for debugging
-            fig = ev[1:50].plot_surv()
-            _trainer.logger.experiment.log({
-                    "EvalSurv_curve": wandb.Image(fig)
-                })
+            # fig = ev[1:50].plot_surv()
+            # _trainer.logger.experiment.log({
+            #         "EvalSurv_curve": wandb.Image(fig)
+            #     })
 
         time_grid = np.linspace(start=0, stop=_pl_module.model.surv_layer._time_scale , num=300)
 

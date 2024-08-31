@@ -35,14 +35,14 @@ class ODESurvCompetingRiskLayer(nn.Module):
                 target_tokens: Optional[torch.tensor] = None,   # shape: torch.Size([bsz, seq_len])
                 target_ages: Optional[torch.tensor] = None,     # shape: torch.Size([bsz, seq_len])        
                 attention_mask: Optional[torch.tensor] = None,  # shape: torch.Size([bsz, seq_len])
-                is_causal: bool = True,                         # Whether we forward every step (True) of seq_len, or just the final step (False)
+                is_generation: bool = False,                         # Whether we forward every step (True) of seq_len, or just the final step (False)
                 return_cdf: bool = False,
                 return_loss: bool = True,
                 ):
         r"""
         """
 
-        if is_causal:
+        if not is_generation:
             
             if return_loss:
 
@@ -54,8 +54,7 @@ class ODESurvCompetingRiskLayer(nn.Module):
                 #       The 1st element of list corresponds to 2nd vocab element (vocab index == 0 is the PAD token which is excluded)
                 #       k \in {0,1} with 1 if the seq target is the same as the single risk ode's index (position in list), and 0
                 #       otherwise
-                k = target_tokens[:, 1:]
-                # shape: torch.Size([bsz, seq_len - 1])
+                k = target_tokens[:, 1:]                                                                # torch.Size([bsz, seq_len - 1])
                 
                 # We are considering the delta of time, but each element in the seq_len just has the time of event. 
                 # This means the output mask requires both the time at the event, and the time of the next event to be available.
@@ -102,7 +101,6 @@ class ODESurvCompetingRiskLayer(nn.Module):
                 
 
         else:
-
             # inference-time mini-optimization: only forward the head on the very last position
             in_hidden_state = hidden_states[:, -1, :]
             
@@ -113,7 +111,7 @@ class ODESurvCompetingRiskLayer(nn.Module):
                 assert attention_mask is not None
                 
                 # Forward the last (non-padded?) state. This will be used for fine-tuning a clinical prediction model, 
-                # but another use case for is_causal = False is that we are simply generating future trajectories. 
+                # but another use case for is_generation = False is that we are simply generating future trajectories. 
                 # In this case we want to just forward the last hidden state, irrespective of any potential padding
                 raise NotImplementedError
                 
@@ -123,7 +121,6 @@ class ODESurvCompetingRiskLayer(nn.Module):
                         "tte_deltas": None,
                        }
 
-                    
             # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
             surv ={**surv, 
                    "surv_CDF":  self._predict_cdf(in_hidden_state) if return_cdf else None}
@@ -137,7 +134,7 @@ class ODESurvCompetingRiskLayer(nn.Module):
         Predict survival curves from the hidden states
         """
 
-        assert hidden_states.dim() == 2
+        assert hidden_states.dim() == 2, hidden_states.shape
         
         # The normalised grid over which to predict
         t_test = torch.tensor(np.concatenate([self.t_eval] * hidden_states.shape[0], 0), dtype=torch.float32, device=self.device)
