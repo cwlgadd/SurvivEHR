@@ -48,7 +48,6 @@ def run(cfg : DictConfig):
 
     # Experiment pre-trained model checkpoint path
     pre_trained_ckpt_path = cfg.experiment.ckpt_dir + cfg.experiment.run_id + ".ckpt"
-    checkpoint = pre_trained_ckpt_path
     
     # Create experiment
     match cfg.experiment.type.replace('-', '').replace(' ', '').lower():
@@ -65,7 +64,9 @@ def run(cfg : DictConfig):
                     raise FileExistsError(f"A pre-trained experiment with the checkpoint path {pre_trained_ckpt_path} already exists.")
             else:
                 assert Path(pre_trained_ckpt_path).is_file(), f"If we are not training a new pre-trained model there must already be a valid checkpoint {pre_trained_ckpt_path} to load."
-                
+
+            new_checkpoint = pre_trained_ckpt_path
+            
         case "zeroshot":
             
             logging.info("\nCreating Zero-Shot experiment. This will evaluate the pre-trained Foundation Model on a clinical prediction model task.")
@@ -74,25 +75,29 @@ def run(cfg : DictConfig):
             assert cfg.experiment.train == False, f"The zero-shot experiment is only for evaluation, not training. Ensure config.experiment.train==False, not {cfg.experiment.train}."
             assert Path(pre_trained_ckpt_path).is_file(), f"To evaluate a pre-trained model, please ensure there is a valid pre-trained checkpoint {pre_trained_ckpt_path} to load."
 
+            new_checkpoint = pre_trained_ckpt_path
 
         case "finetune":
             logging.info("\nCreating Fine-Tuning experiment. This will create / evaluate a fine-tuned model on a pre-existing pre-trained Foundation Model on a clinical prediction model task.")
-            fine_tune_checkpoint_name = cfg.experiment.run_id + f"_{cfg.data.path_to_ds.split('/')[-2]}"    # run id + dataset folder name (i.e. CR_11M_FineTune_CVD)
-            logging.info(f"The fine-tuned model can be found at {fine_tune_checkpoint_name}.ckpt\n")
+            fine_tune_run_id =  cfg.experiment.run_id + f"_{cfg.data.path_to_ds.split('/')[-2]}"   # run id + dataset folder name (i.e. CR_11M_FineTune_CVD)
+            logging.info(f"Loading from pre-trained model found at {pre_trained_ckpt_path}\n")
+            logging.info(f"The fine-tuned model can be found at {fine_tune_run_id}.ckpt\n")
             
-            experiment_instance, Experiment, trainer = setup_finetune_experiment(pre_trained_ckpt_path, cfg=cfg, dm=dm, checkpoint_finetune=fine_tune_checkpoint_name)
+            experiment_instance, Experiment, trainer = setup_finetune_experiment(pre_trained_ckpt_path, cfg=cfg, dm=dm, fine_tune_run_id=fine_tune_run_id)
+
+            # If we are fine-tuning the model, then after any additional training we will load in the `fine_tune_run_id` checkpoint
+            new_checkpoint = cfg.experiment.ckpt_dir + fine_tune_run_id + ".ckpt"
             
             # Ensure there is an existing pre-trained model to fine-tune
             if cfg.experiment.train:
                 if not Path(pre_trained_ckpt_path).is_file():
                     raise FileExistsError(f"The pre-trained model with the checkpoint path {pre_trained_ckpt_path} does not exist.")
-                if Path(fine_tune_checkpoint_name).is_file():
-                    raise FileExistsError(f"A fine-tuned model with the checkpoint path {fine_tune_checkpoint_name} already exists.")
+                if Path(new_checkpoint).is_file():
+                    raise FileExistsError(f"A fine-tuned model with the checkpoint path {new_checkpoint} already exists.")
             else:
-                assert Path(fine_tune_checkpoint_name).is_file(), f"If we are not training a new fine-tuned model there must already be a valid checkpoint {fine_tune_checkpoint_name} to load."
+                assert Path(new_checkpoint).is_file(), f"If we are not training a new fine-tuned model there must already be a valid checkpoint {new_checkpoint} to load."
 
-            # If we are fine-tuning the model, then after any training we will load in the fine_tune_checkpoint_path checkpoint
-            checkpoint = fine_tune_checkpoint_name
+            
             
         case _:
             raise NotImplementedError
@@ -102,8 +107,8 @@ def run(cfg : DictConfig):
         trainer.fit(experiment_instance, datamodule=dm)
 
         # Ensure we evaluate on the best/latest version of the model - particularly if we just trained then load the new best checkpoint
-        logging.info(f"Re-loading from best cached checkpoint {checkpoint}")
-        experiment_instance = Experiment.load_from_checkpoint(checkpoint)
+        logging.info(f"Re-loading from best cached checkpoint {new_checkpoint}")
+        experiment_instance = Experiment.load_from_checkpoint(new_checkpoint)
 
     # Test model
     if cfg.experiment.test:

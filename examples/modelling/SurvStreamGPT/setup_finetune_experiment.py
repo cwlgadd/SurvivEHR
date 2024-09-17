@@ -413,7 +413,7 @@ class FineTuneExperiment(pl.LightningModule):
             "lr_scheduler": lr_scheduler_config
         }
 
-def setup_finetune_experiment(checkpoint, cfg, dm, checkpoint_finetune):
+def setup_finetune_experiment(checkpoint, cfg, dm, fine_tune_run_id):
 
     fine_tune_experiment = FineTuneExperiment.load_from_checkpoint(checkpoint)
     logging.debug(fine_tune_experiment)    
@@ -421,7 +421,7 @@ def setup_finetune_experiment(checkpoint, cfg, dm, checkpoint_finetune):
     # Initialize wandb logger
     if cfg.experiment.log == True:
         logger = pl.loggers.WandbLogger(project=cfg.experiment.project_name,
-                                        name=checkpoint_finetune,
+                                        name=fine_tune_run_id,
                                         save_dir=cfg.experiment.log_dir
                                         )
     else:
@@ -430,7 +430,7 @@ def setup_finetune_experiment(checkpoint, cfg, dm, checkpoint_finetune):
     # Make all callbacks
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         dirpath=cfg.experiment.ckpt_dir,
-        filename=checkpoint_finetune,
+        filename=fine_tune_run_id,
         verbose=cfg.experiment.verbose,
         monitor="val_loss",
     )

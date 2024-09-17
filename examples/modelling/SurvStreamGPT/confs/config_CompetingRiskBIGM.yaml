@@ -12,7 +12,7 @@ data:
   
 experiment:
   type: 'pre-train'                  # Options: ['pre-train', 'zero-shot', 'fine-tune']
-  project_name: SurvStreamGPT_${head.SurvLayer}
+  project_name: SurvEHR_${head.SurvLayer}
   run_id: PreTrain_${head.SurvLayer}_BIGM_${experiment.seed}
   train: True
   test: True
