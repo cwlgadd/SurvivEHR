@@ -8,7 +8,7 @@ import umap
 import wandb
 import matplotlib.pyplot as plt
 from CPRD.src.models.base_callback import BaseCallback
-from CPRD.data.foundational_loader import convert_batch_to_none_causal
+# from CPRD.data.foundational_loader import convert_batch_to_none_causal
 from pycox.evaluation import EvalSurv
 import pandas as pd
 import seaborn as sns
@@ -119,9 +119,9 @@ class PerformanceMetrics(Callback):
         all_outputs, _, _ = _pl_module(batch, is_generation=True, return_loss=False, return_generation=True)
         pred_surv_CDFs = all_outputs["surv"]["surv_CDF"]
 
-        target_tokens = batch['target_token']
-        target_ages = batch['target_age_delta'].numpy()
-        target_values = batch['target_value']
+        target_tokens = batch['target_token'].cpu().numpy()
+        target_ages = batch['target_age_delta'].cpu().numpy()
+        target_values = batch['target_value'].cpu().numpy()
 
         # Merge (additively) each outcome risk curve into a single CDF, and make a label for if one of the outcomes occurred or not
         cdf = np.zeros_like(pred_surv_CDFs[0])
@@ -129,7 +129,7 @@ class PerformanceMetrics(Callback):
         for _outcome_token in self.outcome_tokens:
             # print(f"{_outcome_token}: {pred_surv_CDFs[_outcome_token - 1][:4,:]}")
             cdf += pred_surv_CDFs[_outcome_token - 1] 
-            lbls += (target_tokens == _outcome_token).long().numpy()
+            lbls += (target_tokens == _outcome_token) # .long().numpy()
 
         if np.sum(lbls) == 0:
             logging.warning("No outcome targets in batch. Evaluating metrics will be unstable.")

@@ -96,9 +96,12 @@ class CausalExperiment(pl.LightningModule):
             "lr_scheduler": lr_scheduler_config
         }
 
-def setup_causal_experiment(cfg, dm, vocab_size):
+def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None):
 
-    causal_experiment = CausalExperiment(cfg=cfg, vocab_size=vocab_size)
+    if checkpoint is None:
+        causal_experiment = CausalExperiment(cfg=cfg, vocab_size=vocab_size)
+    else:
+        causal_experiment = CausalExperiment.load_from_checkpoint(checkpoint, cfg=cfg)
     logging.debug(causal_experiment)
 
     # Initialize wandb logger

@@ -10,7 +10,6 @@ data:
   # Path to meta_information. This is created when building datasets. It can then be modified, for example here we updated the default outlier bounds to custom values
   meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle
   
-
 experiment:
   type: 'pre-train'                  # Options: ['pre-train', 'zero-shot', 'fine-tune']
   project_name: SurvEHR_${head.SurvLayer}
@@ -23,7 +22,7 @@ experiment:
   log_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/                    # Where to place any log files
   ckpt_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/       # Where to save checkpoints during training 
   # If we are evaluating the pre-trained model (with zero-shot,or fine-tuning), which outcomes do we consider
-  fine_tune_outcomes: None                                                     
+  fine_tune_outcomes: null                                                     
   
 optim: 
   num_epochs: 1                      # Number of batches. By default we train on each patient one time
