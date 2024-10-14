@@ -24,24 +24,29 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         self.value_weight = cfg.head.value_weight / total_weight
         self.block_size = cfg.transformer.block_size
         
+        self.n_embd = cfg.transformer.n_embd                                                      # Total number of embedded dimensions after MHA concatenation
+        self.n_embd_per_head = cfg.transformer.n_embd // cfg.transformer.n_head                   # How many of these dimensions belong to each head
+        self.n_embd_private = cfg.transformer.private_heads * self.n_embd_per_head                # and how many of these dimensions are private
+        
         self.transformer = TTETransformer(cfg, vocab_size)
 
         match cfg.head.SurvLayer.lower():
             # Removing padding token from vocab size as this is not considered an event in either case
             case "single-risk" | "sr":
-                self.surv_layer = ODESurvSingleRiskLayer(cfg.transformer.n_embd, [], num_risks=vocab_size - 1, device="cuda")
+                self.surv_layer = ODESurvSingleRiskLayer(cfg.n_embd - self.n_embd_private, [], num_risks=vocab_size - 1, device="cuda")
             case "competing-risk" | "cr":
-                self.surv_layer = ODESurvCompetingRiskLayer(cfg.transformer.n_embd, [], num_risks=vocab_size - 1, device="cuda")
+                self.surv_layer = ODESurvCompetingRiskLayer(cfg.n_embd - self.n_embd_private, [], num_risks=vocab_size - 1, device="cuda")
             case _:
                 raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
 
 
         # Regression layers, create a separate regression layer for each measurement
-        self.value_layer = GaussianRegressionLayer(cfg.transformer.n_embd,
+        #   In the case we want to include private_heads, then 
+        self.value_layer = GaussianRegressionLayer(cfg.n_embd - self.n_embd_private,
                                                    measurement_tokens=cfg.head.tokens_for_univariate_regression
                                                    )
 
-        # apply special scaled init to the residual projections, per GPT-2 paper
+        # apply special scaled init to the residual projections, per GPT-2
         # for pn, p in self.named_parameters():
         #     if pn.endswith('c_proj.weight'):
         #         torch.nn.init.normal_(p, mean=0.0, std=0.02/math.sqrt(2 * config.n_layer))
@@ -99,7 +104,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                                          attention_mask=attention_mask)  # shape: (bsz, seq_len, n_embd)
 
         # survival time to event head (survival curve until next token)
-        surv_dict, losses_desurv = self.surv_layer.predict(hidden_states,
+        surv_dict, losses_desurv = self.surv_layer.predict(hidden_states[:,:,:self.n_embd - self.n_embd_private],
                                                            target_tokens=tokens,
                                                            target_ages=ages, 
                                                            attention_mask=attention_mask,
@@ -109,7 +114,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                                                           )
             
         # regression head (values of next token if applicable)
-        values_dist, loss_values = self.value_layer.predict(hidden_states,
+        values_dist, loss_values = self.value_layer.predict(hidden_states[:,:, self.n_embd_private:],
                                                             target_tokens=tokens,
                                                             target_values=values,
                                                             attention_mask=attention_mask,

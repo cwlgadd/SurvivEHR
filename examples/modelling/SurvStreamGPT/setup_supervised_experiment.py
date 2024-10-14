@@ -22,10 +22,13 @@ class SupervisedExperiment(pl.LightningModule):
         self.cfg = cfg
         self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size)
 
-        self.freeze_body = True
-        # Get all parameters except those belonging to `excluded_module`
-        self.parameters_head = set(list(self.model.surv_layer.parameters()) + list(self.model.value_layer.parameters()))
+        self.freeze_body = False
+        self.parameters_head = list(self.model.surv_layer.parameters())
+        if self.model.value_weight > 0:
+            self.parameters_head += list(self.model.value_layer.parameters())
+        self.parameters_head = set(self.parameters_head)
         self.parameters_body = (param for param in self.model.parameters() if param not in self.parameters_head)
+        logging.info(f"Trainable parameters: {'DeSurv head' if self.freeze_body else 'all'} parameters")
 
         # self.replace_head_out_dim = False
         # if self.replace_head_out_dim:
@@ -98,7 +101,7 @@ class SupervisedExperiment(pl.LightningModule):
         target_attention_mask = torch.ones_like(target_tokens, device=self.device) == 1
 
         # survival time to event head (survival curve until next token)
-        surv_dict, losses_desurv = self.model.surv_layer.predict(in_hidden_state,
+        surv_dict, losses_desurv = self.model.surv_layer.predict(in_hidden_state[:,:,:self.model.n_embd - self.model.n_embd_private],
                                                                  target_tokens=target_tokens,
                                                                  target_ages=target_ages, 
                                                                  attention_mask=target_attention_mask,
@@ -108,7 +111,7 @@ class SupervisedExperiment(pl.LightningModule):
                                                                  )
             
         # # regression head (values of next token if applicable)
-        values_dist, loss_values = self.model.value_layer.predict(in_hidden_state,
+        values_dist, loss_values = self.model.value_layer.predict(in_hidden_state[:,:, self.model.n_embd_private:],
                                                                   target_tokens=target_tokens,
                                                                   target_values=target_values,
                                                                   attention_mask=target_attention_mask,
@@ -184,7 +187,7 @@ class SupervisedExperiment(pl.LightningModule):
                 raise NotImplementedError
 
         if self.cfg.optim.scheduler_warmup:
-            logging.info("Using warm-up in scheduler")
+            logging.info(f"Using warm-up in scheduler for {self.cfg.optim.scheduler_periods} steps")
             # Create scheduler with linear warmup followed by Cosine Annealing with warm restarts.
             warmup = int(self.cfg.optim.scheduler_periods)
             lambda1 = lambda step: float(step) / warmup if step < warmup else 1
@@ -210,14 +213,14 @@ def setup_supervised_experiment(cfg, dm, checkpoint):
 
     assert dm.is_supervised, "Datamodule for must be supervised for `setup_supervised_experiment` ."
     assert cfg.experiment.fine_tune_outcomes is not None, "Must provide outcome list for supervised experiment"
-    
+
     supervised_experiment = SupervisedExperiment.load_from_checkpoint(checkpoint, cfg=cfg)
     logging.debug(supervised_experiment)
 
     # Initialize wandb logger
     if cfg.experiment.log == True:
         logger = pl.loggers.WandbLogger(project=cfg.experiment.project_name,
-                                        name=cfg.experiment.run_id + f"_{cfg.data.path_to_ds.split('/')[-2]}",
+                                        name=cfg.experiment.run_id + "_" + cfg.experiment.fine_tune_id, 
                                         save_dir=cfg.experiment.log_dir
                                         )
     else:
@@ -226,7 +229,7 @@ def setup_supervised_experiment(cfg, dm, checkpoint):
     # Make all callbacks
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         dirpath=cfg.experiment.ckpt_dir,
-        filename=cfg.experiment.run_id + f"_{cfg.data.path_to_ds.split('/')[-2]}",
+        filename=cfg.experiment.run_id + "_" + cfg.experiment.fine_tune_id, 
         verbose=cfg.experiment.verbose,
         monitor="val_loss",
     )

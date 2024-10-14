@@ -49,76 +49,101 @@ def run(cfg : DictConfig):
     # cfg.head.tokens_for_univariate_regression = dm.encode(measurements_for_univariate_regression) #
     measurements_for_univariate_regression = dm.train_set.meta_information["measurement_tables"][dm.train_set.meta_information["measurement_tables"]["count_obs"] > 0]["event"].to_list()
     cfg.head.tokens_for_univariate_regression = dm.encode(measurements_for_univariate_regression)
-    logging.debug(OmegaConf.to_yaml(cfg))
+    logging.info(OmegaConf.to_yaml(cfg))
 
     # Experiment pre-trained model checkpoint path
     pre_trained_ckpt_path = cfg.experiment.ckpt_dir + cfg.experiment.run_id + ".ckpt"
     
     # Create experiment
-    match cfg.experiment.type.replace('-', '').replace(' ', '').lower():
+    experiment_type = cfg.experiment.type.replace('-', '').replace(' ', '').lower()
+    match experiment_type:
     # (TODO: LBYL)
         case "pretrain" | "causal" | "selfsupervised":
+            
             if Path(pre_trained_ckpt_path).is_file():
                 # Load existing experiment from checkpoint
+                logging.info("="*100)
+                logging.info(f"# Loading a pre-trained model with the checkpoint path {pre_trained_ckpt_path}. Evaluating causal performance...")
+                logging.info("="*100)
                 
                 if cfg.experiment.train:
                     # Catch cases where user loads a pre-trained model and tries to pre-train it further, as this edge case is not supported 
                     #   (it will result in checkpointing to a new pre_trian_ckpt-V2.ckpt file and then re-loading the original after training)
-                    raise FileExistsError(f"A pre-trained causal experiment with the checkpoint path {pre_trained_ckpt_path} already exists. Further training on a checkpoint is not yet supported.")
+                    raise FileExistsError(f"Further training on a checkpoint is not supported.")
                     
-                logging.info("="*100)
-                logging.info(f"# A pre-trained model with the checkpoint path {pre_trained_ckpt_path} already exists, loading.")
-                logging.info("="*100)
                 load_from_checkpoint = pre_trained_ckpt_path
                 
             else:
-                logging.info(f"A pre-trained model cannot be found at checkpoint path {pre_trained_ckpt_path}.")
                 # Create new experiment
+                logging.info("="*100)
+                logging.info(f"Creating new pre-trained model at the path {pre_trained_ckpt_path}.")
+                logging.info("="*100)
+                
                 assert dm.is_supervised == False, f"If you are training a new pre-trained model, the data module must not be supervised. Got {dm.is_supervised}."
                 assert cfg.experiment.train is True, f"If you are not training a new pre-trained model, please load a valid checkpoint. {pre_trained_ckpt_path} is not valid."
                 
-                logging.info("="*100)
-                logging.info(f"# Creating a new pre-trained/causal experiment.")
                 logging.info(f"# This will create / evaluate a pre-trained Foundation Model on a causal (next-event prediction) modelling task.")
-                logging.info(f"# This can be found at {pre_trained_ckpt_path}")
-                logging.info("="*100)
                 load_from_checkpoint = None
                 
             experiment_instance, Experiment, trainer = setup_causal_experiment(cfg=cfg, dm=dm, vocab_size=vocab_size, checkpoint=load_from_checkpoint)
             new_checkpoint = pre_trained_ckpt_path
-            
-        case "finetune" | "supervised" | "clinicalpredictionmodel" | "cpm":
 
+            
+        case "zeroshot":
+            # Evaluate an existing pre-trained experiment
+            logging.info("="*100)
+            logging.info(f"# Loading a pre-trained model with the checkpoint path {pre_trained_ckpt_path}. Evaluating supervised performance")
+            logging.info("="*100)
+            
             # Ensure the pre-trained model exists
             if not Path(pre_trained_ckpt_path).is_file():
                 raise FileExistsError(f"The pre-trained model with the checkpoint path {pre_trained_ckpt_path} does not exist.")
+            
+            # Load existing pre-trained checkpoint
+            assert cfg.experiment.train is False, f"The zero-shot experiment evaluates a pre-trained causal model on a supervised task without additional training. Ensure training is set to False"
 
-            fine_tune_run_id =  cfg.experiment.run_id + f"_{cfg.data.path_to_ds.split('/')[-2]}"   # run id + dataset folder name (i.e. CR_11M_FineTune_CVD)
-            fine_tune_ckpt_path = cfg.experiment.ckpt_dir + fine_tune_run_id + ".ckpt"
-            if Path(fine_tune_ckpt_path).is_file():
+            load_from_checkpoint = pre_trained_ckpt_path
+                
+            experiment_instance, Experiment, trainer = setup_supervised_experiment(cfg=cfg, dm=dm, checkpoint=load_from_checkpoint)
+            new_checkpoint = pre_trained_ckpt_path
+
+        case "finetune" | "fewshot":
+            # Create/evaluate a fine-tuned model
+
+            # Get ckpt path for each experiment type
+            supervised_run_id =  cfg.experiment.run_id + "_" + cfg.experiment.fine_tune_id   # run id + dataset folder name (i.e. CR_11M_FineTune_CVD)
+            supervised_ckpt_path = cfg.experiment.ckpt_dir + supervised_run_id + ".ckpt"
+            
+            logging.info("="*100)
+            logging.info(f"# Fine-tuning experiment, at checkpoint {supervised_ckpt_path}")
+            logging.info("="*100)
+            
+            # Ensure the pre-trained model exists
+            if not Path(pre_trained_ckpt_path).is_file():
+                raise FileExistsError(f"The pre-trained model with the checkpoint path {pre_trained_ckpt_path} does not exist.")
+            
+            if Path(supervised_ckpt_path).is_file():
                 # Load existing fine-tuned experiment from checkpoint
+                logging.info(f"Loading a fine-tuned model with the checkpoint path {supervised_ckpt_path}. Evaluating supervised performance")
 
-                if cfg.experiment.train:
-                    # Catch cases where user loads a fine-tuned model and tries to fine-tune it further, as this edge case is not supported 
-                    #   (it will result in checkpointing to a new fine_tune_ckpt-V2.ckpt file and then re-loading the original after training)
-                    raise FileExistsError(f"A fine-tuned supervised experiment with the checkpoint path {fine_tune_ckpt_path} already exists. Further training on a checkpoint is not yet supported.")
+                # Catch cases where user loads a fine-tuned model and tries to fine-tune it further, as this edge case is not supported 
+                #   (it will result in checkpointing to a new fine_tune_ckpt-V2.ckpt file and then re-loading the original after training)
+                assert cfg.experiment.train is False, f"Further training on a checkpoint is not supported."
 
-                load_from_checkpoint = fine_tune_ckpt_path
+                load_from_checkpoint = supervised_ckpt_path
                 
             else:
                 # Create new fine-tuning experiment
-                logging.info("="*100)
-                logging.info(f"# Creating a new supervised experiment from the existing pre-trained model")
-                logging.info(f"# This pre-trained causal experiment can be found at {pre_trained_ckpt_path}.")
-                if cfg.experiment.train:
-                    logging.info(f"# This will fine-tune the pre-trained Foundation Model on a supervised (clinical prediction model) modelling task.")
-                logging.info(f"# This can be found at {fine_tune_ckpt_path}")
-                logging.info("="*100)
+                logging.info(f"Creating new fine-tuned model at the path {supervised_ckpt_path}.")
+                logging.info(f"This is trained from a checkpointed pre-trained causal experiment, which can be found at {pre_trained_ckpt_path}.")
+                
+                assert cfg.experiment.train is True, f"If you are not training a new fine-tuned model, please load a valid checkpoint. {pre_trained_ckpt_path} is not valid."
+                
                 load_from_checkpoint = pre_trained_ckpt_path
                 
             experiment_instance, Experiment, trainer = setup_supervised_experiment(cfg=cfg, dm=dm, checkpoint=load_from_checkpoint)
-            new_checkpoint = fine_tune_ckpt_path
-            
+            new_checkpoint = supervised_ckpt_path
+
         case _:
             raise NotImplementedError
     

@@ -339,9 +339,19 @@ class FoundationalDataset(Dataset):
                 
         # Read the corresponding row from the Parquet dataset
         try:
-            row_df = pq.read_table(self.parquet_path + self.sub_dir + file).to_pandas().loc[idx]
+            if Path(file).is_file():
+                # Current version
+                row_df = pq.read_table(file).to_pandas().loc[idx]  
+                
+            elif Path(self.parquet_path + self.sub_dir + file).is_file():
+                 # Old version of this code produced datasets with dictionaries that only stored the filename, catch them
+                row_df = pq.read_table(self.parquet_path + self.sub_dir + file).to_pandas().loc[idx]
+                
+            else:
+                raise FileNotFoundError
+           
         except:
-            raise ValueError(f"No data found for index {idx} from file {self.parquet_path}{self.sub_dir}{file}")
+            raise ValueError(f"No data found for index {idx} from file {self.parquet_path}{self.sub_dir}{file}, with file rowcount {self.file_row_count_dict[file]}")
 
         # Static variables
         ##################

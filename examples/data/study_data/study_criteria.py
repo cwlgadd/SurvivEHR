@@ -4,12 +4,11 @@ import logging
 def cvd_inclusion_method(index_on_event="TYPE2DIABETES", 
                          outcomes=["IHDINCLUDINGMI_OPTIMALV2", "ISCHAEMICSTROKE_V2", "MINFARCTION", "STROKEUNSPECIFIED_V2", "STROKE_HAEMRGIC"],
                          exclude_on_events=["TYPE1DM"],                         
-                         exclude_on_events_prior_to_index=['Statins', #'Lipid_lowering_drugs_Optimal', 'Aspirin_OPTIMAL',
-                                                            # 'HF_V3',, 'PVD_V3'
-                                                          ],
+                         exclude_on_events_prior_to_index=['Statins'],
                          study_period=["1998-01-01", "2019-12-31"],
                          age_at_entry_range=[25, 85],
                          min_registered_years=1,
+                         min_events=None,
                          ):
 
     
@@ -20,6 +19,7 @@ def cvd_inclusion_method(index_on_event="TYPE2DIABETES",
                                            study_period=study_period,
                                            age_at_entry_range=age_at_entry_range,
                                            min_registered_years=min_registered_years,
+                                           min_events=min_events,
                                            )
     return CVD_inclusion.fit
 
@@ -33,6 +33,7 @@ class index_inclusion_method():
                  study_period=["1998-01-01", "2019-12-31"],
                  age_at_entry_range=[25, 85],
                  min_registered_years=1,
+                 min_events=None,
                  ):
         """
         ARGS:
@@ -57,6 +58,8 @@ class index_inclusion_method():
                 the minimum and maximum age at cohort entry, in the form [lower,upper] in years
             min_registered_years
                 the minimum number of years a patient must be registered at the practice for at cohort entry
+            min_events
+                the minimum number of events that must occur up to and including the index event to be included in the study
     
         Note: because this is called on a per practice basis, we dont need to worry about overlapping PATIENT_ID between practices (only the combination is unique)
         """
@@ -68,6 +71,7 @@ class index_inclusion_method():
         self._study_period = study_period
         self._age_at_entry_range = age_at_entry_range
         self._min_registered_years = min_registered_years
+        self._min_events = min_events
 
     def fit(self,
             lazy_static,
@@ -275,5 +279,25 @@ class index_inclusion_method():
                 pl.concat([lazy_combined_frame_before_index, outcome])
                 .sort(["PRACTICE_ID", "PATIENT_ID", "DATE"])                                        # Sort to ensure date order within patients
             )
+
+        #############################################################
+        # REMOVE PATIENTS WITH FEWER THAN MIN EVENTS (EXCLUDING OUTCOME)
+        #############################################################
+        if self._min_events is not None:
+            patients_with_min_events = (
+                lazy_combined_frame
+                .filter(pl.col('DATE') <= pl.col('INDEX_DATE'))
+                .with_columns(pl.col("EVENT"))
+                .groupby("PATIENT_ID")
+                .agg(pl.col("EVENT").count())
+                .filter(pl.col("EVENT")>=self._min_events)
+                .unique("PATIENT_ID")
+                .select(pl.col('PATIENT_ID'))
+            )
+            
+            # and reduce original frames using this list
+            new_combined_frame = patients_with_min_events.join(new_combined_frame, on=["PATIENT_ID"], how="inner")  
+            lazy_static = patients_with_min_events.join(lazy_static, on=["PATIENT_ID"], how="inner")  
+        
     
         return lazy_static, new_combined_frame
