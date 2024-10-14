@@ -33,16 +33,16 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         match cfg.head.SurvLayer.lower():
             # Removing padding token from vocab size as this is not considered an event in either case
             case "single-risk" | "sr":
-                self.surv_layer = ODESurvSingleRiskLayer(cfg.n_embd - self.n_embd_private, [], num_risks=vocab_size - 1, device="cuda")
+                self.surv_layer = ODESurvSingleRiskLayer(self.n_embd - self.n_embd_private, [], num_risks=vocab_size - 1, device="cuda")
             case "competing-risk" | "cr":
-                self.surv_layer = ODESurvCompetingRiskLayer(cfg.n_embd - self.n_embd_private, [], num_risks=vocab_size - 1, device="cuda")
+                self.surv_layer = ODESurvCompetingRiskLayer(self.n_embd - self.n_embd_private, [], num_risks=vocab_size - 1, device="cuda")
             case _:
                 raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
 
 
         # Regression layers, create a separate regression layer for each measurement
         #   In the case we want to include private_heads, then 
-        self.value_layer = GaussianRegressionLayer(cfg.n_embd - self.n_embd_private,
+        self.value_layer = GaussianRegressionLayer(self.n_embd - self.n_embd_private,
                                                    measurement_tokens=cfg.head.tokens_for_univariate_regression
                                                    )
 
