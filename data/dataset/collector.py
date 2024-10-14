@@ -17,13 +17,13 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
     """
     def __init__(self, db_path):
         self.db_path = db_path
+
         self.connection = None
         self.cursor = None
-        self.connection_token = 'sqlite://' + self.db_path 
 
     def connect(self):
         try:
-            self.connection = sqlite3.connect(self.db_path, timeout=2000)
+            self.connection = sqlite3.connect(self.db_path, timeout=20000)
             self.cursor = self.connection.cursor()
             logging.debug("Connected to SQLite database")
         except sqlite3.Error as e:
@@ -191,7 +191,7 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                         query += f"AND {conditions[idx_table]}"
                                   
                 logging.debug(f"Query: {query[:120] if len(query) > 120 else query}")
-                df = pl.read_database(query=query, connection_uri=self.connection_token)
+                df = pl.read_database(query=query, connection_uri='sqlite://' + self.db_path)
 
                 if len(df) > 0:
                     rows_by_table["lazy_" + table] = df.lazy()
@@ -351,6 +351,7 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
         #    If identifier exists in one but not the other, default behaviour is to fill with null, these are handled by filtering later
         #    All these operations are performed lazily
         lazy_combined_frame = lazy_combined_frame.join(lazy_static, on=["PRACTICE_ID", "PATIENT_ID"], how="inner")
+
 
         return lazy_combined_frame
 

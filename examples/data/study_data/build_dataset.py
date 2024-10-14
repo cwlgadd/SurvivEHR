@@ -24,6 +24,7 @@ if __name__ == "__main__":
 
     torch.manual_seed(1337)
     logging.basicConfig(level=logging.INFO)
+    logging.info(f"Building study dataset on {os.cpu_count()} CPUs and {torch.cuda.device_count()} GPUs")
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     num_threads = 3
     print(f"Using device: {device}.")
@@ -31,22 +32,22 @@ if __name__ == "__main__":
 
     # load the configuration file, override any settings 
     with initialize(version_base=None, config_path="../../modelling/SurvStreamGPT/confs", job_name="dataset_creation_notebook"):
-        cfg = compose(config_name="config_CompetingRisk129M", overrides=[])
-    cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/"
+        cfg = compose(config_name="config_CompetingRisk37M")
+    cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD50+/"
     print(OmegaConf.to_yaml(cfg))
 
     # Build 
     dm = FoundationalDataModule(path_to_db=cfg.data.path_to_db,
                                 path_to_ds=cfg.data.path_to_ds,
                                 load=False,
-                                include_diagnoses=True,                            
+                                include_diagnoses=True,
                                 include_measurements=True,
                                 drop_missing_data=False,
                                 drop_empty_dynamic=True,
                                 tokenizer="tabular",
                                 overwrite_practice_ids = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/practice_id_splits.pickle",
                                 overwrite_meta_information=cfg.data.meta_information_path,
-                                study_inclusion_method=cvd_inclusion_method(),
+                                study_inclusion_method=cvd_inclusion_method(min_events=50),
                                 num_threads=num_threads
                                )
     

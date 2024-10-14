@@ -120,8 +120,7 @@ class PolarsDataset:
         # Loop over practice IDs
         #    * create the generator that performs a lookup on the database for each practice ID and returns a lazy frame for each table's rows        
         #    * collating the lazy tables into a lazy DL-friendly representation,
-        for split_name, split_ids in zip(["train", "test", "val"], [self.train_practice_ids,  self.test_practice_ids,  self.val_practice_ids]):
-
+        for split_name, split_ids in zip(["test", "train", "val"], [self.test_practice_ids,  self.train_practice_ids,  self.val_practice_ids]):
             # for debugging just create dataset on only first
             # split_ids = split_ids[:1]
             
@@ -167,24 +166,25 @@ class PolarsDataset:
                                   save_path:               str,
                                   **kwargs,
                                  ):
+        """ save splits into a hive style partitioning using parquet which is a columnal format, but gives efficient compression
+        """
+        
         logging.debug(f"processing {chunk_name}")
         
         # Merge the lazy polars tables provided by the generator into one lazy polars frame
         lazy_batch = self.collector._collate_lazy_tables(lazy_table_frames_dict, **kwargs)
 
-        if save_path is not None:
-            # save splits `hive` style partitioning using parquet which is a columnal format, but gives efficient compression
-            # TODO: make directories if they dont already exist
+        # TODO: make directories if they dont already exist
 
-            # include row count so we can filter when reading from file
-            df = lazy_batch.collect().with_row_count().to_pandas()  # offset=total_samples
-
+        # include row count so we can filter when reading from file
+        df = lazy_batch.collect().with_row_count().to_pandas()  # offset=total_samples
+        total_samples = len(df.index)
+        
+        if total_samples > 0:
             # convert row count to a lower cardinality bin which can be used in the hive partitioning for faster reading
             # ... the smaller the window the more files created, storage space used, and the longer this takes to run, but 
             # ... the faster the read efficiency.
             df = df.assign(CHUNK = [int(_v / 250) for _v in df['row_nr']])                  
-            
-            total_samples = len(df.index)
             
             table = pa.Table.from_pandas(df)
             pq.write_to_dataset(table, root_path=save_path, 
@@ -250,7 +250,7 @@ class PolarsDataset:
         for file in tqdm(pathlib.Path(parquet_path).rglob('*.parquet'), desc=desc):
             num_rows =  pq.ParquetFile(file).metadata.num_rows
             relative_file_path = str(file)[len(str(parquet_path)):]               # remove the root of the file path
-            logging.warning(f"relative_file_path: {relative_file_path}  -  manually done last dataset build, verify this is correct on next run and delete.")
+            logging.debug(f"relative_file_path: {relative_file_path}  -  manually done last dataset build, verify this is correct on next run and delete.")
             file_row_counts[file] = num_rows                                      # update hash map
             total_count += num_rows
 

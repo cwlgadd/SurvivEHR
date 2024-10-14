@@ -34,14 +34,14 @@ class ODESurvSingleRiskLayer(nn.Module):
                 target_tokens: Optional[torch.tensor] = None,   # shape: torch.Size([bsz, seq_len])
                 target_ages: Optional[torch.tensor] = None,     # shape: torch.Size([bsz, seq_len])        
                 attention_mask: Optional[torch.tensor] = None,  # shape: torch.Size([bsz, seq_len])
-                is_causal: bool = True,                         # Whether we forward every step (True) of seq_len, or just the final step (False)
+                is_generation: bool = False,                         # Whether we forward every step (True) of seq_len, or just the final step (False)
                 return_cdf: bool = False,
                 return_loss: bool = True,
                 ):
         r"""
         """
         
-        if is_causal:
+        if not is_generation:
 
             if return_loss:
 
@@ -122,7 +122,7 @@ class ODESurvSingleRiskLayer(nn.Module):
                 assert attention_mask is not None
                 
                 # Forward the last (non-padded?) state. This will be used for fine-tuning a clinical prediction model, 
-                # but another use case for is_causal = False is that we are simply generating future trajectories. 
+                # but another use case for is_generation = True is that we are simply generating future trajectories. 
                 # In this case we want to just forward the last hidden state, irrespective of any potential padding
                 raise NotImplementedError
 
