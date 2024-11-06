@@ -50,15 +50,15 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         return self.collate_fn.supervised
     
     def __init__(self, 
-                 path_to_db: str,
-                 path_to_ds: str,
-                 load: bool,
-                 tokenizer: str = "tabular",
-                 batch_size: int = 64,
-                 min_workers:int = 1,
+                 path_to_db:                 str,
+                 path_to_ds:                 str,
+                 load:                       bool,
+                 tokenizer:                  str = "tabular",
+                 batch_size:                 int = 64,
+                 min_workers:                int = 1,
                  overwrite_practice_ids:     Optional[str] = None,
                  overwrite_meta_information: Optional[str] = None,
-                 supervised:bool = False,
+                 supervised:                 bool = False,
                  **kwargs   
                 ):
         """
@@ -223,9 +223,9 @@ class FoundationalDataset(Dataset):
             print(f"{_key}".ljust(20) + f"| {static[_key][0]}")
         # dynamic
         print(f"Sequence of {len(batch['ages'])} events")
-        print("\nToken".ljust(76) + "| Age".ljust(20) + "| Standardised value".ljust(20) + "\n" + "="*115)
+        print("\nToken".ljust(76) + "| Age at event (in days)".ljust(30) + "| Standardised value".ljust(20) + "\n" + "="*125)
         for idx_event, (token, age, value) in enumerate(zip(self.tokenizer.decode(batch["tokens"].tolist()).split(" "), batch["ages"], batch["values"])):
-            print(f"{token}".ljust(75) + f"| {age}".ljust(20) + f"| {value:.2f}".ljust(20))
+            print(f"{token}".ljust(75) + f"| {age * self.time_scale}".ljust(30) + f"| {value:.2f}".ljust(20))
             if max_dynamic_events is not None and idx_event >= max_dynamic_events - 1:
                 break
         
@@ -239,6 +239,7 @@ class FoundationalDataset(Dataset):
                  standardise_values:           bool = True,
                  global_diagnoses:             bool = False,
                  random_context_window:        bool = False,
+                 time_scale:                   float=1825.0,                     # Scale by 5 years so when we model on a standardised time grid we look 5 years ahead
                  **kwargs
                 ):
         """
@@ -277,6 +278,7 @@ class FoundationalDataset(Dataset):
         self.global_diagnoses = global_diagnoses 
         self.random_context_window = random_context_window
         self.meta_information = meta_information
+        self.time_scale = time_scale
 
         # Create a PyArrow dataset directly from the PolarsDataset saved hive partitioned dataset
         # NOTE:   This can take some time to initialise, but using the API is cleaner
@@ -448,7 +450,7 @@ class FoundationalDataset(Dataset):
                 
         return {"static_covariates": torch.tensor(static_covariates, dtype=torch.float),
                 "tokens": torch.tensor(encoded_tokens),
-                "ages": torch.tensor(sequence_ages),
+                "ages": torch.tensor(sequence_ages) / self.time_scale,
                 "values": torch.tensor(sequence_values),
                }
 
@@ -524,6 +526,10 @@ class FoundationalDataset(Dataset):
 class Collator(object):
     
     def __init__(self, supervised=False):
+        """
+        supervised:                           whether to take the last time point as the target
+        """
+        
         logging.info(f"Creating {'supervised' if supervised else 'unsupervised'} collator for DataModule")
         self.supervised = supervised
         
@@ -640,13 +646,16 @@ class Collator(object):
             value_matrix[i, last_non_pad_index] = torch.tensor(np.nan, dtype=value_row.dtype)
             # Replace the mask in the mask_matrix with padding (0)
             masking_matrix[i, last_non_pad_index] = 0
-    
+
+        # inputs
         batch["tokens"] = token_matrix
         batch["ages"] = age_matrix
         batch["values"] = value_matrix
         batch["attention_mask"] = masking_matrix
+
+        # targets
         batch["target_token"] = removed_tokens #
         batch["target_age_delta"] = removed_ages #.reshape((-1,1))
         batch["target_value"] = removed_values #.reshape((-1,1))
-    
+
         return batch

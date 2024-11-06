@@ -13,116 +13,102 @@ class ODESurvCompetingRiskLayer(nn.Module):
         
         super().__init__()
         self.sr_ode = ODESurvMultiple(cov_dim=in_dim,
-                                      hidden_dim_fc=hidden_dim,
-                                      hidden_dim_ode=hidden_dim,
+                                      hidden_dim=hidden_dim,
                                       num_risks=num_risks,        # do not include pad token as an event 
                                       device=device,
                                       n=n) 
                                                                                                                    
-        # this is the maximum period considered in generation, and also used as normalising constant in DeSurv
-        self._time_scale = 365*5                               
-        # the time grid which we generate over
-        self.t_eval = np.linspace(0, self._time_scale, self._time_scale + 1)    
+        # the time grid which we generate over - assuming time scales are standardised
+        self.t_eval = np.linspace(0, 1, 1000)    
         self.device = device
 
         logging.info(f"Using Competing-Risk DeSurv head.")
-        logging.info(f"Internally scaling time in survival head by {self._time_scale} days")
-        logging.info(f"In generation forwarding DeSurv on the grid between [{self.t_eval.min()}, {self.t_eval.max()}]" \
-                     f" with {len(self.t_eval)} time-points of delta={self.t_eval[1]-self.t_eval[0]}")
+        logging.info(f"In generation forwarding DeSurv on the grid between [{self.t_eval.min()}, {self.t_eval.max()}] with {len(self.t_eval)} intervals")
 
     def predict(self,
                 hidden_states: torch.tensor,                    # shape: torch.Size([bsz, seq_len, n_embd])
-                target_tokens: Optional[torch.tensor] = None,   # shape: torch.Size([bsz, seq_len])
-                target_ages: Optional[torch.tensor] = None,     # shape: torch.Size([bsz, seq_len])        
-                attention_mask: Optional[torch.tensor] = None,  # shape: torch.Size([bsz, seq_len])
-                is_generation: bool = False,                         # Whether we forward every step (True) of seq_len, or just the final step (False)
+                target_tokens: Optional[torch.tensor] = None,   # if is_generation==False: torch.Size([bsz, seq_len]), else torch.Size([bsz, 1])
+                target_ages: Optional[torch.tensor] = None,     # if is_generation==False: torch.Size([bsz, seq_len]), else torch.Size([bsz, 1])
+                attention_mask: Optional[torch.tensor] = None,  # if is_generation == False: torch.Size([bsz, seq_len]), else None
+                is_generation: bool = False,                    # Whether we forward every step (True) of seq_len, or just the final step (False)
                 return_cdf: bool = False,
                 return_loss: bool = True,
                 ):
         r"""
+
+        Competing-risk for each type of event, where tte_deltas are the times to each next
+         event. Censored events (such as GP visit with no diagnosis/measurement/test. I.e. k=0 (but not padding) are
+         not in the currently considered dataset.
         """
 
         if not is_generation:
             
-            if return_loss:
 
-                assert target_tokens is not None
-                assert target_ages is not None
-                assert attention_mask is not None
+            assert target_tokens is not None
+            assert target_ages is not None
+            assert attention_mask is not None
+        
+            # Get the competing risk event types. A list of len vocab_size-1 where each element of the list is an event
+            #       The 1st element of list corresponds to 2nd vocab element (vocab index == 0 is the PAD token which is excluded)
+            #       k \in {0,1} with 1 if the seq target is the same as the single risk ode's index (position in list), and 0
+            #       otherwise
+            k = target_tokens[:, 1:]                                                                # torch.Size([bsz, seq_len - 1])
             
-                # Get the competing risk event types. A list of len vocab_size-1 where each element of the list is an event
-                #       The 1st element of list corresponds to 2nd vocab element (vocab index == 0 is the PAD token which is excluded)
-                #       k \in {0,1} with 1 if the seq target is the same as the single risk ode's index (position in list), and 0
-                #       otherwise
-                k = target_tokens[:, 1:]                                                                # torch.Size([bsz, seq_len - 1])
-                
-                # We are considering the delta of time, but each element in the seq_len just has the time of event. 
-                # This means the output mask requires both the time at the event, and the time of the next event to be available.
-                tte_obs_mask = attention_mask[:, :-1] & attention_mask[:, 1:]   
-                # shape: torch.Size([bsz, seq_len - 1])
-                
-                # Get time to event, excluding first in sequence as we do not know what time the one pre-dating it occurred
-                tte_deltas = target_ages[:, 1:] - target_ages[:, :-1]                         
-                tte_deltas = tte_deltas / self._time_scale  
-                tte_deltas = torch.where(tte_obs_mask == 1, tte_deltas, torch.ones_like(tte_deltas)) 
-                assert torch.all(tte_deltas >= 0), f"events must be given in time order, {tte_deltas[tte_deltas<0]}"
-                # shape: torch.Size([bsz, seq_len - 1])
-    
-                # Vectorise
-                in_hidden_state = hidden_states[:, :-1, :].reshape((-1, hidden_states.shape[-1]))        # torch.Size([bsz * (seq_len-1), hidden_size])
-                tte_deltas = tte_deltas.reshape(-1)                                                      # torch.Size([bsz * (seq_len-1)])
-                tte_obs_mask = tte_obs_mask.reshape(-1)                                                  # torch.Size([bsz * (seq_len-1)])
-    
-                # and apply the observation mask
-                in_hidden_state = in_hidden_state[tte_obs_mask == 1]
-                tte_deltas = tte_deltas[tte_obs_mask == 1]
-                k = k.flatten()[tte_obs_mask == 1]
-    
-                # At this point we have a competing-risk for each type of event, where tte_deltas are the times to each next
-                #  event. Censored events (such as GP visit with no diagnosis/measurement/test. I.e. k=0 (but not padding),
-                #  though informative, is not in the currently considered dataset. TODO
-    
+            # We are considering the delta of time, but each element in the seq_len just has the time of event. 
+            # This means the output mask requires both the time at the event, and the time of the next event to be available.
+            tte_obs_mask = attention_mask[:, :-1] & attention_mask[:, 1:]   
+            # shape: torch.Size([bsz, seq_len - 1])
+            
+            # Get time to event, excluding first in sequence as we do not know what time the one pre-dating it occurred
+            tte_deltas = target_ages[:, 1:] - target_ages[:, :-1]                         
+            tte_deltas = torch.where(tte_obs_mask == 1, tte_deltas, torch.ones_like(tte_deltas)) 
+            assert torch.all(tte_deltas >= 0), f"events must be given in time order, {tte_deltas[tte_deltas<0]}"
+            # shape: torch.Size([bsz, seq_len - 1])
+
+            # Vectorise
+            in_hidden_state = hidden_states[:, :-1, :].reshape((-1, hidden_states.shape[-1]))        # torch.Size([bsz * (seq_len-1), hidden_size])
+            tte_deltas = tte_deltas.reshape(-1)                                                      # torch.Size([bsz * (seq_len-1)])
+            tte_obs_mask = tte_obs_mask.reshape(-1)                                                  # torch.Size([bsz * (seq_len-1)])
+
+            # and apply the observation mask
+            in_hidden_state = in_hidden_state[tte_obs_mask == 1]
+            tte_deltas = tte_deltas[tte_obs_mask == 1]
+            k = k.flatten()[tte_obs_mask == 1]
+
+            if return_loss:
                 # Calculate losses, excluding masked values. Each sr_ode returns the sum over observed events
                 #    to be consistent with other heads, we scale by number of observed values to obtain per SR-model mean
                 #    and we sum across the mixture of survival ODEs
                 surv_loss = [self.sr_ode.loss(in_hidden_state, tte_deltas, k) / k.shape[0]]
-                surv = {"k": [k],
-                        "tte_deltas": tte_deltas,
-                       }
             else:
                 surv_loss = None
-                surv = {"k": None,
-                        "tte_deltas": None,
-                       }
 
             # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
-            surv ={**surv, 
+            surv ={"k": [k],
+                   "tte_deltas": tte_deltas,
                    "surv_CDF":  self._predict_cdf(in_hidden_state.reshape((-1,in_hidden_state.shape[-1]))) if return_cdf else None}
                 
 
         else:
             # inference-time mini-optimization: only forward the head on the very last position
-            in_hidden_state = hidden_states[:, -1, :]
+            in_hidden_state = hidden_states[:, -1, :]                      # torch.Size([bsz, hid_dim])
             
             if return_loss:
-
+                # Forward the last state. This will be used for fine-tuning a clinical prediction model.
+                # Note: Padding doesn't matter as all the padded hidden_state values share the same value as the last observation's hidden state
                 assert target_tokens is not None
                 assert target_ages is not None
-                assert attention_mask is not None
-                
-                # Forward the last (non-padded?) state. This will be used for fine-tuning a clinical prediction model, 
-                # but another use case for is_generation = False is that we are simply generating future trajectories. 
-                # In this case we want to just forward the last hidden state, irrespective of any potential padding
-                raise NotImplementedError
+
+                surv_loss = [self.sr_ode.loss(in_hidden_state, target_ages.reshape(-1), target_tokens.reshape(-1)) / target_tokens.shape[0]]
                 
             else:
+                # Another use case for is_generation = True is that we are simply generating future trajectories. 
+                # In this case we do not have targets, and do not need to calculate the loss
                 surv_loss = None
-                surv = {"k": None,
-                        "tte_deltas": None,
-                       }
 
             # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
-            surv ={**surv, 
+            surv ={"k": target_tokens,
+                   "tte_deltas": target_ages, 
                    "surv_CDF":  self._predict_cdf(in_hidden_state) if return_cdf else None}
                 
         return surv, surv_loss
@@ -138,7 +124,6 @@ class ODESurvCompetingRiskLayer(nn.Module):
         
         # The normalised grid over which to predict
         t_test = torch.tensor(np.concatenate([self.t_eval] * hidden_states.shape[0], 0), dtype=torch.float32, device=self.device)
-        t_test /= self._time_scale
         H_test = hidden_states.repeat_interleave(self.t_eval.size, 0).to(self.device, torch.float32)
 
         # Batched predict: Cannot make all predictions at once due to memory constraints

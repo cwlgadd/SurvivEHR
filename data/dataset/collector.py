@@ -191,7 +191,18 @@ class SQLiteDataCollector(Static, Diagnoses, Measurements):
                         query += f"AND {conditions[idx_table]}"
                                   
                 logging.debug(f"Query: {query[:120] if len(query) > 120 else query}")
-                df = pl.read_database(query=query, connection_uri='sqlite://' + self.db_path)
+
+                # Load with polars
+                #    This can cause timeout issues
+                # df = pl.read_database(query=query, connection_uri='sqlite://' + self.db_path)
+
+                # Load with pandas then convert to polars. 
+                #   This lets us use the existing connection from the sqlite3 package and so we can specify longer timeout
+                #   We also need to specify 'VALUE' is a float, as pandas will convert this to string (not all queries are on tables with VALUE)
+                pandas_df = pd.read_sql_query(query, self.connection)
+                if "VALUE" in pandas_df.columns:
+                    pandas_df["VALUE"] = pandas_df["VALUE"].astype(float)
+                df = pl.from_pandas(pandas_df)
 
                 if len(df) > 0:
                     rows_by_table["lazy_" + table] = df.lazy()

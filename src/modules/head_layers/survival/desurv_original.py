@@ -3,126 +3,130 @@ import torch
 import torch.nn as nn
 import logging
 
+from torch.nn.functional import softplus, softmax
+
+
 class FCNet(nn.Module):
-    """Fully Connected Neural Network with Dynamic Hidden Layers"""
-
-    def __init__(self, input_dim, hidden_dim, output_dim, output_act, device="cpu"):
-
+    """Standard Neural Network"""
+    def __init__(self, 
+                 input_dim, 
+                 hidden_dim, 
+                 output_dim,
+                 nonlinearity=nn.ReLU,
+                 output_act=nn.Identity,
+                 device="cpu"):
         super().__init__()
 
         self.device = device
         logging.debug(f"FCNet: Using {self.device} as the device")
+        logging.info(f"original")
+        self.mapping = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nonlinearity(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nonlinearity(),
+            nn.Linear(hidden_dim, output_dim),
+            output_act
+        )
 
-        layers = []
-        if type(hidden_dim) is list:
-            input_dim = input_dim
-            for lyr in range(len(hidden_dim)):
-                layers.append(nn.Linear(input_dim, hidden_dim[lyr]))
-                layers.append(nn.ReLU())
-                input_dim = hidden_dim[lyr]
-
-        layers.append(nn.Linear(input_dim, output_dim))
-        layers.append(output_act)
-        layers = nn.ModuleList(layers)
-        self.mapping = nn.Sequential(*layers)
-
-    def forward(self, x):
+    def forward(self,x):
         return self.mapping(x)
 
-
 class CondODENet(nn.Module):
-    """Conditional ODE Neural Network"""
-
-    def __init__(self, input_dim, hidden_dim, output_dim, device="cpu", n=15, modified=True):
-
+    def __init__(self,
+                 cov_dim,
+                 hidden_dim,
+                 output_dim,
+                 nonlinearity=nn.ReLU,
+                 device="cpu", 
+                 n=15):
         super().__init__()
 
-        self.device = device #torch.device("cuda:0" if device == "gpu" and torch.cuda.is_available() else "cpu")
+        self.device = device 
         logging.debug(f"CondODENet: Using {self.device} as the device")
-        self.modified = modified
-
-        self.output_dim = output_dim
-        self.n = n
-        u, w = np.polynomial.legendre.leggauss(n)
-        self.u = nn.Parameter(torch.tensor(u, device=self.device, dtype=torch.float32)[None, :], requires_grad=False)
-        self.w = nn.Parameter(torch.tensor(w, device=self.device, dtype=torch.float32)[None, :], requires_grad=False)
-
-        self.BaseNet = FCNet(input_dim, hidden_dim, output_dim, nn.Softplus(), device)
-        self.BaseNet = self.BaseNet.to(self.BaseNet.device)
-
-    def ode_mapping(self, x, t):
-
-        z = torch.cat((x, t), 1)
-        return self.BaseNet(z)
-
-    def forward(self, x, t, derivative=False):
         
-        tau = torch.matmul(t / 2, 1 + self.u)
-        tau_ = torch.flatten(tau).unsqueeze(1)
-        reppedx = x.repeat_interleave(torch.tensor([self.n] * t.shape[0], dtype=torch.long, device=self.device), dim=0)
+        self.output_dim = output_dim
 
-        dudt = self.ode_mapping(reppedx, tau_)
-        f = dudt.reshape((*tau.shape, self.output_dim))
-        pred = t / 2 * ((self.w.unsqueeze(2) * f).sum(dim=1))
-        pred = pred.to(self.device)
+        self.dudt = nn.Sequential(
+            nn.Linear(cov_dim+1, hidden_dim),
+            nonlinearity(),
 
-        if self.modified:
-            return 1 - torch.exp(-pred)
-        else:
-            return torch.tanh(pred)
-            
+            nn.Linear(hidden_dim, hidden_dim),
+            nonlinearity(),
+
+            nn.Linear(hidden_dim, output_dim),
+            nn.Softplus()
+        )
+
+        self.n = n
+        u_n, w_n = np.polynomial.legendre.leggauss(n)
+        self.u_n = nn.Parameter(torch.tensor(u_n,device=self.device,dtype=torch.float32)[None,:],requires_grad=False)
+        self.w_n = nn.Parameter(torch.tensor(w_n,device=self.device,dtype=torch.float32)[None,:],requires_grad=False)
+
+    def mapping(self, x_):
+        t = x_[:,0][:,None].to(self.device)
+        x = x_[:,1:].to(self.device)
+        tau = torch.matmul(t/2, 1+self.u_n) # N x n
+        tau_ = torch.flatten(tau)[:,None] # Nn x 1. Think of as N n-dim vectors stacked on top of each other
+        reppedx = torch.repeat_interleave(x, torch.tensor([self.n]*t.shape[0], dtype=torch.long, device=self.device), dim=0)
+        taux = torch.cat((tau_, reppedx),1) # Nn x (d+1)
+        f_n = self.dudt(taux).reshape((*tau.shape, self.output_dim)) # N x n x d_out
+        pred = t/2 * ((self.w_n[:,:,None] * f_n).sum(dim=1))
+        return pred
+
+    def forward(self, x_):
+        return torch.tanh(self.mapping(x_))
 
 class ODESurvSingle(nn.Module):
     def __init__(self, 
                  cov_dim, 
                  hidden_dim,
+                 nonlinearity=nn.ReLU,
                  device="cpu",
-                 n=15, 
-                 modified=True):
-
+                 n=15):
         super().__init__()
 
-        input_dim = cov_dim + 1
-        self.net = CondODENet(input_dim, hidden_dim, 1, device=device, n=n, modified=modified)
+        self.net = CondODENet(cov_dim, hidden_dim, 1, nonlinearity, device, n)
         self.net = self.net.to(self.net.device)
-        self.modified = modified
 
         self.lr = 1e-3
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        self.optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr)
 
     def forward(self, x, t):
-        x = x.to(self.net.device)
-        t = t.to(self.net.device)
-        t = t.unsqueeze(1)
-        return self.net.forward(x, t).squeeze()
+        t = t[:,None]
+        N = t.shape[0]
+
+        z = torch.cat((t,x),1)
+
+        return self.net.forward(z).squeeze()
 
     def predict(self, x, t):
         # wrap back for original optimize code
         return self.forward(x, t)
 
     def loss(self, x, t, k):
-        # print(f"x: {x.shape}, t:{t.shape} k:{k.shape}")
-        x = x.to(self.net.device)
-        t = t.to(self.net.device)
-        k = k.to(self.net.device)
+        t = t[:,None]
+        N = t.size()[0]
 
-        t = t.unsqueeze(1)
+        cens_ids = torch.nonzero(torch.eq(k,0))[:,0]
+        ncens = cens_ids.size()[0]
+        uncens_ids = torch.nonzero(torch.eq(k,1))[:,0]
+
+        z = torch.cat((t,x),1)
+
         eps = 1e-8
 
-        censterm = torch.tensor(0)
-        cens_ids = torch.where(k == 0)[0]
+        censterm = 0
         if torch.numel(cens_ids) != 0:
-            cdf_cens = self.net.forward(x[cens_ids, :], t[cens_ids, :]).squeeze()
-            censterm = torch.log(1 - cdf_cens + eps).sum()
+            cdf_cens = self.net.forward(z[cens_ids,:]).squeeze()
+            s_cens = 1 - cdf_cens
+            censterm = torch.log(s_cens + eps).sum()
 
-        uncensterm = torch.tensor(0)
-        uncens_ids = torch.where(k == 1)[0]
+        uncensterm = 0
         if torch.numel(uncens_ids) != 0:
-            cdf_uncens = self.net.forward(x[uncens_ids, :], t[uncens_ids, :], derivative=True).squeeze()
-            if not self.modified:
-                cdf_uncens = cdf_uncens ** 2
-            dudt_uncens = self.net.ode_mapping(x[uncens_ids, :], t[uncens_ids, :]).squeeze()
-            uncensterm = (torch.log(1 - cdf_uncens + eps) + torch.log(dudt_uncens + eps)).sum()
+            cdf_uncens = self.net.forward(z[uncens_ids,:]).squeeze()
+            dudt_uncens = self.net.dudt(z[uncens_ids,:]).squeeze()
+            uncensterm = (torch.log(1 - cdf_uncens**2 + eps) + torch.log(dudt_uncens + eps)).sum()
 
         return -(censterm + uncensterm)
 
@@ -181,39 +185,40 @@ class ODESurvSingle(nn.Module):
         if data_loader_val is not None:
             state_dict = torch.load("low")
             self.load_state_dict(state_dict)
-        
 
 class ODESurvMultiple(nn.Module):
     def __init__(self, 
-                 cov_dim, 
-                 hidden_dim,
+                 cov_dim,
+                 hidden_dim, 
                  num_risks,
-                 device="cpu",
+                 nonlinearity=nn.ReLU, 
+                 device="cpu", 
                  n=15):
         super().__init__()
 
-        input_dim = cov_dim + 1
+        self.K = num_risks
 
-        self.pinet = FCNet(cov_dim, hidden_dim, num_risks, nn.Softmax(dim=1), device)
-        self.pinet = self.pinet.to(self.pinet.device)
-
-        self.odenet = CondODENet(input_dim, hidden_dim, num_risks, device, n)
+        self.odenet = CondODENet(cov_dim, hidden_dim, num_risks, nonlinearity, device, n)
         self.odenet = self.odenet.to(self.odenet.device)
 
-        self.K = num_risks
+        self.pinet = FCNet(cov_dim, hidden_dim, self.K, device=device, output_act=nn.Softmax(dim=1))
+        self.pinet = self.pinet.to(self.pinet.device)
 
         self.lr = 1e-3
         self.optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
 
     def get_pi(self, x):
-
         return self.pinet(x)
 
     def forward(self, x, t):
+        t = t[:,None]
+        N = t.size()[0]
 
-        t = t.unsqueeze(1)
+        z = torch.cat((t,x),1)
+
         pi = self.get_pi(x)
-        preds = pi * self.odenet.forward(x, t)
+
+        preds = pi * self.odenet.forward(z)
 
         return preds, pi
 
@@ -222,33 +227,30 @@ class ODESurvMultiple(nn.Module):
         return self.forward(x, t)
 
     def loss(self, x, t, k):
+        t = t[:,None]
 
-        t = t.unsqueeze(1)
         eps = 1e-8
 
-        censterm = torch.tensor(0)
-        cens_ids = torch.where(k == 0)[0]
+        censterm = 0
+        cens_ids = torch.nonzero(torch.eq(k,0))[:,0]
         if torch.numel(cens_ids) != 0:
-            cif_cens = self.forward(x[cens_ids, :], t[cens_ids, 0])[0]
+            cif_cens = self.forward(x[cens_ids,:], t[cens_ids,0])[0]
             cdf_cens = cif_cens.sum(dim=1)
             censterm = torch.log(1 - cdf_cens + eps).sum()
 
-        uncensterm = torch.tensor(0)
+        uncensterm = 0
         for i in range(self.K):
-            uncens_ids = torch.where(k == i + 1)[0]
-            if torch.numel(uncens_ids) != 0:
-                cdf_uncens = self.odenet.forward(x[uncens_ids, :], t[uncens_ids, :])[:, i]
-                dudt_uncens = self.odenet.ode_mapping(x[uncens_ids, :], t[uncens_ids, :])[:, i]
-                pi = self.get_pi(x[uncens_ids, :])[:, i]
-
-                likel = (torch.log(1 - cdf_uncens + eps) + torch.log(dudt_uncens + eps) + torch.log(pi + eps)).sum()
-                uncensterm = uncensterm + likel
-
-        return -(censterm + uncensterm)    
+            ids = torch.nonzero(torch.eq(k,i+1))[:,0]
+            if torch.numel(ids) != 0:
+                tanhu = self.odenet.forward(torch.cat((t[ids,:], x[ids,:]),1))[:,i]
+                pi = self.forward(x[ids,:],t[ids,0])[1][:,i]
+                dudt = self.odenet.dudt(torch.cat((t[ids,:], x[ids,:]),1))[:,i]
+                l = (torch.log(1 - tanhu**2 + eps) + torch.log(dudt + eps) + torch.log(pi + eps)).sum()
+                uncensterm = uncensterm + l
+        return -(censterm + uncensterm)
 
     def optimize(self, data_loader, n_epochs, logging_freq=10, data_loader_val=None,
                  max_wait=20):
-   
         batch_size = data_loader.batch_size
 
         if data_loader_val is not None:

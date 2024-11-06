@@ -57,7 +57,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                 values:                 torch.tensor,
                 covariates:             Optional[torch.tensor] = None,
                 attention_mask:         Optional[torch.tensor] = None,
-                is_generation:          bool = True,
+                is_generation:          bool = False,
                 return_generation:      bool = False,
                 return_loss:            bool = True,
                 ):

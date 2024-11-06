@@ -4,6 +4,7 @@ import logging
 from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlateau, CosineAnnealingLR, LambdaLR, SequentialLR, ConstantLR, ChainedScheduler, ExponentialLR
 from CPRD.src.models.base_callback import Embedding
+from CPRD.src.models.survival.custom_callbacks.causal_eval import PerformanceMetrics
 import math
 import numpy as np
 
@@ -130,26 +131,7 @@ class CausalExperiment(pl.LightningModule):
                 
             case _:
                 pass
-
-
-        # Fine-tuning phase
-        # TODO: this is more important if not using a decay
-        fine_tuning_scheduler = False
-        if fine_tuning_scheduler:
-            logging.info("Followed by a fine-tuning scheduler for the remaining steps")
-            
-            # make scheduler
         
-            # scheduler = ReduceLROnPlateau(optimizer)
-            # scheduler = ConstantLR(optimizer, factor=1.0)
-            # scheduler = CosineAnnealingLR(optimizer,
-            #                               T_max=int(remaining_batches),
-            #                               eta_min=self.cfg.optim.learning_rate / 2.5)
-        
-            schedulers.append(scheduler)
-            milestones.append(anneal_period)
-        
-
         # Combine
         scheduler = SequentialLR(optimizer, schedulers=schedulers, milestones=milestones)
 
@@ -204,13 +186,10 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None):
                  ]
 
     # ... custom callbacks
-    val_batch = next(iter(dm.val_dataloader()))
-    test_batch = next(iter(dm.test_dataloader()))
-
     # Hidden state embedding
     logging.info("Creating hidden state embedding callback")
-    embedding_callback = Embedding(val_batch=val_batch,
-                                   test_batch=test_batch
+    embedding_callback = Embedding(val_batch=next(iter(dm.val_dataloader())),
+                                   test_batch=next(iter(dm.test_dataloader()))
                                   )
     # callbacks.append(embedding_callback)
 
@@ -224,6 +203,13 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None):
         )
         callbacks.append(early_stop_callback)
 
+    # Add callbacks which apply to outcome prediction tasks (currently numerically unstable to evaluate)
+    # metric_callback = PerformanceMetrics(log_ctd=True,
+    #                                      log_ibs=True,
+    #                                      log_inbll=True
+    #                                      )
+    # callbacks.append(metric_callback)
+
     _trainer = pl.Trainer(
         logger=logger,
         callbacks=callbacks,
@@ -232,8 +218,6 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None):
         val_check_interval=cfg.optim.val_check_interval,
         limit_val_batches=cfg.optim.limit_val_batches,
         limit_test_batches=cfg.optim.limit_test_batches,
-        # devices=torch.cuda.device_count(),
-        # gradient_clip_val=0.5
     )
 
     return causal_experiment, CausalExperiment, _trainer

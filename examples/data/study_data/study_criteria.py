@@ -11,7 +11,6 @@ def cvd_inclusion_method(index_on_event="TYPE2DIABETES",
                          min_events=None,
                          ):
 
-    
     CVD_inclusion = index_inclusion_method(index_on_event=index_on_event, 
                                            exclude_on_events_prior_to_index=exclude_on_events_prior_to_index,
                                            exclude_on_events=exclude_on_events,
@@ -260,6 +259,8 @@ class index_inclusion_method():
             .sort(["PRACTICE_ID", "PATIENT_ID", "DATE"])                                        # Sort to ensure date order within patients
             .unique(subset=["PRACTICE_ID", "PATIENT_ID"], keep="first")                          # Keep chronologically last event experienced by patient
         )
+
+        # If this event occurs beyond 10 years beyond the index date, then replace with UNK event at index date + 10 years
     
         #############################################################
         # MERGE EVENTS UP TO AND INCLUDING INDEX, AND OUTCOME

@@ -15,6 +15,22 @@ import seaborn as sns
 import logging
 import copy
 
+# from pysurvival.pysurvival.utils._metrics import _concordance_index, _brier_score
+
+# def evaluate_concordance_index(risk, t, k, include_ties=True, additional_results=False, **kwargs):
+# # Ordering risk, T and E in descending order according to T
+#     order = np.argsort(-t)
+#     risk = risk[order]
+#     t = t[order]
+#     k = k[order]
+
+#     # Calculating th c-index
+#     results = _concordance_index(risk, t, k, include_ties)
+
+#     if not additional_results:
+#         return results[0]
+#     else:
+#         return results
 
 class Template(Callback, BaseCallback):
 
@@ -58,21 +74,18 @@ class PerformanceMetrics(Callback):
     def __init__(self, 
                  outcome_tokens,
                  log_ctd=True, 
-                 log_bs=True,
                  log_ibs=True, 
                  log_inbll=True,
-                 reduce_to_outcomes=None
-                ):
+                 plot_outcome_curves=False):
         
         Callback.__init__(self)
         self.outcome_tokens = outcome_tokens
         self.log_ctd = log_ctd
         self.log_ibs = log_ibs
-        self.log_bs = log_bs
         self.log_inbll = log_inbll
-        self.reduce_to_outcomes = reduce_to_outcomes
+        self.plot_outcome_curves = plot_outcome_curves
 
-    def plot_outcome_curve(self, cdf, lbls, _trainer, log_name="outcome_split_curve"):
+    def plot_outcome_curve(self, cdf, lbls, _trainer):
         
         plt.close()
         cdf_true = cdf[lbls==1,:]
@@ -81,46 +94,42 @@ class PerformanceMetrics(Callback):
         wandb_images = []
         fig, ax = plt.subplots(1, 1)
         for i in range(cdf_true.shape[0]):
-            plt.plot(np.linspace(0,1,1000), cdf_true[i,:], c="r", label="event" if i == 0 else None, alpha=1)
+            plt.plot(np.linspace(1,1826,1826), cdf_true[i,:], c="r", label="outcome occurred next" if i == 0 else None, alpha=1)
         for i in range(cdf_false.shape[0]):
-            plt.plot(np.linspace(0,1,1000), cdf_false[i,:], c="k", label="censored" if i == 0 else None, alpha=0.1)
+            plt.plot(np.linspace(1,1826,1826), cdf_false[i,:], c="k", label="outcome did not occur next" if i == 0 else None, alpha=0.1)
         
         plt.legend(loc=2)
-        plt.xlabel("Time")
-        plt.ylabel(f"\sum F_k for outcome tokens k={','.join([str(i) for i in self.outcome_tokens])}")
+        plt.xlabel("days")
+        plt.ylabel(f"P(t>T) - outcome tokens={','.join([str(i) for i in self.outcome_tokens])}")
 
         _trainer.logger.experiment.log({
-                log_name + "-Survival": wandb.Image(fig)
+                "outcome_split_curve": wandb.Image(fig)
             })
         
     def run_callback(self,
                      _trainer,
                      _pl_module,
                      batch,
-                     log_name:               str='Metrics',
-                     plot_outcome_curves = False
+                     log_name:               str='Embedding',
                     ):
+        
+        #  The zero_shot and fine_tuning _pl_modules already 
+        # batch = convert_batch_to_none_causal(batch)
 
-        # Make prediction of each survival curve
-        all_outputs, _, _ = _pl_module(batch, return_loss=False, return_generation=True)
-
-        # We obtain the survival curves for each of the outcomes of the _pl_module
+        all_outputs, _, _ = _pl_module(batch, is_generation=True, return_loss=False, return_generation=True)
         pred_surv_CDFs = all_outputs["surv"]["surv_CDF"]
 
-        # If we fine-tuned with a new head then we condensed the target tokens for the new task, do the same here
-        if self.reduce_to_outcomes is not None:
-            batch['target_token'] = self.reduce_to_outcomes(batch['target_token'])
-            
         target_tokens = batch['target_token'].cpu().numpy()
         target_ages = batch['target_age_delta'].cpu().numpy()
         target_values = batch['target_value'].cpu().numpy()
 
-        # Merge (additively) each outcome risk curve into a single CDF, and update label for if outcome occurred or not
+        # Merge (additively) each outcome risk curve into a single CDF, and make a label for if one of the outcomes occurred or not
         cdf = np.zeros_like(pred_surv_CDFs[0])
         lbls = np.zeros_like(target_tokens)     
         for _outcome_token in self.outcome_tokens:
+            # print(f"{_outcome_token}: {pred_surv_CDFs[_outcome_token - 1][:4,:]}")
             cdf += pred_surv_CDFs[_outcome_token - 1] 
-            lbls += (target_tokens == _outcome_token)
+            lbls += (target_tokens == _outcome_token) # .long().numpy()
 
         if np.sum(lbls) == 0:
             logging.warning("No outcome targets in batch. Evaluating metrics will be unstable.")
@@ -130,19 +139,23 @@ class PerformanceMetrics(Callback):
         ev = EvalSurv(surv, target_ages, lbls, censor_surv='km')
 
         # Plot the outcome curves
-        if plot_outcome_curves:
-            self.plot_outcome_curve(cdf, lbls, _trainer, log_name=log_name)
+        if self.plot_outcome_curves:
+            # Internal plot
+            self.plot_outcome_curve(cdf, lbls, _trainer)
 
-        time_grid = np.linspace(start=0, stop=_pl_module.model.surv_layer.t_eval.max() , num=300)
+            # EvSurv's view for debugging
+            # fig = ev[1:50].plot_surv()
+            # _trainer.logger.experiment.log({
+            #         "EvalSurv_curve": wandb.Image(fig)
+            #     })
+
+        time_grid = np.linspace(start=0, stop=_pl_module.model.surv_layer._time_scale , num=300)
 
         # Calculate and log desired metrics
         metric_dict = {}
         if self.log_ctd:
             ctd = ev.concordance_td()                           # Time-dependent Concordance Index
             metric_dict = {**metric_dict, log_name+"ctd": ctd}
-        # if self.log_bs:
-        #     bs = ev.brier_score(time_grid)                      # Brier Score
-        #     metric_dict = {**metric_dict, log_name+"bs": bs}
         if self.log_ibs:
             ibs = ev.integrated_brier_score(time_grid)          # Integrated Brier Score
             metric_dict = {**metric_dict, log_name+"ibs": ibs}
@@ -154,14 +167,13 @@ class PerformanceMetrics(Callback):
         # if self.rmse:
         #     raise NotImplementedError
         self.log_dict(metric_dict)
-        
+
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
         # Run callback
         self.run_callback(_trainer=trainer, 
                           _pl_module = pl_module,
                           batch=batch,
                           log_name = "Val:OutcomePerformanceMetrics", 
-                          plot_outcome_curves = True
                           )
 
     def on_test_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
@@ -170,5 +182,4 @@ class PerformanceMetrics(Callback):
                           _pl_module = pl_module,
                           batch=batch,
                           log_name = "Test:OutcomePerformanceMetrics", 
-                          plot_outcome_curves = True
                           )

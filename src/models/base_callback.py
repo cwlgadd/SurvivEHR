@@ -119,7 +119,7 @@ class Embedding(Callback, BaseCallback):
         hidden_states = np.asarray(hidden_states.detach().cpu()).reshape(-1,hidden_states.shape[-1])
 
         if labels is None:
-            labels = np.ones(hidden_states.shape[0],)
+            labels = -np.ones(hidden_states.shape[0],)
 
         # Plot depends on shape of latent dimension
         if hidden_states.shape[1] == 1:

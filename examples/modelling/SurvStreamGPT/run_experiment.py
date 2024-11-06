@@ -6,8 +6,8 @@ import logging
 from pathlib import Path
 from CPRD.data.foundational_loader import FoundationalDataModule
 from CPRD.examples.modelling.SurvStreamGPT.setup_causal_experiment import setup_causal_experiment, CausalExperiment
-# from CPRD.examples.modelling.SurvStreamGPT.setup_zeroshot_experiment import setup_zeroshot_experiment, ZeroShotExperiment
-from CPRD.examples.modelling.SurvStreamGPT.setup_supervised_experiment import setup_supervised_experiment, SupervisedExperiment
+from CPRD.examples.modelling.SurvStreamGPT.setup_fewshot_experiment import setup_fewshot_experiment, FewShotExperiment
+from CPRD.examples.modelling.SurvStreamGPT.setup_finetune_experiment import setup_finetune_experiment, FineTuneExperiment
 
 from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
 
@@ -24,7 +24,7 @@ def run(cfg : DictConfig):
     os.environ["HYDRA_FULL_ERROR"] = "1"
 
     # make dataloader
-    supervised = True if cfg.experiment.fine_tune_outcomes is not None else False
+    supervised = True if cfg.experiment.fine_tune_outcomes is not None else False    
     logging.info("="*100)
     logging.info(f"# Loading DataModule for dataset {cfg.data.path_to_ds}. This will be loaded in {'supervised' if supervised else 'causal'} form.")
     logging.info("="*100)
@@ -38,8 +38,9 @@ def run(cfg : DictConfig):
                                 freq_threshold=cfg.data.unk_freq_threshold,
                                 min_workers=cfg.data.min_workers,
                                 overwrite_meta_information=cfg.data.meta_information_path,
-                                supervised=supervised
+                                supervised=supervised,
                                )
+    
     # Get required information from initialised dataloader
     # ... vocab size
     vocab_size = dm.train_set.tokenizer.vocab_size
@@ -60,24 +61,25 @@ def run(cfg : DictConfig):
     # (TODO: LBYL)
         case "pretrain" | "causal" | "selfsupervised":
             
+            # Training (or causal evaluation) a pre-trained model
+            logging.info("="*100)
+            logging.info(f"# Pre-training experiment")
+            logging.info("="*100)
+            
             if Path(pre_trained_ckpt_path).is_file():
                 # Load existing experiment from checkpoint
-                logging.info("="*100)
-                logging.info(f"# Loading a pre-trained model with the checkpoint path {pre_trained_ckpt_path}. Evaluating causal performance...")
-                logging.info("="*100)
-                
+                logging.info(f"Loading a pre-trained model with the checkpoint path {pre_trained_ckpt_path}.")
+
+                # Catch cases where user loads a pre-trained model and tries to pre-train it further, as this edge case is not supported 
+                #   (it will result in checkpointing to a new pre_train_ckpt-V2.ckpt file and then re-loading the original after training)
                 if cfg.experiment.train:
-                    # Catch cases where user loads a pre-trained model and tries to pre-train it further, as this edge case is not supported 
-                    #   (it will result in checkpointing to a new pre_trian_ckpt-V2.ckpt file and then re-loading the original after training)
                     raise FileExistsError(f"Further training on a checkpoint is not supported.")
                     
                 load_from_checkpoint = pre_trained_ckpt_path
                 
             else:
                 # Create new experiment
-                logging.info("="*100)
                 logging.info(f"Creating new pre-trained model at the path {pre_trained_ckpt_path}.")
-                logging.info("="*100)
                 
                 assert dm.is_supervised == False, f"If you are training a new pre-trained model, the data module must not be supervised. Got {dm.is_supervised}."
                 assert cfg.experiment.train is True, f"If you are not training a new pre-trained model, please load a valid checkpoint. {pre_trained_ckpt_path} is not valid."
@@ -85,15 +87,21 @@ def run(cfg : DictConfig):
                 logging.info(f"# This will create / evaluate a pre-trained Foundation Model on a causal (next-event prediction) modelling task.")
                 load_from_checkpoint = None
                 
-            experiment_instance, Experiment, trainer = setup_causal_experiment(cfg=cfg, dm=dm, vocab_size=vocab_size, checkpoint=load_from_checkpoint)
+            experiment_instance, Experiment, trainer = setup_causal_experiment(cfg=cfg, 
+                                                                               dm=dm, 
+                                                                               vocab_size=vocab_size,
+                                                                               checkpoint=load_from_checkpoint
+                                                                              )
             new_checkpoint = pre_trained_ckpt_path
 
             
         case "zeroshot":
             # Evaluate an existing pre-trained experiment
             logging.info("="*100)
-            logging.info(f"# Loading a pre-trained model with the checkpoint path {pre_trained_ckpt_path}. Evaluating supervised performance")
+            logging.info(f"# # Zero-shot learning experiment")
             logging.info("="*100)
+
+            logging.info(f"Loading a pre-trained model with the checkpoint path {pre_trained_ckpt_path}.")
             
             # Ensure the pre-trained model exists
             if not Path(pre_trained_ckpt_path).is_file():
@@ -104,24 +112,75 @@ def run(cfg : DictConfig):
 
             load_from_checkpoint = pre_trained_ckpt_path
                 
-            experiment_instance, Experiment, trainer = setup_supervised_experiment(cfg=cfg, dm=dm, checkpoint=load_from_checkpoint)
+            experiment_instance, Experiment, trainer = setup_fewshot_experiment(cfg=cfg,
+                                                                                dm=dm, 
+                                                                                vocab_size=vocab_size,
+                                                                                checkpoint=load_from_checkpoint
+                                                                               )
             new_checkpoint = pre_trained_ckpt_path
 
-        case "finetune" | "fewshot":
+        case "fewshot":
+            # Create/evaluate a few-shot model
+            logging.info("="*100)
+            logging.info(f"# Few-shot learning experiment.")
+            logging.info("="*100)
+
+            # Get ckpt path for each experiment type (either to be loaded or created)
+            supervised_run_id =  cfg.experiment.run_id + "_" + cfg.experiment.fine_tune_id   # run id + dataset folder name (i.e. CR_11M_FineTune_CVD)
+            supervised_ckpt_path = cfg.experiment.ckpt_dir + supervised_run_id + ".ckpt"
+            
+            # By default, we try to load in any existing model with the same supervised name
+            if Path(supervised_ckpt_path).is_file():
+                # Load existing fine-tuned experiment from checkpoint
+                logging.info(f"Loading a few-shot model with the checkpoint path {supervised_ckpt_path}.")
+
+                # Catch cases where user loads a fine-tuned model and tries to fine-tune it further, as this edge case is not supported 
+                #   (it will result in checkpointing to a new fine_tune_ckpt-V2.ckpt file and then re-loading the original after training)
+                assert cfg.experiment.train is False, f"Further training on a checkpoint is not supported."
+
+                load_from_checkpoint = supervised_ckpt_path
+
+            # Otherwise we create a new model built upon the specified pre-trained model
+            elif Path(pre_trained_ckpt_path).is_file():
+                # Create new fine-tuning experiment
+                logging.info(f"Creating new few-shot model at the path {supervised_ckpt_path}. " + \
+                             f"This is initialised from a checkpointed pre-trained causal experiment, which can be found at {pre_trained_ckpt_path}.")
+                
+                assert cfg.experiment.train is True, f"If you are not training a new few-shot model, please load a valid checkpoint. {pre_trained_ckpt_path} is not valid."
+                
+                load_from_checkpoint = pre_trained_ckpt_path
+
+            else:
+                logging.info(f"Creating new few-shot model from scratch.")
+                
+                assert cfg.experiment.train is True, f"If you are not training a new fine-tuned model, please load a valid checkpoint. {pre_trained_ckpt_path} is not valid."
+                load_from_checkpoint = None
+
+            experiment_instance, Experiment, trainer = setup_fewshot_experiment(cfg=cfg, 
+                                                                                dm=dm, 
+                                                                                vocab_size=vocab_size,
+                                                                                checkpoint=load_from_checkpoint
+                                                                               )
+            
+            # Specfiy path we should will find the best attained model after training, so that this can be loaded before testing
+            new_checkpoint = supervised_ckpt_path
+
+        case "finetune" | "finetunesr" | "finetunecr":
             # Create/evaluate a fine-tuned model
+
+            if experiment_type[-2:] == "sr":
+                risk_model="single-risk"
+            else:
+                risk_model="competing-risk"
 
             # Get ckpt path for each experiment type
             supervised_run_id =  cfg.experiment.run_id + "_" + cfg.experiment.fine_tune_id   # run id + dataset folder name (i.e. CR_11M_FineTune_CVD)
             supervised_ckpt_path = cfg.experiment.ckpt_dir + supervised_run_id + ".ckpt"
             
             logging.info("="*100)
-            logging.info(f"# Fine-tuning experiment, at checkpoint {supervised_ckpt_path}")
+            logging.info(f"# Fine-tune learning experiment with a new {risk_model} head")
             logging.info("="*100)
-            
-            # Ensure the pre-trained model exists
-            if not Path(pre_trained_ckpt_path).is_file():
-                raise FileExistsError(f"The pre-trained model with the checkpoint path {pre_trained_ckpt_path} does not exist.")
-            
+
             if Path(supervised_ckpt_path).is_file():
                 # Load existing fine-tuned experiment from checkpoint
                 logging.info(f"Loading a fine-tuned model with the checkpoint path {supervised_ckpt_path}. Evaluating supervised performance")
@@ -129,21 +188,33 @@ def run(cfg : DictConfig):
                 # Catch cases where user loads a fine-tuned model and tries to fine-tune it further, as this edge case is not supported 
                 #   (it will result in checkpointing to a new fine_tune_ckpt-V2.ckpt file and then re-loading the original after training)
                 assert cfg.experiment.train is False, f"Further training on a checkpoint is not supported."
-
-                load_from_checkpoint = supervised_ckpt_path
+                ft_ckpt = supervised_ckpt_path
+                mode = 'load_from_finetune'
                 
-            else:
-                # Create new fine-tuning experiment
+            elif Path(pre_trained_ckpt_path).is_file():
+                # Create new fine-tuning experiment, from a pre-trained model
                 logging.info(f"Creating new fine-tuned model at the path {supervised_ckpt_path}.")
                 logging.info(f"This is trained from a checkpointed pre-trained causal experiment, which can be found at {pre_trained_ckpt_path}.")
                 
                 assert cfg.experiment.train is True, f"If you are not training a new fine-tuned model, please load a valid checkpoint. {pre_trained_ckpt_path} is not valid."
+                ft_ckpt = pre_trained_ckpt_path
+                mode = 'load_from_pretrain'
                 
-                load_from_checkpoint = pre_trained_ckpt_path
+            else:
+                logging.info(f"Creating new fine-tuned model from scratch.")
                 
-            experiment_instance, Experiment, trainer = setup_supervised_experiment(cfg=cfg, dm=dm, checkpoint=load_from_checkpoint)
+                assert cfg.experiment.train is True, f"If you are not training a new fine-tuned model, please load a valid checkpoint. {pre_trained_ckpt_path} is not valid."
+                ft_ckpt = None
+                mode = 'no_load'
+                
+            experiment_instance, Experiment, trainer = setup_finetune_experiment(cfg=cfg,
+                                                                                 dm=dm, 
+                                                                                 mode=mode,
+                                                                                 risk_model=risk_model,
+                                                                                 checkpoint=ft_ckpt,
+                                                                                )
             new_checkpoint = supervised_ckpt_path
-
+            
         case _:
             raise NotImplementedError
     
@@ -160,7 +231,7 @@ def run(cfg : DictConfig):
         logging.info(f"Testing model.")
         trainer.test(experiment_instance, dataloaders=dm.test_dataloader())
 
-    return experiment_instance.model, dm
+    return experiment_instance, dm
 
 if __name__ == "__main__":
     run()

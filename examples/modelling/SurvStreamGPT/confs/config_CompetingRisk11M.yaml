@@ -23,7 +23,8 @@ experiment:
   log_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/                    # Where to place any log files
   ckpt_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/       # Where to save checkpoints during training 
   # If we are evaluating the pre-trained model (with zero-shot, or fine-tuning), which outcomes do we consider
-  fine_tune_outcomes: null                                                     
+  fine_tune_outcomes: null           # For zero-shot, few-shot, and fine-tuning experiments 
+  # fine_tune_collapse: null
   
 optim: 
   num_epochs: 5                      # Number of epochs

@@ -1,0 +1,970 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "4921342e-8ff8-45d4-b1f6-9fe480c2ee1d",
+   "metadata": {},
+   "source": [
+    "# CPRD Notebook:\n",
+    "## Evaluation of fine-tuning the pre-trained SurvivEHR-CR model on a supervised cohort study.\n",
+    "\n",
+    "Cohort study: predicting Cardiovascular Disease in a Type 2 Diabetes Mellitus population.\n",
+    "\n",
+    "This notebook quantifies the performance obtained when fine-tuning the pre-trained model to a sub-population."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "a671c59b-4428-4e63-a138-7244418a87c5",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Added path '/rds/homes/g/gaddcz/Projects/CPRD/virtual-envTorch2.0-icelake/lib/python3.10/site-packages' at start of search paths.\n"
+     ]
+    }
+   ],
+   "source": [
+    "import os\n",
+    "from pathlib import Path\n",
+    "import sys\n",
+    "node_type = os.getenv('BB_CPU')\n",
+    "venv_dir = f'/rds/homes/g/gaddcz/Projects/CPRD/virtual-envTorch2.0-{node_type}'\n",
+    "venv_site_pkgs = Path(venv_dir) / 'lib' / f'python{sys.version_info.major}.{sys.version_info.minor}' / 'site-packages'\n",
+    "if venv_site_pkgs.exists():\n",
+    "    sys.path.insert(0, str(venv_site_pkgs))\n",
+    "    print(f\"Added path '{venv_site_pkgs}' at start of search paths.\")\n",
+    "else:\n",
+    "    print(f\"Path '{venv_site_pkgs}' not found. Check that it exists and/or that it exists for node-type '{node_type}'.\")\n",
+    "\n",
+    "%load_ext autoreload\n",
+    "%autoreload 2"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "d866c7f0-eaa8-4129-b3b1-d4d6b504d0a7",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Using device: cuda.\n",
+      "env: SLURM_NTASKS_PER_NODE=28\n"
+     ]
+    }
+   ],
+   "source": [
+    "import torch\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "import logging\n",
+    "import wandb\n",
+    "from tqdm import tqdm\n",
+    "import pickle\n",
+    "from hydra import compose, initialize\n",
+    "from omegaconf import OmegaConf\n",
+    "from CPRD.examples.modelling.SurvStreamGPT.run_experiment import run\n",
+    "from CPRD.data.foundational_loader import FoundationalDataModule\n",
+    "# from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling\n",
+    "\n",
+    "from sklearn import set_config\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn.preprocessing import OrdinalEncoder\n",
+    "\n",
+    "from sksurv.datasets import load_gbsg2\n",
+    "from sksurv.preprocessing import OneHotEncoder\n",
+    "from sksurv.ensemble import RandomSurvivalForest\n",
+    "from CPRD.src.modules.head_layers.survival.desurv import ODESurvSingle\n",
+    "from pycox.evaluation import EvalSurv\n",
+    "\n",
+    "from CPRD.examples.modelling.benchmarks.DeSurv.setup_deSurv_experiment import DeSurvExperiment, setup_desurv_experiment\n",
+    "\n",
+    "import time\n",
+    "import pyarrow.dataset as ds\n",
+    "import pyarrow.parquet as pq\n",
+    "import os\n",
+    "import polars as pl\n",
+    "pl.Config.set_tbl_rows(10000)\n",
+    "import pandas as pd\n",
+    "pd.options.display.max_rows = 10000\n",
+    "\n",
+    "torch.manual_seed(1337)\n",
+    "torch.set_float32_matmul_precision('medium')\n",
+    "\n",
+    "logging.basicConfig(level=logging.INFO)\n",
+    "device = 'cuda' if torch.cuda.is_available() else 'cpu'\n",
+    "# device = \"cpu\"    # if more informative debugging statements are needed\n",
+    "print(f\"Using device: {device}.\")\n",
+    "\n",
+    " # TODO: define an env variable to fix for a local hpc environment issue, this shouldn't be needed\n",
+    "%env SLURM_NTASKS_PER_NODE=28   "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "63e00688-1426-4046-910c-45bde94db899",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "is_decoder: true\n",
+      "data:\n",
+      "  batch_size: 64\n",
+      "  unk_freq_threshold: 0.0\n",
+      "  min_workers: 20\n",
+      "  global_diagnoses: false\n",
+      "  path_to_db: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/\n",
+      "  path_to_ds: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/\n",
+      "  meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle\n",
+      "experiment:\n",
+      "  type: pre-train\n",
+      "  project_name: SurvivEHR-benchmarks\n",
+      "  run_id: DeSurv\n",
+      "  fine_tune_id: null\n",
+      "  train: true\n",
+      "  test: true\n",
+      "  verbose: true\n",
+      "  seed: 1337\n",
+      "  log: true\n",
+      "  log_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/\n",
+      "  ckpt_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/\n",
+      "  fine_tune_outcomes:\n",
+      "  - IHDINCLUDINGMI_OPTIMALV2\n",
+      "  - ISCHAEMICSTROKE_V2\n",
+      "  - MINFARCTION\n",
+      "  - STROKEUNSPECIFIED_V2\n",
+      "  - STROKE_HAEMRGIC\n",
+      "  fine_tune_collapse: null\n",
+      "optim:\n",
+      "  num_epochs: 5\n",
+      "  learning_rate: 0.0003\n",
+      "  scheduler_warmup: true\n",
+      "  scheduler: CAWarmRestarts\n",
+      "  scheduler_periods: 10000\n",
+      "  learning_rate_decay: 0.8\n",
+      "  val_check_interval: 1000\n",
+      "  early_stop: true\n",
+      "  early_stop_patience: 30\n",
+      "  log_every_n_steps: 20\n",
+      "  limit_val_batches: 0.025\n",
+      "  limit_test_batches: 0.025\n",
+      "transformer:\n",
+      "  block_type: Neo\n",
+      "  block_size: 256\n",
+      "  n_layer: 6\n",
+      "  n_head: 6\n",
+      "  n_embd: 384\n",
+      "  layer_norm_bias: false\n",
+      "  attention_type: global\n",
+      "  bias: true\n",
+      "  dropout: 0.0\n",
+      "  attention_dropout: 0.0\n",
+      "  resid_dropout: 0.0\n",
+      "  private_heads: 0\n",
+      "head:\n",
+      "  SurvLayer: cr\n",
+      "  surv_weight: 0.5\n",
+      "  tokens_for_univariate_regression: None\n",
+      "  value_weight: 0.5\n",
+      "\n"
+     ]
+    }
+   ],
+   "source": [
+    "# load the configuration file, override any settings \n",
+    "with initialize(version_base=None, config_path=\"SurvStreamGPT/confs\", job_name=\"testing_notebook\"):\n",
+    "    cfg = compose(config_name=\"config_CompetingRisk11M\", \n",
+    "                  overrides=['experiment.fine_tune_outcomes=[\"IHDINCLUDINGMI_OPTIMALV2\", \"ISCHAEMICSTROKE_V2\", \"MINFARCTION\", \"STROKEUNSPECIFIED_V2\", \"STROKE_HAEMRGIC\"]',\n",
+    "                             \"data.path_to_ds=/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/\",\n",
+    "                             \"experiment.project_name=SurvivEHR-benchmarks\",\n",
+    "                             \"experiment.run_id=DeSurv\",\n",
+    "                            ]\n",
+    "                 )     \n",
+    "\n",
+    "print(OmegaConf.to_yaml(cfg))\n",
+    "\n",
+    "save_path = f\"/rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/{cfg.experiment.run_id}/\"\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "56903fb8-3948-4186-a59c-f8e3ea026113",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "b68624c9-3478-457c-afe4-212edbfca9b3",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "INFO:root:Running cr on 72 CPUs and 1 GPUs\n",
+      "INFO:root:====================================================================================================\n",
+      "INFO:root:# Loading DataModule for dataset /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/. This will be loaded in supervised form.\n",
+      "INFO:root:====================================================================================================\n",
+      "INFO:root:Creating supervised collator for DataModule\n",
+      "INFO:root:Using meta information from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle\n",
+      "INFO:root:Using train file-row count dictionary from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/file_row_count_dict_train.pickle\n",
+      "INFO:root:Using test file-row count dictionary from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/file_row_count_dict_test.pickle\n",
+      "INFO:root:Using val file-row count dictionary from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/file_row_count_dict_val.pickle\n",
+      "INFO:root:Tokenzier created based on 7,555,415,275 tokens\n",
+      "INFO:root:Using tabular tokenizer, created from meta information and containing 265 tokens\n",
+      "INFO:root:Loaded /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/split=train/ dataset, with 572,096 samples\n",
+      "INFO:root:Loaded /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/split=test/ dataset, with 35,758 samples\n",
+      "INFO:root:Loaded /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/split=val/ dataset, with 33,280 samples\n"
+     ]
+    }
+   ],
+   "source": [
+    "logging.basicConfig(level=logging.DEBUG)\n",
+    "logging.info(f\"Running {cfg.head.SurvLayer} on {os.cpu_count()} CPUs and {torch.cuda.device_count()} GPUs\")\n",
+    "\n",
+    "# Global settings\n",
+    "torch.manual_seed(cfg.experiment.seed)\n",
+    "torch.set_float32_matmul_precision('medium')\n",
+    "os.environ[\"HYDRA_FULL_ERROR\"] = \"1\"\n",
+    "\n",
+    "# make dataloader\n",
+    "supervised = True if cfg.experiment.fine_tune_outcomes is not None else False    \n",
+    "logging.info(\"=\"*100)\n",
+    "logging.info(f\"# Loading DataModule for dataset {cfg.data.path_to_ds}. This will be loaded in {'supervised' if supervised else 'causal'} form.\")\n",
+    "logging.info(\"=\"*100)\n",
+    "dm = FoundationalDataModule(path_to_db=cfg.data.path_to_db,\n",
+    "                            path_to_ds=cfg.data.path_to_ds,\n",
+    "                            load=True,\n",
+    "                            tokenizer=\"tabular\",\n",
+    "                            batch_size=cfg.data.batch_size,\n",
+    "                            max_seq_length=cfg.transformer.block_size,\n",
+    "                            global_diagnoses=cfg.data.global_diagnoses,\n",
+    "                            freq_threshold=cfg.data.unk_freq_threshold,\n",
+    "                            min_workers=cfg.data.min_workers,\n",
+    "                            overwrite_meta_information=cfg.data.meta_information_path,\n",
+    "                            supervised=supervised,\n",
+    "                           )\n",
+    "\n",
+    "# Get required information from initialised dataloader\n",
+    "# ... vocab size\n",
+    "vocab_size = dm.train_set.tokenizer.vocab_size"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "187652f2-f907-46fd-9e55-764b7616d6aa",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "INFO:root:Creating cr DeSurv experiment with outcomes {'IHDINCLUDINGMI_OPTIMALV2': 95, 'ISCHAEMICSTROKE_V2': 41, 'MINFARCTION': 67, 'STROKEUNSPECIFIED_V2': 65, 'STROKE_HAEMRGIC': 28}\n",
+      "GPU available: True (cuda), used: True\n",
+      "TPU available: False, using: 0 TPU cores\n",
+      "IPU available: False, using: 0 IPUs\n",
+      "HPU available: False, using: 0 HPUs\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "'/rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/DeSurv.ckpt'"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "INFO:root:Training model.\n",
+      "LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]\n",
+      "INFO:root:Using ReduceLROnPlateau scheduler\n",
+      "\n",
+      "  | Name   | Type            | Params\n",
+      "-------------------------------------------\n",
+      "0 | sr_ode | ODESurvMultiple | 3.4 K \n",
+      "-------------------------------------------\n",
+      "3.4 K     Trainable params\n",
+      "30        Non-trainable params\n",
+      "3.4 K     Total params\n",
+      "0.014     Total estimated model params size (MB)\n",
+      "SLURM auto-requeueing enabled. Setting signal handlers.\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "9cf9122bbd1147be9bf82a21620e38ee",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "Sanity Checking: |          | 0/? [00:00<?, ?it/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "torch.Size([64, 279])\n",
+      "torch.Size([64, 6])\n",
+      "torch.Size([64, 1, 1])\n",
+      "torch.Size([64, 15, 6])\n"
+     ]
+    },
+    {
+     "ename": "RuntimeError",
+     "evalue": "The size of tensor a (64) must match the size of tensor b (15) at non-singleton dimension 1",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mRuntimeError\u001b[0m                              Traceback (most recent call last)",
+      "Cell \u001b[0;32mIn [14], line 7\u001b[0m\n\u001b[1;32m      4\u001b[0m display(checkpoint)\n\u001b[1;32m      6\u001b[0m logging\u001b[38;5;241m.\u001b[39minfo(\u001b[38;5;124mf\u001b[39m\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mTraining model.\u001b[39m\u001b[38;5;124m\"\u001b[39m)\n\u001b[0;32m----> 7\u001b[0m \u001b[43mtrainer\u001b[49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43mfit\u001b[49m\u001b[43m(\u001b[49m\u001b[43mexperiment_instance\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mdatamodule\u001b[49m\u001b[38;5;241;43m=\u001b[39;49m\u001b[43mdm\u001b[49m\u001b[43m)\u001b[49m\n\u001b[1;32m      9\u001b[0m \u001b[38;5;66;03m# Ensure we evaluate on the best/latest version of the model - particularly if we just trained then load the new best checkpoint\u001b[39;00m\n\u001b[1;32m     10\u001b[0m logging\u001b[38;5;241m.\u001b[39minfo(\u001b[38;5;124mf\u001b[39m\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mRe-loading from best cached checkpoint \u001b[39m\u001b[38;5;132;01m{\u001b[39;00mnew_checkpoint\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m\"\u001b[39m)\n",
+      "File \u001b[0;32m/rds/bear-apps/2022a/EL8-ice/software/PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py:545\u001b[0m, in \u001b[0;36mTrainer.fit\u001b[0;34m(self, model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)\u001b[0m\n\u001b[1;32m    543\u001b[0m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mstate\u001b[38;5;241m.\u001b[39mstatus \u001b[38;5;241m=\u001b[39m TrainerStatus\u001b[38;5;241m.\u001b[39mRUNNING\n\u001b[1;32m    544\u001b[0m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mtraining \u001b[38;5;241m=\u001b[39m \u001b[38;5;28;01mTrue\u001b[39;00m\n\u001b[0;32m--> 545\u001b[0m \u001b[43mcall\u001b[49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43m_call_and_handle_interrupt\u001b[49m\u001b[43m(\u001b[49m\n\u001b[1;32m    546\u001b[0m \u001b[43m    \u001b[49m\u001b[38;5;28;43mself\u001b[39;49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[38;5;28;43mself\u001b[39;49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43m_fit_impl\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mmodel\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mtrain_dataloaders\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mval_dataloaders\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mdatamodule\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mckpt_path\u001b[49m\n\u001b[1;32m    547\u001b[0m \u001b[43m\u001b[49m\u001b[43m)\u001b[49m\n",
+      "File \u001b[0;32m/rds/bear-apps/2022a/EL8-ice/software/PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/pytorch_lightning/trainer/call.py:44\u001b[0m, in \u001b[0;36m_call_and_handle_interrupt\u001b[0;34m(trainer, trainer_fn, *args, **kwargs)\u001b[0m\n\u001b[1;32m     42\u001b[0m     \u001b[38;5;28;01mif\u001b[39;00m trainer\u001b[38;5;241m.\u001b[39mstrategy\u001b[38;5;241m.\u001b[39mlauncher \u001b[38;5;129;01mis\u001b[39;00m \u001b[38;5;129;01mnot\u001b[39;00m \u001b[38;5;28;01mNone\u001b[39;00m:\n\u001b[1;32m     43\u001b[0m         \u001b[38;5;28;01mreturn\u001b[39;00m trainer\u001b[38;5;241m.\u001b[39mstrategy\u001b[38;5;241m.\u001b[39mlauncher\u001b[38;5;241m.\u001b[39mlaunch(trainer_fn, \u001b[38;5;241m*\u001b[39margs, trainer\u001b[38;5;241m=\u001b[39mtrainer, \u001b[38;5;241m*\u001b[39m\u001b[38;5;241m*\u001b[39mkwargs)\n\u001b[0;32m---> 44\u001b[0m     \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[43mtrainer_fn\u001b[49m\u001b[43m(\u001b[49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[43margs\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[43mkwargs\u001b[49m\u001b[43m)\u001b[49m\n\u001b[1;32m     46\u001b[0m \u001b[38;5;28;01mexcept\u001b[39;00m _TunerExitException:\n\u001b[1;32m     47\u001b[0m     _call_teardown_hook(trainer)\n",
+      "File \u001b[0;32m/rds/bear-apps/2022a/EL8-ice/software/PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py:581\u001b[0m, in \u001b[0;36mTrainer._fit_impl\u001b[0;34m(self, model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)\u001b[0m\n\u001b[1;32m    574\u001b[0m \u001b[38;5;28;01massert\u001b[39;00m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mstate\u001b[38;5;241m.\u001b[39mfn \u001b[38;5;129;01mis\u001b[39;00m \u001b[38;5;129;01mnot\u001b[39;00m \u001b[38;5;28;01mNone\u001b[39;00m\n\u001b[1;32m    575\u001b[0m ckpt_path \u001b[38;5;241m=\u001b[39m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_checkpoint_connector\u001b[38;5;241m.\u001b[39m_select_ckpt_path(\n\u001b[1;32m    576\u001b[0m     \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mstate\u001b[38;5;241m.\u001b[39mfn,\n\u001b[1;32m    577\u001b[0m     ckpt_path,\n\u001b[1;32m    578\u001b[0m     model_provided\u001b[38;5;241m=\u001b[39m\u001b[38;5;28;01mTrue\u001b[39;00m,\n\u001b[1;32m    579\u001b[0m     model_connected\u001b[38;5;241m=\u001b[39m\u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mlightning_module \u001b[38;5;129;01mis\u001b[39;00m \u001b[38;5;129;01mnot\u001b[39;00m \u001b[38;5;28;01mNone\u001b[39;00m,\n\u001b[1;32m    580\u001b[0m )\n\u001b[0;32m--> 581\u001b[0m \u001b[38;5;28;43mself\u001b[39;49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43m_run\u001b[49m\u001b[43m(\u001b[49m\u001b[43mmodel\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mckpt_path\u001b[49m\u001b[38;5;241;43m=\u001b[39;49m\u001b[43mckpt_path\u001b[49m\u001b[43m)\u001b[49m\n\u001b[1;32m    583\u001b[0m \u001b[38;5;28;01massert\u001b[39;00m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mstate\u001b[38;5;241m.\u001b[39mstopped\n\u001b[1;32m    584\u001b[0m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mtraining \u001b[38;5;241m=\u001b[39m \u001b[38;5;28;01mFalse\u001b[39;00m\n",
+      "File \u001b[0;32m/rds/bear-apps/2022a/EL8-ice/software/PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py:990\u001b[0m, in \u001b[0;36mTrainer._run\u001b[0;34m(self, model, ckpt_path)\u001b[0m\n\u001b[1;32m    985\u001b[0m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_signal_connector\u001b[38;5;241m.\u001b[39mregister_signal_handlers()\n\u001b[1;32m    987\u001b[0m \u001b[38;5;66;03m# ----------------------------\u001b[39;00m\n\u001b[1;32m    988\u001b[0m \u001b[38;5;66;03m# RUN THE TRAINER\u001b[39;00m\n\u001b[1;32m    989\u001b[0m \u001b[38;5;66;03m# ----------------------------\u001b[39;00m\n\u001b[0;32m--> 990\u001b[0m results \u001b[38;5;241m=\u001b[39m \u001b[38;5;28;43mself\u001b[39;49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43m_run_stage\u001b[49m\u001b[43m(\u001b[49m\u001b[43m)\u001b[49m\n\u001b[1;32m    992\u001b[0m \u001b[38;5;66;03m# ----------------------------\u001b[39;00m\n\u001b[1;32m    993\u001b[0m \u001b[38;5;66;03m# POST-Training CLEAN UP\u001b[39;00m\n\u001b[1;32m    994\u001b[0m \u001b[38;5;66;03m# ----------------------------\u001b[39;00m\n\u001b[1;32m    995\u001b[0m log\u001b[38;5;241m.\u001b[39mdebug(\u001b[38;5;124mf\u001b[39m\u001b[38;5;124m\"\u001b[39m\u001b[38;5;132;01m{\u001b[39;00m\u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m\u001b[38;5;18m__class__\u001b[39m\u001b[38;5;241m.\u001b[39m\u001b[38;5;18m__name__\u001b[39m\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m: trainer tearing down\u001b[39m\u001b[38;5;124m\"\u001b[39m)\n",
+      "File \u001b[0;32m/rds/bear-apps/2022a/EL8-ice/software/PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py:1034\u001b[0m, in \u001b[0;36mTrainer._run_stage\u001b[0;34m(self)\u001b[0m\n\u001b[1;32m   1032\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mtraining:\n\u001b[1;32m   1033\u001b[0m     \u001b[38;5;28;01mwith\u001b[39;00m isolate_rng():\n\u001b[0;32m-> 1034\u001b[0m         \u001b[38;5;28;43mself\u001b[39;49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43m_run_sanity_check\u001b[49m\u001b[43m(\u001b[49m\u001b[43m)\u001b[49m\n\u001b[1;32m   1035\u001b[0m     \u001b[38;5;28;01mwith\u001b[39;00m torch\u001b[38;5;241m.\u001b[39mautograd\u001b[38;5;241m.\u001b[39mset_detect_anomaly(\u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_detect_anomaly):\n\u001b[1;32m   1036\u001b[0m         \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mfit_loop\u001b[38;5;241m.\u001b[39mrun()\n",
+      "File \u001b[0;32m/rds/bear-apps/2022a/EL8-ice/software/PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/pytorch_lightning/trainer/trainer.py:1063\u001b[0m, in \u001b[0;36mTrainer._run_sanity_check\u001b[0;34m(self)\u001b[0m\n\u001b[1;32m   1060\u001b[0m call\u001b[38;5;241m.\u001b[39m_call_callback_hooks(\u001b[38;5;28mself\u001b[39m, \u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mon_sanity_check_start\u001b[39m\u001b[38;5;124m\"\u001b[39m)\n\u001b[1;32m   1062\u001b[0m \u001b[38;5;66;03m# run eval step\u001b[39;00m\n\u001b[0;32m-> 1063\u001b[0m \u001b[43mval_loop\u001b[49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43mrun\u001b[49m\u001b[43m(\u001b[49m\u001b[43m)\u001b[49m\n\u001b[1;32m   1065\u001b[0m call\u001b[38;5;241m.\u001b[39m_call_callback_hooks(\u001b[38;5;28mself\u001b[39m, \u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mon_sanity_check_end\u001b[39m\u001b[38;5;124m\"\u001b[39m)\n\u001b[1;32m   1067\u001b[0m \u001b[38;5;66;03m# reset logger connector\u001b[39;00m\n",
+      "File \u001b[0;32m/rds/bear-apps/2022a/EL8-ice/software/PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/pytorch_lightning/loops/utilities.py:181\u001b[0m, in \u001b[0;36m_no_grad_context.<locals>._decorator\u001b[0;34m(self, *args, **kwargs)\u001b[0m\n\u001b[1;32m    179\u001b[0m     context_manager \u001b[38;5;241m=\u001b[39m torch\u001b[38;5;241m.\u001b[39mno_grad\n\u001b[1;32m    180\u001b[0m \u001b[38;5;28;01mwith\u001b[39;00m context_manager():\n\u001b[0;32m--> 181\u001b[0m     \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[43mloop_run\u001b[49m\u001b[43m(\u001b[49m\u001b[38;5;28;43mself\u001b[39;49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[43margs\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[43mkwargs\u001b[49m\u001b[43m)\u001b[49m\n",
+      "File \u001b[0;32m/rds/bear-apps/2022a/EL8-ice/software/PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/pytorch_lightning/loops/evaluation_loop.py:134\u001b[0m, in \u001b[0;36m_EvaluationLoop.run\u001b[0;34m(self)\u001b[0m\n\u001b[1;32m    132\u001b[0m     \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mbatch_progress\u001b[38;5;241m.\u001b[39mis_last_batch \u001b[38;5;241m=\u001b[39m data_fetcher\u001b[38;5;241m.\u001b[39mdone\n\u001b[1;32m    133\u001b[0m     \u001b[38;5;66;03m# run step hooks\u001b[39;00m\n\u001b[0;32m--> 134\u001b[0m     \u001b[38;5;28;43mself\u001b[39;49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43m_evaluation_step\u001b[49m\u001b[43m(\u001b[49m\u001b[43mbatch\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mbatch_idx\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mdataloader_idx\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mdataloader_iter\u001b[49m\u001b[43m)\u001b[49m\n\u001b[1;32m    135\u001b[0m \u001b[38;5;28;01mexcept\u001b[39;00m \u001b[38;5;167;01mStopIteration\u001b[39;00m:\n\u001b[1;32m    136\u001b[0m     \u001b[38;5;66;03m# this needs to wrap the `*_step` call too (not just `next`) for `dataloader_iter` support\u001b[39;00m\n\u001b[1;32m    137\u001b[0m     \u001b[38;5;28;01mbreak\u001b[39;00m\n",
+      "File \u001b[0;32m/rds/bear-apps/2022a/EL8-ice/software/PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/pytorch_lightning/loops/evaluation_loop.py:391\u001b[0m, in \u001b[0;36m_EvaluationLoop._evaluation_step\u001b[0;34m(self, batch, batch_idx, dataloader_idx, dataloader_iter)\u001b[0m\n\u001b[1;32m    385\u001b[0m hook_name \u001b[38;5;241m=\u001b[39m \u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mtest_step\u001b[39m\u001b[38;5;124m\"\u001b[39m \u001b[38;5;28;01mif\u001b[39;00m trainer\u001b[38;5;241m.\u001b[39mtesting \u001b[38;5;28;01melse\u001b[39;00m \u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mvalidation_step\u001b[39m\u001b[38;5;124m\"\u001b[39m\n\u001b[1;32m    386\u001b[0m step_args \u001b[38;5;241m=\u001b[39m (\n\u001b[1;32m    387\u001b[0m     \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_build_step_args_from_hook_kwargs(hook_kwargs, hook_name)\n\u001b[1;32m    388\u001b[0m     \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;129;01mnot\u001b[39;00m using_dataloader_iter\n\u001b[1;32m    389\u001b[0m     \u001b[38;5;28;01melse\u001b[39;00m (dataloader_iter,)\n\u001b[1;32m    390\u001b[0m )\n\u001b[0;32m--> 391\u001b[0m output \u001b[38;5;241m=\u001b[39m \u001b[43mcall\u001b[49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43m_call_strategy_hook\u001b[49m\u001b[43m(\u001b[49m\u001b[43mtrainer\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mhook_name\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[43mstep_args\u001b[49m\u001b[43m)\u001b[49m\n\u001b[1;32m    393\u001b[0m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mbatch_progress\u001b[38;5;241m.\u001b[39mincrement_processed()\n\u001b[1;32m    395\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m using_dataloader_iter:\n\u001b[1;32m    396\u001b[0m     \u001b[38;5;66;03m# update the hook kwargs now that the step method might have consumed the iterator\u001b[39;00m\n",
+      "File \u001b[0;32m/rds/bear-apps/2022a/EL8-ice/software/PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/pytorch_lightning/trainer/call.py:309\u001b[0m, in \u001b[0;36m_call_strategy_hook\u001b[0;34m(trainer, hook_name, *args, **kwargs)\u001b[0m\n\u001b[1;32m    306\u001b[0m     \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[38;5;28;01mNone\u001b[39;00m\n\u001b[1;32m    308\u001b[0m \u001b[38;5;28;01mwith\u001b[39;00m trainer\u001b[38;5;241m.\u001b[39mprofiler\u001b[38;5;241m.\u001b[39mprofile(\u001b[38;5;124mf\u001b[39m\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124m[Strategy]\u001b[39m\u001b[38;5;132;01m{\u001b[39;00mtrainer\u001b[38;5;241m.\u001b[39mstrategy\u001b[38;5;241m.\u001b[39m\u001b[38;5;18m__class__\u001b[39m\u001b[38;5;241m.\u001b[39m\u001b[38;5;18m__name__\u001b[39m\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m.\u001b[39m\u001b[38;5;132;01m{\u001b[39;00mhook_name\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m\"\u001b[39m):\n\u001b[0;32m--> 309\u001b[0m     output \u001b[38;5;241m=\u001b[39m \u001b[43mfn\u001b[49m\u001b[43m(\u001b[49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[43margs\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[43mkwargs\u001b[49m\u001b[43m)\u001b[49m\n\u001b[1;32m    311\u001b[0m \u001b[38;5;66;03m# restore current_fx when nested context\u001b[39;00m\n\u001b[1;32m    312\u001b[0m pl_module\u001b[38;5;241m.\u001b[39m_current_fx_name \u001b[38;5;241m=\u001b[39m prev_fx_name\n",
+      "File \u001b[0;32m/rds/bear-apps/2022a/EL8-ice/software/PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/pytorch_lightning/strategies/strategy.py:403\u001b[0m, in \u001b[0;36mStrategy.validation_step\u001b[0;34m(self, *args, **kwargs)\u001b[0m\n\u001b[1;32m    401\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mmodel \u001b[38;5;241m!=\u001b[39m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mlightning_module:\n\u001b[1;32m    402\u001b[0m     \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_forward_redirection(\u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mmodel, \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mlightning_module, \u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mvalidation_step\u001b[39m\u001b[38;5;124m\"\u001b[39m, \u001b[38;5;241m*\u001b[39margs, \u001b[38;5;241m*\u001b[39m\u001b[38;5;241m*\u001b[39mkwargs)\n\u001b[0;32m--> 403\u001b[0m \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[38;5;28;43mself\u001b[39;49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43mlightning_module\u001b[49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43mvalidation_step\u001b[49m\u001b[43m(\u001b[49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[43margs\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[43mkwargs\u001b[49m\u001b[43m)\u001b[49m\n",
+      "File \u001b[0;32m~/Projects/CPRD/examples/modelling/benchmarks/DeSurv/setup_deSurv_experiment.py:109\u001b[0m, in \u001b[0;36mDeSurvExperiment.validation_step\u001b[0;34m(self, batch, batch_idx)\u001b[0m\n\u001b[1;32m    108\u001b[0m \u001b[38;5;28;01mdef\u001b[39;00m \u001b[38;5;21mvalidation_step\u001b[39m(\u001b[38;5;28mself\u001b[39m, batch, batch_idx):\n\u001b[0;32m--> 109\u001b[0m     loss \u001b[38;5;241m=\u001b[39m \u001b[38;5;28;43mself\u001b[39;49m\u001b[43m(\u001b[49m\u001b[43mbatch\u001b[49m\u001b[43m)\u001b[49m   \n\u001b[1;32m    110\u001b[0m     \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mlog(\u001b[38;5;124mf\u001b[39m\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mval_loss\u001b[39m\u001b[38;5;124m\"\u001b[39m, loss, prog_bar\u001b[38;5;241m=\u001b[39m\u001b[38;5;28;01mFalse\u001b[39;00m, logger\u001b[38;5;241m=\u001b[39m\u001b[38;5;28;01mTrue\u001b[39;00m, sync_dist\u001b[38;5;241m=\u001b[39m\u001b[38;5;28;01mTrue\u001b[39;00m)\n\u001b[1;32m    111\u001b[0m     \u001b[38;5;28;01mreturn\u001b[39;00m loss\n",
+      "File \u001b[0;32m/rds/bear-apps/2022a/EL8-ice/software/PyTorch/2.0.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/torch/nn/modules/module.py:1501\u001b[0m, in \u001b[0;36mModule._call_impl\u001b[0;34m(self, *args, **kwargs)\u001b[0m\n\u001b[1;32m   1496\u001b[0m \u001b[38;5;66;03m# If we don't have any hooks, we want to skip the rest of the logic in\u001b[39;00m\n\u001b[1;32m   1497\u001b[0m \u001b[38;5;66;03m# this function, and just call forward.\u001b[39;00m\n\u001b[1;32m   1498\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;129;01mnot\u001b[39;00m (\u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_backward_hooks \u001b[38;5;129;01mor\u001b[39;00m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_backward_pre_hooks \u001b[38;5;129;01mor\u001b[39;00m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_forward_hooks \u001b[38;5;129;01mor\u001b[39;00m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_forward_pre_hooks\n\u001b[1;32m   1499\u001b[0m         \u001b[38;5;129;01mor\u001b[39;00m _global_backward_pre_hooks \u001b[38;5;129;01mor\u001b[39;00m _global_backward_hooks\n\u001b[1;32m   1500\u001b[0m         \u001b[38;5;129;01mor\u001b[39;00m _global_forward_hooks \u001b[38;5;129;01mor\u001b[39;00m _global_forward_pre_hooks):\n\u001b[0;32m-> 1501\u001b[0m     \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[43mforward_call\u001b[49m\u001b[43m(\u001b[49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[43margs\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[43mkwargs\u001b[49m\u001b[43m)\u001b[49m\n\u001b[1;32m   1502\u001b[0m \u001b[38;5;66;03m# Do not call functions when jit is used\u001b[39;00m\n\u001b[1;32m   1503\u001b[0m full_backward_hooks, non_full_backward_hooks \u001b[38;5;241m=\u001b[39m [], []\n",
+      "File \u001b[0;32m~/Projects/CPRD/examples/modelling/benchmarks/DeSurv/setup_deSurv_experiment.py:90\u001b[0m, in \u001b[0;36mDeSurvExperiment.forward\u001b[0;34m(self, batch, is_generation, return_loss, return_generation)\u001b[0m\n\u001b[1;32m     87\u001b[0m t \u001b[38;5;241m/\u001b[39m\u001b[38;5;241m=\u001b[39m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_time_scale\n\u001b[1;32m     88\u001b[0m bsz \u001b[38;5;241m=\u001b[39m X\u001b[38;5;241m.\u001b[39mshape[\u001b[38;5;241m0\u001b[39m]\n\u001b[0;32m---> 90\u001b[0m losses_desurv \u001b[38;5;241m=\u001b[39m [\u001b[38;5;28;43mself\u001b[39;49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43msr_ode\u001b[49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43mloss\u001b[49m\u001b[43m(\u001b[49m\u001b[43mX\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mt\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mk\u001b[49m\u001b[43m)\u001b[49m \u001b[38;5;241m/\u001b[39m bsz]\n\u001b[1;32m     92\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m return_loss:\n\u001b[1;32m     93\u001b[0m     loss \u001b[38;5;241m=\u001b[39m torch\u001b[38;5;241m.\u001b[39msum(torch\u001b[38;5;241m.\u001b[39mstack(losses_desurv))                                  \u001b[38;5;66;03m# losses are returned as a list, as the Single-Risk head is many DeSurv models in parallel, combine\u001b[39;00m\n",
+      "File \u001b[0;32m~/Projects/CPRD/src/modules/head_layers/survival/desurv.py:236\u001b[0m, in \u001b[0;36mODESurvMultiple.loss\u001b[0;34m(self, x, t, k)\u001b[0m\n\u001b[1;32m    234\u001b[0m cens_ids \u001b[38;5;241m=\u001b[39m torch\u001b[38;5;241m.\u001b[39mwhere(k \u001b[38;5;241m==\u001b[39m \u001b[38;5;241m0\u001b[39m)[\u001b[38;5;241m0\u001b[39m]\n\u001b[1;32m    235\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m torch\u001b[38;5;241m.\u001b[39mnumel(cens_ids) \u001b[38;5;241m!=\u001b[39m \u001b[38;5;241m0\u001b[39m:\n\u001b[0;32m--> 236\u001b[0m     cif_cens \u001b[38;5;241m=\u001b[39m \u001b[38;5;28;43mself\u001b[39;49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43mforward\u001b[49m\u001b[43m(\u001b[49m\u001b[43mx\u001b[49m\u001b[43m[\u001b[49m\u001b[43mcens_ids\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43m:\u001b[49m\u001b[43m]\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mt\u001b[49m\u001b[43m[\u001b[49m\u001b[43mcens_ids\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[38;5;241;43m0\u001b[39;49m\u001b[43m]\u001b[49m\u001b[43m)\u001b[49m[\u001b[38;5;241m0\u001b[39m]\n\u001b[1;32m    237\u001b[0m     cdf_cens \u001b[38;5;241m=\u001b[39m cif_cens\u001b[38;5;241m.\u001b[39msum(dim\u001b[38;5;241m=\u001b[39m\u001b[38;5;241m1\u001b[39m)\n\u001b[1;32m    238\u001b[0m     censterm \u001b[38;5;241m=\u001b[39m torch\u001b[38;5;241m.\u001b[39mlog(\u001b[38;5;241m1\u001b[39m \u001b[38;5;241m-\u001b[39m cdf_cens \u001b[38;5;241m+\u001b[39m eps)\u001b[38;5;241m.\u001b[39msum()\n",
+      "File \u001b[0;32m~/Projects/CPRD/src/modules/head_layers/survival/desurv.py:220\u001b[0m, in \u001b[0;36mODESurvMultiple.forward\u001b[0;34m(self, x, t)\u001b[0m\n\u001b[1;32m    218\u001b[0m \u001b[38;5;28mprint\u001b[39m(t\u001b[38;5;241m.\u001b[39mshape)\n\u001b[1;32m    219\u001b[0m \u001b[38;5;28mprint\u001b[39m(\u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39modenet\u001b[38;5;241m.\u001b[39mforward(x, t)\u001b[38;5;241m.\u001b[39mshape)\n\u001b[0;32m--> 220\u001b[0m preds \u001b[38;5;241m=\u001b[39m \u001b[43mpi\u001b[49m\u001b[43m \u001b[49m\u001b[38;5;241;43m*\u001b[39;49m\u001b[43m \u001b[49m\u001b[38;5;28;43mself\u001b[39;49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43modenet\u001b[49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43mforward\u001b[49m\u001b[43m(\u001b[49m\u001b[43mx\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mt\u001b[49m\u001b[43m)\u001b[49m\n\u001b[1;32m    222\u001b[0m \u001b[38;5;28;01mreturn\u001b[39;00m preds, pi\n",
+      "\u001b[0;31mRuntimeError\u001b[0m: The size of tensor a (64) must match the size of tensor b (15) at non-singleton dimension 1"
+     ]
+    }
+   ],
+   "source": [
+    "experiment_instance, Experiment, trainer = setup_desurv_experiment(cfg=cfg, dm=dm, risk_model=\"cr\")\n",
+    "\n",
+    "checkpoint = cfg.experiment.ckpt_dir + cfg.experiment.run_id + \".ckpt\"\n",
+    "display(checkpoint)\n",
+    "\n",
+    "logging.info(f\"Training model.\")\n",
+    "trainer.fit(experiment_instance, datamodule=dm)\n",
+    "\n",
+    "# Ensure we evaluate on the best/latest version of the model - particularly if we just trained then load the new best checkpoint\n",
+    "logging.info(f\"Re-loading from best cached checkpoint {new_checkpoint}\")\n",
+    "experiment_instance = Experiment.load_from_checkpoint(new_checkpoint)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1d7ce7a5-c8a9-443d-bd74-0a03ada2918d",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9cf95faf-0b0b-41c0-aa2c-474935e16007",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "98ecb812-40c2-4125-87f6-2eff18d75f85",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6e606ced-beae-4b0f-87f7-462adfc4e671",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "supervised = True if cfg.experiment.fine_tune_outcomes is not None else False\n",
+    "logging.info(\"=\"*100)\n",
+    "logging.info(f\"# Loading DataModule for dataset {cfg.data.path_to_ds}. This will be loaded in {'supervised' if supervised else 'causal'} form.\")\n",
+    "logging.info(\"=\"*100)\n",
+    "dm = FoundationalDataModule(path_to_db=cfg.data.path_to_db,\n",
+    "                            path_to_ds=cfg.data.path_to_ds,\n",
+    "                            load=True,\n",
+    "                            tokenizer=\"tabular\",\n",
+    "                            batch_size=cfg.data.batch_size,\n",
+    "                            max_seq_length=cfg.transformer.block_size,\n",
+    "                            global_diagnoses=cfg.data.global_diagnoses,\n",
+    "                            freq_threshold=cfg.data.unk_freq_threshold,\n",
+    "                            min_workers=cfg.data.min_workers,\n",
+    "                            overwrite_meta_information=cfg.data.meta_information_path,\n",
+    "                            supervised=supervised\n",
+    "                           )\n",
+    "# Get required information from initialised dataloader\n",
+    "# ... vocab size\n",
+    "vocab_size = dm.train_set.tokenizer.vocab_size\n",
+    "# ... Extract the measurements, using the fact that the diagnoses are all up upper case. This is needed for automatically setting the configuration below\n",
+    "#     encode into the list of univariate measurements to model with Normal distribution\n",
+    "# measurements_for_univariate_regression = [record for record in dm.tokenizer._event_counts[\"EVENT\"] if record.upper() != record]\n",
+    "# cfg.head.tokens_for_univariate_regression = dm.encode(measurements_for_univariate_regression) #\n",
+    "measurements_for_univariate_regression = dm.train_set.meta_information[\"measurement_tables\"][dm.train_set.meta_information[\"measurement_tables\"][\"count_obs\"] > 0][\"event\"].to_list()\n",
+    "cfg.head.tokens_for_univariate_regression = dm.encode(measurements_for_univariate_regression)\n",
+    "logging.debug(OmegaConf.to_yaml(cfg))\n",
+    "\n",
+    "target_tokens = dm.encode(['IHDINCLUDINGMI_OPTIMALV2', 'ISCHAEMICSTROKE_V2', 'MINFARCTION', 'STROKEUNSPECIFIED_V2', 'STROKE_HAEMRGIC'])\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "fd2e0a69-cc78-43d6-8e6c-bac2194a3f1b",
+   "metadata": {},
+   "source": [
+    "# Run experiment"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9bacadcc-f857-45e2-94e8-0ca43ccbd196",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# X, y = load_gbsg2()\n",
+    "# grade_str = X.loc[:, \"tgrade\"].astype(object).values[:, np.newaxis]\n",
+    "# grade_num = OrdinalEncoder(categories=[[\"I\", \"II\", \"III\"]]).fit_transform(grade_str)\n",
+    "\n",
+    "# X_no_grade = X.drop(\"tgrade\", axis=1)\n",
+    "# Xt = OneHotEncoder().fit_transform(X_no_grade)\n",
+    "# Xt.loc[:, \"tgrade\"] = grade_num\n",
+    "# print(X.head())\n",
+    "# print(Xt.head())\n",
+    "\n",
+    "# print(type(y))\n",
+    "# print(y)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4f61fa0f-4217-40d7-8996-73301eaf736a",
+   "metadata": {},
+   "source": [
+    "# Create dataset"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "bfbfbc95-0553-4f07-aca4-c25ef905acf5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def make_xsectional_dataset(dataset, n=None):\n",
+    "\n",
+    "    X = pd.DataFrame(columns=[f'static_{_idx}' for _idx in range(16)] + [f'{dataset.tokenizer._itos[_idx]}' for _idx in range(2,vocab_size)])\n",
+    "    Y = []\n",
+    "    \n",
+    "    for s_idx, sample in tqdm(enumerate(dataset), total=n):\n",
+    "    \n",
+    "        # Input\n",
+    "        ########\n",
+    "        # Static variables are already processed into categories where required\n",
+    "        static = sample[\"static_covariates\"]\n",
+    "    \n",
+    "        # Get a binary vector of vocab_size elements, which indicate if patient has any history of a condition (at any time, as long as it fits study criteria)\n",
+    "        # Note, 0 and 1 are PAD and UNK tokens which arent required\n",
+    "        input_tokens = sample[\"tokens\"][:-1]\n",
+    "        token_binary = torch.zeros(vocab_size-2)\n",
+    "        for tkn_idx in range(2, vocab_size):\n",
+    "            if tkn_idx in input_tokens:\n",
+    "                token_binary[tkn_idx-2] = 1\n",
+    "    \n",
+    "        sample_input = torch.hstack((static, token_binary)).tolist()\n",
+    "        X.loc[s_idx] = sample_input\n",
+    "    \n",
+    "        # Target\n",
+    "        ########\n",
+    "        target = sample[\"tokens\"][-1]\n",
+    "        if target in target_tokens:\n",
+    "            target = True\n",
+    "        else:\n",
+    "            target = False\n",
+    "        delta_age = sample[\"ages\"][-1] - sample[\"ages\"][-2]\n",
+    "        Y.append((target, int(delta_age)))\n",
+    "    \n",
+    "        if n is not None and s_idx >= n:\n",
+    "            break\n",
+    "\n",
+    "    y = np.array(Y, dtype=[('Status', '?'), ('Survival_in_days', '<f8')])\n",
+    "\n",
+    "    return X, y\n",
+    "\n",
+    "def make_xsectional_dataset2(datamodule, target_tokens, split='train', n=None):\n",
+    "\n",
+    "    X = pd.DataFrame(columns=[f'static_{_idx}' for _idx in range(16)] + [f'{datamodule.train_set.tokenizer._itos[_idx]}' for _idx in range(2,vocab_size)])\n",
+    "    Y = []\n",
+    "\n",
+    "    match split:\n",
+    "        case 'train':\n",
+    "            dataloader = datamodule.train_dataloader()\n",
+    "        case 'val':\n",
+    "            dataloader = datamodule.val_dataloader()\n",
+    "        case 'test':\n",
+    "            dataloader = datamodule.test_dataloader()\n",
+    "    \n",
+    "    for b_idx, batch in tqdm(enumerate(dataloader), total=n):\n",
+    "\n",
+    "        # Input\n",
+    "        ########\n",
+    "        # Static variables are already processed into categories where required\n",
+    "        static = batch[\"static_covariates\"].numpy()\n",
+    "    \n",
+    "        # Get a binary vector of vocab_size elements, which indicate if patient has any history of a condition (at any time, as long as it fits study criteria)\n",
+    "        # Note, 0 and 1 are PAD and UNK tokens which arent required\n",
+    "        input_tokens = batch[\"tokens\"]\n",
+    "        token_binary = np.zeros((static.shape[0], vocab_size-2))\n",
+    "        for s_idx in range(static.shape[0]):\n",
+    "            for tkn_idx in range(2, vocab_size):\n",
+    "                if tkn_idx in input_tokens[s_idx, :]:\n",
+    "                    token_binary[s_idx, tkn_idx-2] = 1\n",
+    "    \n",
+    "        batch_input = np.hstack((static, token_binary))\n",
+    "        batch_df = pd.DataFrame(batch_input, columns=X.columns)\n",
+    "        X = pd.concat([X, batch_df])\n",
+    "        \n",
+    "        # Target\n",
+    "        ########\n",
+    "        targets = batch[\"target_token\"].numpy()\n",
+    "        for s_idx in range(static.shape[0]):\n",
+    "            if targets[s_idx] in target_tokens:\n",
+    "                target = True\n",
+    "            else:\n",
+    "                target = False\n",
+    "            \n",
+    "            Y.append((target, int(batch[\"target_age_delta\"][s_idx] )))\n",
+    "    \n",
+    "        if n is not None and b_idx >= n:\n",
+    "            break\n",
+    "\n",
+    "    y = np.array(Y, dtype=[('Status', '?'), ('Survival_in_days', '<f8')])\n",
+    "\n",
+    "    return X, y\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "589fa98a-4455-42ec-8871-ef22fef8adc7",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# for batch in dm.train_dataloader():\n",
+    "#     break\n",
+    "# print(batch)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "032cb2f5-10f5-4b90-a8df-d4ea7d05a513",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# X_train, y_train = make_static_dataset(dm.train_set, n=1e6)\n",
+    "# X_test, y_test = make_static_dataset(dm.test_set, n=None)\n",
+    "# # print(Y)\n",
+    "# # print(X.head())\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "7a4b2ba2-22c3-48fa-8df3-ffd201700636",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "dict_keys(['X_train', 'y_train', 'X_test', 'y_test', 'X_val', 'y_val'])\n"
+     ]
+    }
+   ],
+   "source": [
+    "load = True\n",
+    "\n",
+    "if load is False:\n",
+    "    n_train =  len(dm.train_dataloader()) \n",
+    "    X_train, y_train = make_xsectional_dataset2(dm, target_tokens, split='train', n=n_train)\n",
+    "    \n",
+    "    n_test = len(dm.test_dataloader())  \n",
+    "    X_test, y_test = make_xsectional_dataset2(dm, target_tokens, split='test', n=n_test)\n",
+    "\n",
+    "    n_val =  len(dm.val_dataloader()) \n",
+    "    X_val, y_val = make_xsectional_dataset2(dm, target_tokens, split='val', n=n_val)\n",
+    "\n",
+    "    data = {\"X_train\": X_train,\n",
+    "            \"y_train\": y_train,\n",
+    "            \"X_test\": X_test,\n",
+    "            \"y_test\": y_test,\n",
+    "            \"X_val\": X_val,\n",
+    "            \"y_val\": y_val}\n",
+    "    \n",
+    "    import pickle \n",
+    "    \n",
+    "    with open('/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/xsectional_data.pickle', 'wb') as handle:\n",
+    "        pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)\n",
+    "else:\n",
+    "    with open('/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/xsectional_data.pickle', \"rb\") as handle:\n",
+    "        data = pickle.load(handle)\n",
+    "\n",
+    "print(data.keys())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "5c07623f-a10e-4a75-8086-d237766b40a3",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(572096, 279)\n",
+      "[(False, 3593.) ( True,  326.) (False, 1409.) ... (False, 1100.)\n",
+      " (False, 5445.) (False, 3755.)]\n",
+      "(10000, 279)\n",
+      "(10000,)\n"
+     ]
+    }
+   ],
+   "source": [
+    "X_train = data[\"X_train\"]\n",
+    "y_train = data[\"y_train\"]\n",
+    "\n",
+    "X_val = data[\"X_val\"][:10000]\n",
+    "y_val = data[\"y_val\"][:10000]\n",
+    "\n",
+    "X_test = data[\"X_test\"][:10000]\n",
+    "y_test = data[\"y_test\"][:10000]\n",
+    "\n",
+    "print(X_train.shape)\n",
+    "print(y_train)\n",
+    "print(X_test.shape)\n",
+    "print(y_test.shape)\n",
+    "\n",
+    "target_ages_train = np.asarray([i[1] for i in y_train])\n",
+    "lbls_train = np.asarray([1 if i[0] == True else 0 for i in y_train])\n",
+    "\n",
+    "target_ages_val = np.asarray([i[1] for i in y_val])\n",
+    "lbls_val = np.asarray([1 if i[0] == True else 0 for i in y_val])\n",
+    "\n",
+    "target_ages_test = np.asarray([i[1] for i in y_test])\n",
+    "lbls_test = np.asarray([1 if i[0] == True else 0 for i in y_test])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "ee5f222d-0065-4794-a98a-2cc6807a37cd",
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "NameError",
+     "evalue": "name 'target_tokens' is not defined",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mNameError\u001b[0m                                 Traceback (most recent call last)",
+      "Cell \u001b[0;32mIn [15], line 2\u001b[0m\n\u001b[1;32m      1\u001b[0m \u001b[38;5;66;03m# dm.train_set.tokenizer._stoi\u001b[39;00m\n\u001b[0;32m----> 2\u001b[0m \u001b[38;5;28mprint\u001b[39m(\u001b[43mtarget_tokens\u001b[49m)\n",
+      "\u001b[0;31mNameError\u001b[0m: name 'target_tokens' is not defined"
+     ]
+    }
+   ],
+   "source": [
+    "# dm.train_set.tokenizer._stoi\n",
+    "print(target_tokens)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9d5cc5ca-6493-42f0-b231-3d6021ca447f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "_time_scale = 365*5                               \n",
+    "# the time grid which we generate over\n",
+    "t_eval = np.linspace(0, _time_scale, _time_scale + 1) \n",
+    "print(t_eval[-1])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "663aac66-65b0-41f3-8095-3c3e6dc235b1",
+   "metadata": {},
+   "source": [
+    "# Make dataset"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "3d3756cb-0163-460b-b3e9-e39c65f9df13",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler\n",
+    "from torch.utils.data import TensorDataset, DataLoader\n",
+    "\n",
+    "print(type(X_train.to_numpy()))\n",
+    "print(y_train)\n",
+    "\n",
+    "t_train_max = np.amax(target_ages_train)\n",
+    "target_ages_train = target_ages_train / t_train_max\n",
+    "target_ages_val = target_ages_val / t_train_max\n",
+    "target_ages_test = target_ages_test / t_train_max\n",
+    "        \n",
+    "batch_size = 32\n",
+    "# Train\n",
+    "dataset_train = TensorDataset(*[torch.tensor(u,dtype=dtype_) for u, dtype_ in [(X_train.to_numpy(dtype=float),torch.float32),\n",
+    "                                                                               (target_ages_train,torch.float32),\n",
+    "                                                                               (lbls_train,torch.long)]])\n",
+    "data_loader_train = DataLoader(dataset_train, batch_size=batch_size, pin_memory=True, shuffle=True, drop_last=True)\n",
+    "\n",
+    "# Val\n",
+    "dataset_val = TensorDataset(*[torch.tensor(u,dtype=dtype_) for u, dtype_ in [(X_val.to_numpy(dtype=float),torch.float32),\n",
+    "                                                                               (target_ages_val,torch.float32),\n",
+    "                                                                               (lbls_val,torch.long)]])\n",
+    "data_loader_val = DataLoader(dataset_val, batch_size=batch_size, pin_memory=True, shuffle=True, drop_last=True)\n",
+    "\n",
+    "\n",
+    "# Test\n",
+    "dataset_test = TensorDataset(*[torch.tensor(u,dtype=dtype_) for u, dtype_ in [(X_test.to_numpy(dtype=float),torch.float32),\n",
+    "                                                                               (target_ages_test,torch.float32),\n",
+    "                                                                               (lbls_test,torch.long)]])\n",
+    "data_loader_test = DataLoader(dataset_test, batch_size=batch_size, pin_memory=True, shuffle=True, drop_last=True)  "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "617c6f81-8c6f-4293-bccd-f6ebd6ff756d",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "dc3e0b84-339c-4bf7-a399-4a2d4879ab28",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# # Evaluate concordance. Scale using the head layers internal scaling.\n",
+    "# # surv = pd.DataFrame(np.transpose((1 - cdf)), index=_pl_module.model.surv_layer.t_eval)\n",
+    "\n",
+    "# surv = pd.DataFrame(np.transpose(preds), index=t_eval)\n",
+    "# ev = EvalSurv(surv, target_ages, lbls, censor_surv='km')\n",
+    "\n",
+    "# time_grid = np.linspace(start=0, stop=t_eval[-1] , num=300)\n",
+    "# print(ev.concordance_td())\n",
+    "# print(ev.integrated_brier_score(time_grid))\n",
+    "# print(ev.integrated_nbll(time_grid))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "935f114b-f2dd-4c60-99ea-1a6368f61d90",
+   "metadata": {},
+   "source": [
+    "# DeepSurv"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7aa5f7df-05b2-449f-a36c-f6c04ba0914a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\n",
+    "# test = np.array_split(X_test, X_test.s)\n",
+    "# print(len(test))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a54bf04f-c64c-4f91-9c89-783e361d8f8e",
+   "metadata": {},
+   "source": [
+    "# DeSurv"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5ca10359-06da-4f94-af70-e4411aa85b38",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "desurv_model = ODESurvSingle(cov_dim=X_train.shape[1],\n",
+    "                             hidden_dim=[],\n",
+    "                             n=15)\n",
+    "\n",
+    "def optimize(model, data_loader, n_epochs, logging_freq=10, data_loader_val=None, max_wait=20):\n",
+    "    batch_size = data_loader.batch_size\n",
+    "    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)\n",
+    "\n",
+    "    if data_loader_val is not None:\n",
+    "        best_val_loss = np.inf\n",
+    "        wait = 0\n",
+    "\n",
+    "    for epoch in range(n_epochs):\n",
+    "\n",
+    "        train_loss = 0.0\n",
+    "\n",
+    "        for batch_idx, (x, t, k) in enumerate(data_loader):\n",
+    "            argsort_t = torch.argsort(t)\n",
+    "            x_ = x[argsort_t,:]\n",
+    "            t_ = t[argsort_t]\n",
+    "            k_ = k[argsort_t]\n",
+    "\n",
+    "            optimizer.zero_grad()\n",
+    "            loss = model.loss(x_,t_,k_)\n",
+    "            loss.backward()\n",
+    "            optimizer.step()\n",
+    "\n",
+    "            train_loss += loss.item()\n",
+    "\n",
+    "        if epoch % logging_freq == 0:\n",
+    "            print(f\"\\tEpoch: {epoch:2}. Total loss: {train_loss:11.2f}\")\n",
+    "            if data_loader_val is not None:\n",
+    "                val_loss = 0\n",
+    "                for batch_idx, (x, t, k) in enumerate(data_loader_val):\n",
+    "                    argsort_t = torch.argsort(t)\n",
+    "                    x_ = x[argsort_t,:]\n",
+    "                    t_ = t[argsort_t]\n",
+    "                    k_ = k[argsort_t]\n",
+    "\n",
+    "                    loss = model.loss(x_,t_,k_)\n",
+    "                    val_loss += loss.item()\n",
+    "\n",
+    "                if val_loss < best_val_loss:\n",
+    "                    best_val_loss = val_loss\n",
+    "                    wait = 0\n",
+    "                    print(f\"best_epoch: {epoch}\")\n",
+    "                    torch.save(model.state_dict(), \"low_desurv\")\n",
+    "                else:\n",
+    "                    wait += 1\n",
+    "\n",
+    "                if wait > max_wait:\n",
+    "                    state_dict = torch.load(\"low_desurv\")\n",
+    "                    model.load_state_dict(state_dict)\n",
+    "                    return model\n",
+    "\n",
+    "                print(f\"\\tEpoch: {epoch:2}. Total val loss: {val_loss:11.2f}\")\n",
+    "                \n",
+    "    if data_loader_val is not None:\n",
+    "        state_dict = torch.load(\"low_desurv\")\n",
+    "        model.load_state_dict(state_dict)\n",
+    "        return model\n",
+    "\n",
+    "\n",
+    "desurv_model = optimize(desurv_model, data_loader_train, n_epochs=300, logging_freq=1, data_loader_val=data_loader_val, max_wait=20)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e2cf17ea-f1b0-4f76-be25-b49f46fb2c55",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(type(X_test))\n",
+    "\n",
+    "argsortttest = np.argsort(target_ages_test)\n",
+    "t_test = target_ages_test[argsortttest]\n",
+    "e_test = lbls_test[argsortttest]\n",
+    "x_test = X_test.to_numpy(dtype=float)[argsortttest,:]\n",
+    "\n",
+    "\n",
+    "n_eval = 3000\n",
+    "t_eval = np.linspace(0,np.amax(t_test),n_eval)\n",
+    "\n",
+    "with torch.no_grad():\n",
+    "    t_ = torch.tensor(np.concatenate([t_eval]*x_test.shape[0], 0),dtype=torch.float32)\n",
+    "    x_ = torch.tensor(np.repeat(x_test, [t_eval.size]*x_test.shape[0], axis=0), dtype=torch.float32)\n",
+    "    surv = pd.DataFrame(np.transpose((1 - model.predict(x_,t_).reshape((x_test.shape[0],t_eval.size))).detach().numpy()),\n",
+    "                        index=t_eval)\n",
+    "\n",
+    "ev = EvalSurv(surv, t_test, e_test, censor_surv='km')\n",
+    "\n",
+    "time_grid = np.linspace(t_test.min(), 0.9*t_test.max(), 1000)\n",
+    "print(ev.concordance_td())\n",
+    "print(ev.integrated_brier_score(time_grid))\n",
+    "print(ev.integrated_nbll(time_grid))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ea059550-4a8b-499e-b96f-b27151b5b75d",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python",
+   "language": "python",
+   "name": "sys_python"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.4"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
