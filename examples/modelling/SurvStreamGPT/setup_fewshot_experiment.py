@@ -27,12 +27,24 @@ class FewShotExperiment(pl.LightningModule):
         self.freeze_body = freeze_body
         if self.freeze_body:
             logging.info(f"Fixing Transformer parameters and training only head.")
-        self.parameters_head = list(self.model.surv_layer.parameters())
-        if self.model.value_weight > 0:
-            self.parameters_head += list(self.model.value_layer.parameters())
-        self.parameters_head = set(self.parameters_head)
-        self.parameters_body = (param for param in self.model.parameters() if param not in self.parameters_head)
-        
+            for name, param in self.model.named_parameters():
+                if "surv_layer" not in name:
+                    # If the parameter is in the body, retain it and fix it.
+                    param.requires_grad = False
+                    
+    def _reinit_weights(self):
+        # Else, if it is in the (pre-train architecure) head, re-initialise and re-train. 
+        #    This is important in the Few-Shot setting to not get stuck in local optima.
+        #    As we transition from the task of predicting the `next` event risk, to the 
+        #    task of predicting risk within X years, the time-scales vary drastically.
+        logging.info(f"Re-initialising survival head parameters.")
+        for name, param in self.model.named_parameters():
+            if "surv_layer" in name:
+                if param.dim() > 1:              # weight parameters 
+                    torch.nn.init.xavier_uniform_(param)
+                else:
+                    torch.nn.init.zeros_(param)  # Initialize biases or other 1D parameters
+
     def forward(self, batch, return_loss=True, return_generation=False):
 
         # inputs
@@ -81,41 +93,6 @@ class FewShotExperiment(pl.LightningModule):
             
         return {"surv": surv_dict}, {"loss": loss}, in_hidden_state[:, [-1], :]
             
-        # # regression head (values of next token if applicable)
-        # values_dist, loss_values = self.model.value_layer.predict(in_hidden_state[:,:, self.model.n_embd_private:],
-        #                                                           target_tokens=target_tokens,
-        #                                                           target_values=target_values,
-        #                                                           attention_mask=target_attention_mask,
-        #                                                           is_generation=is_generation,
-        #                                                           return_loss=return_loss,
-        #                                                           return_value_dist=return_generation,
-        #                                                           )
-
-        # if return_loss:
-        #      # losses are returned as a list, as the Single-Risk head is many DeSurv models in parallel, combine
-        #     loss_desurv = torch.sum(torch.stack(losses_desurv))
-        #     # and take weighted sum of heads
-        #     loss = (self.model.surv_weight * loss_desurv)  + (self.model.value_weight * loss_values)
-
-        #     if torch.isnan(loss):
-        #         logging.warning(f"Invalid loss {loss}: ({loss_desurv} and {loss_values}), " + \
-        #                         f"with target tokens {target_tokens}, target values {target_values} and target ages {target_ages}")
-        #         raise NotImplementedError
-        # else:
-        #     loss_desurv = None
-        #     loss = None
-            
-        # outputs = {"surv": surv_dict,
-        #            "values_dist": values_dist}
-        # losses = {"loss": loss,
-        #           "loss_desurv": loss_desurv,                  
-        #          }
-        # if self.model.value_weight > 0:
-        #     losses = {**losses,
-        #               "loss_values": loss_values}
-        
-        # return outputs, losses, in_hidden_state
-
     def training_step(self, batch, batch_idx):
         _, loss_dict, _ = self(batch)   
         for _key in loss_dict.keys():
@@ -136,8 +113,7 @@ class FewShotExperiment(pl.LightningModule):
 
     def configure_optimizers(self):
 
-        parameters = self.parameters_head if self.freeze_body else self.parameters()
-        optimizer = torch.optim.AdamW(parameters, lr=self.cfg.optim.learning_rate)
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.cfg.optim.learning_rate)
 
         freq = 1
         match self.cfg.optim.scheduler.lower():
@@ -182,7 +158,7 @@ class FewShotExperiment(pl.LightningModule):
             "lr_scheduler": lr_scheduler_config
         }
 
-def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None):
+def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
 
     assert dm.is_supervised, "Datamodule for must be supervised for `setup_fewshot_experiment`."
     assert cfg.experiment.fine_tune_outcomes is not None, "Must provide outcome list for `setup_fewshot_experiment`."
@@ -191,23 +167,24 @@ def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None):
     #    In the few-shot/zero-shot setting these are used in the clinical prediction model callback to collapse the `vocab_size` outcomes into outcomes and none-outcome
     #    but the model still predicts all `vocab_size` outcomes.
     outcome_tokens =  dm.encode(cfg.experiment.fine_tune_outcomes)
-    logging.info(f"Fine tune outcomes encode into tokens {outcome_tokens}")
+    outcome_dict = {_key: _value for _key, _value in zip(cfg.experiment.fine_tune_outcomes, outcome_tokens)}
+    logging.info(f"Running few-shot experiment with outcomes {outcome_dict}")
+    # print(dm.train_set.tokenizer._stoi.keys())
 
     if checkpoint is not None:
-        fewshot_experiment = FewShotExperiment.load_from_checkpoint(checkpoint, cfg=cfg)
+        logging.info("Loading from checkpoint and freezing model body")
+        fewshot_experiment = FewShotExperiment.load_from_checkpoint(checkpoint, cfg=cfg, freeze_body=True)
+        fewshot_experiment._reinit_weights()
     else:
+        logging.info("Creating new experiment")
         fewshot_experiment = FewShotExperiment(cfg=cfg, vocab_size=vocab_size, freeze_body=False)
     logging.debug(fewshot_experiment)
 
     # Initialize wandb logger
-    if cfg.experiment.log == True:
-        logger = pl.loggers.WandbLogger(project=cfg.experiment.project_name,
-                                        name=cfg.experiment.run_id + "_" + cfg.experiment.fine_tune_id, 
-                                        save_dir=cfg.experiment.log_dir
-                                        )
-    else:
+    if cfg.experiment.log == False:
         logger = None
 
+    ####################
     # Make all callbacks
     ####################
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
@@ -216,25 +193,40 @@ def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None):
         verbose=cfg.experiment.verbose,
         monitor="val_loss",
     )
+    
     # LR monitor
+    ############
     lr_monitor = pl.callbacks.LearningRateMonitor(logging_interval='step')
+    
     # Add callbacks which apply to outcome prediction tasks
-    metric_callback = PerformanceMetrics(outcome_tokens=outcome_tokens, log_ctd=True, log_ibs=True, log_inbll=True)
+    ############
+    # Create a hash map which maps the token to corresponding desurv output. 
+    # For few-shot this is simply converting token to the index (PAD token takes value zero so we shift)
+    outcome_token_to_desurv_output_index = {token: token - 1 for token in outcome_tokens}        
+    metric_callback = PerformanceMetrics(outcome_tokens=outcome_tokens,
+                                         outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
+                                         log_individual=True if cfg.head.SurvLayer.lower() == "sr" else False,
+                                         log_combined=True, # True if cfg.head.SurvLayer.lower() == "cr" else False,
+                                         log_ctd=True, 
+                                         log_ibs=True,
+                                         log_inbll=True)
     # 
     callbacks = [checkpoint_callback, lr_monitor, metric_callback]
 
     # Optional callbacks
+    ######################
+    # Hidden state embedding
+    #    as we are fine-tuning the entire model the latent embeddings will be changed
     if not fewshot_experiment.freeze_body:
-        # Hidden state embedding
-        logging.debug("Creating hidden state embedding callback - as we are fine-tuning the entire model the latent embeddings will be changed")
+        logging.debug("Creating hidden state embedding callback.")
         # We do not want to plot every single validation/test sample, so pass in a batch of each
         embedding_callback = Embedding(val_batch=next(iter(dm.val_dataloader())),
                                        test_batch=next(iter(dm.test_dataloader()))
                                       )
         callbacks.append(embedding_callback)
-
+        
+    # Early stopping callback
     if cfg.optim.early_stop:
-        # Early stopping callback
         logging.debug("Creating early stopping callback")
         early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
             monitor="val_loss", mode="min",

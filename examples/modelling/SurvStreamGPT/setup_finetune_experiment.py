@@ -37,34 +37,26 @@ class FineTuneExperiment(pl.LightningModule):
                 # e.g. This could be a single event, or all events that constitute some form of umbrella, e.g. cardiovascular disease
                 self.surv_layer = ODESurvSingleRiskLayer(self.model.n_embd - self.model.n_embd_private, [32,32], num_risks=1, device="cuda")
                 
-                # Create a method which reduces from the causal k={1,2,3,4,5,...} form to the competing risk form k={\null, 1,2,3,..., K}
+                # Create a method which reduces from the causal k={1,2,3,4,5,...} form to the single risk form k={\null, 1}
                 self.reduce_to_outcomes = lambda x: sum([torch.where(x==i, 1, 0) for i in outcome_tokens])
-                
-                # and then record what these K outcomes are
-                self.reduced_outcome_tokens = [1]
                 
             case "competingrisk" | "cr":
                 # Treat each risk as a competing risk
-                self.surv_layer = ODESurvCompetingRiskLayer(self.model.n_embd - self.model.n_embd_private, [32,32], num_risks=len(outcome_tokens) + 1, device="cuda")
+                self.surv_layer = ODESurvCompetingRiskLayer(self.model.n_embd - self.model.n_embd_private, [32,32], num_risks=len(outcome_tokens), device="cuda")
                 
-                # Create a method which reduces from the causal k={1,2,3,4,5,...} form to the competing risk form k={\null, 1,2,3,..., K}
+                # Create a method which reduces from the causal k={1,2,3,4,5,...} form to the competing risk form k={1,2,3,..., K}
                 self.reduce_to_outcomes = lambda x: sum([torch.where(x==i, idx+1, 0) for idx, i in enumerate(outcome_tokens)])
-                
-                # and then record what these K outcomes are, e.g. = [1,2,3,4,K=5]
-                self.reduced_outcome_tokens = [idx + 1 for idx, i in enumerate(outcome_tokens)]
-                
+
             case _:
                 raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
 
         # Freeze the pre-trained model body and only fine-tune the new head
         self.freeze_body = freeze_body
         if self.freeze_body:
-            self.parameters_head = list(self.surv_layer.parameters())
-            self.parameters_head = set(self.parameters_head)
-            for param in self.model.parameters():
-                if param not in self.parameters_head:
+            logging.info(f"Fixing Transformer parameters and training only head.")
+            for name, param in self.model.named_parameters():
+                if "surv_layer" not in name:
                     param.requires_grad = False
-        logging.info(f"Trainable parameters: {'DeSurv head' if self.freeze_body else 'all'} parameters")
 
         self.dropout = torch.nn.Dropout(p=0.0)
 
@@ -128,12 +120,12 @@ class FineTuneExperiment(pl.LightningModule):
         # survival time to event head (survival curve until next token)
         surv_dict, losses_desurv = self.surv_layer.predict(in_hidden_state[:,:,:self.model.n_embd - self.model.n_embd_private],
                                                            target_tokens=target_tokens,
-                                                           target_ages=target_ages, 
-                                                           attention_mask=target_attention_mask,
-                                                           is_generation=is_generation,
-                                                           return_loss=return_loss,
-                                                           return_cdf=return_generation,
-                                                           )
+                                                                 target_ages=target_ages,
+                                                                 attention_mask=target_attention_mask,
+                                                                 is_generation=is_generation,
+                                                                 return_loss=return_loss,
+                                                                 return_cdf=return_generation,
+                                                                 )
 
         if return_loss:
             loss = torch.sum(torch.stack(losses_desurv))                                  # losses are returned as a list, as the Single-Risk head is many DeSurv models in parallel, combine
@@ -167,8 +159,7 @@ class FineTuneExperiment(pl.LightningModule):
 
     def configure_optimizers(self):
 
-        parameters = self.parameters_head if self.freeze_body else self.parameters()
-        optimizer = torch.optim.AdamW(parameters, lr=self.cfg.optim.learning_rate)
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.cfg.optim.learning_rate)
 
         freq = 1
         match self.cfg.optim.scheduler.lower():
@@ -213,7 +204,7 @@ class FineTuneExperiment(pl.LightningModule):
             "lr_scheduler": lr_scheduler_config
         }
 
-def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None):
+def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger=None):
 
     assert dm.is_supervised, "Datamodule for must be supervised for `setup_finetune_experiment` ."
     assert cfg.experiment.fine_tune_outcomes is not None, "Must provide outcome list for `setup_finetune_experiment`."
@@ -233,9 +224,9 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None):
             finetune_experiment = FineTuneExperiment.load_from_checkpoint(checkpoint, cfg=cfg, outcome_tokens=outcome_tokens, risk_model=risk_model)
         case "load_from_pretrain":
             assert checkpoint is not None
-            logging.info(f"Loading pre-trained checkpoint from {checkpoint}")
+            logging.info(f"Loading pre-trained checkpoint from {checkpoint}. Freezing body.")
             pretrained_experiment = CausalExperiment.load_from_checkpoint(checkpoint, cfg=cfg)
-            finetune_experiment = FineTuneExperiment(cfg, outcome_tokens, risk_model=risk_model) 
+            finetune_experiment = FineTuneExperiment(cfg, outcome_tokens, risk_model=risk_model, freeze_body=True) 
             finetune_experiment.model = pretrained_experiment.model
         case "no_load":
             logging.info(f"Fine-tuning from scratch")
@@ -247,10 +238,11 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None):
 
     # Initialize wandb logger
     if cfg.experiment.log == True:
-        logger = pl.loggers.WandbLogger(project=cfg.experiment.project_name,
-                                        name=cfg.experiment.run_id + "_" + cfg.experiment.fine_tune_id, 
-                                        save_dir=cfg.experiment.log_dir
-                                        )
+        logger = logger
+        # logger = pl.loggers.WandbLogger(project=cfg.experiment.project_name,
+        #                                 name=cfg.experiment.run_id + "_" + cfg.experiment.fine_tune_id, 
+        #                                 save_dir=cfg.experiment.log_dir
+        #                                 )
     else:
         logger = None
 
@@ -292,12 +284,20 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None):
         callbacks.append(early_stop_callback)
 
     # Add callbacks which apply to outcome prediction tasks
-    metric_callback = PerformanceMetrics(outcome_tokens=finetune_experiment.reduced_outcome_tokens,
-                                         log_ctd=True,
+    ###########
+    # Create a hash map which maps the token to corresponding desurv output. 
+    if risk_model == "single-risk":
+        outcome_token_to_desurv_output_index = {token: 0 for token in outcome_tokens}
+    if risk_model == "competing-risk":
+        outcome_token_to_desurv_output_index = {token: idx for idx, token in enumerate(outcome_tokens)}
+    # Construct callback
+    metric_callback = PerformanceMetrics(outcome_tokens=outcome_tokens,
+                                         outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
+                                         log_individual=True if risk_model == "single-risk" else False,
+                                         log_combined=True,
+                                         log_ctd=True, 
                                          log_ibs=True,
-                                         log_inbll=True,
-                                         reduce_to_outcomes = finetune_experiment.reduce_to_outcomes,
-                                         )
+                                         log_inbll=True)
     callbacks.append(metric_callback)
 
     _trainer = pl.Trainer(

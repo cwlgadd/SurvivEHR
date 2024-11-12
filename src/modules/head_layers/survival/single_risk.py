@@ -22,15 +22,15 @@ class ODESurvSingleRiskLayer(nn.Module):
         self.t_eval = np.linspace(0, 1, 1000)
         self.device = device
 
-        logging.info(f"Using Single-Risk DeSurvival head. This module predicts a separate survival curve for each possible future event.")
+        logging.info(f"Using Single-Risk DeSurvival head. This module predicts an independent survival curve for each possible future event.")
         logging.info(f"In generation forwarding DeSurv on the grid between [{self.t_eval.min()}, {self.t_eval.max()}] with {len(self.t_eval)} intervals")
 
     def predict(self,
                 hidden_states: torch.tensor,                    # shape: torch.Size([bsz, seq_len, n_embd])
-                target_tokens: Optional[torch.tensor] = None,   # shape: torch.Size([bsz, seq_len])
-                target_ages: Optional[torch.tensor] = None,     # shape: torch.Size([bsz, seq_len])        
-                attention_mask: Optional[torch.tensor] = None,  # shape: torch.Size([bsz, seq_len])
-                is_generation: bool = False,                         # Whether we forward every step (True) of seq_len, or just the final step (False)
+                target_tokens: torch.tensor,                    # if is_generation==False: torch.Size([bsz, seq_len]), else torch.Size([bsz, 1])
+                target_ages: torch.tensor,                      # if is_generation==False: torch.Size([bsz, seq_len]), else torch.Size([bsz, 1])
+                attention_mask: Optional[torch.tensor] = None,  # if is_generation == False: torch.Size([bsz, seq_len]), else None
+                is_generation: bool = False,                    # Whether we forward every step (True) of seq_len, or just the final step (False)
                 return_cdf: bool = False,
                 return_loss: bool = True,
                 ):
@@ -40,7 +40,7 @@ class ODESurvSingleRiskLayer(nn.Module):
          event, whether this occurred or not within this single-risk model. k indicates whether event occurred, where
          1=yes, and 0=another event occurred. 
         """
-        
+
         if not is_generation:
 
             assert target_tokens is not None
@@ -51,6 +51,7 @@ class ODESurvSingleRiskLayer(nn.Module):
             #       The 1st element of list corresponds to 2nd vocab element (vocab index == 0 is the PAD token which is excluded)
             #       k \in {0,1} with 1 if the seq target is the same as the single risk ode's index (position in list), and 0
             #       otherwise
+            
             k = [torch.where(target_tokens[:, 1:] == event + 1, 1, 0) for event, _ in enumerate(self.sr_ode)]
             # shape: [torch.Size([bsz, seq_len - 1]), ...]
             
@@ -61,7 +62,6 @@ class ODESurvSingleRiskLayer(nn.Module):
             
             # Get time to event, excluding first in sequence as we do not know what time the one pre-dating it occurred
             tte_deltas = target_ages[:, 1:] - target_ages[:, :-1]                         
-            tte_deltas = tte_deltas
             tte_deltas = torch.where(tte_obs_mask == 1, tte_deltas, torch.ones_like(tte_deltas)) 
             assert torch.all(tte_deltas >= 0), f"events must be given in time order, {tte_deltas[tte_deltas<0]}"
             # shape: torch.Size([bsz, seq_len - 1])
@@ -84,32 +84,56 @@ class ODESurvSingleRiskLayer(nn.Module):
     
             else:
                 surv_losses = None
-            
+
             # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
-            surv ={"k": k,
+            if return_cdf:
+                preds, pis = self._predict_cdf(in_hidden_state.reshape((-1,in_hidden_state.shape[-1]))) 
+            else:
+                preds, pis = None, None
+            surv ={"k": [k],
                    "tte_deltas": tte_deltas,
-                   "surv_CDF":  self._predict_cdf(in_hidden_state.reshape((-1,in_hidden_state.shape[-1]))) if return_cdf else None}
-        
+                   "surv_CDF": preds,
+                   "surv_pi": pis}
         
         else:        
             # inference-time mini-optimization: only forward the head on the very last position
             in_hidden_state = hidden_states[:, -1, :]
 
             if return_loss:
+                # Forward the last state. This will be used for few-shot training a clinical prediction mo+del.
+                # Note: Padding doesn't matter as all the padded hidden_state values share the same value as the last observation's hidden state
                 assert target_tokens is not None
                 assert target_ages is not None
                 
-                # Forward the last (non-padded?) state. This will be used for fine-tuning a clinical prediction model, 
-                # but another use case for is_generation = True is that we are simply generating future trajectories. 
-                # In this case we want to just forward the last hidden state, irrespective of any potential padding
-                raise NotImplementedError
+                surv_losses = []
+                for _idx_ode, _sr_ode in enumerate(self.sr_ode):
+
+                    k = torch.where(target_tokens == _idx_ode + 1, 1, 0)
+                    ode_loss = _sr_ode.loss(in_hidden_state, target_ages.reshape(-1), k.reshape(-1)) / target_tokens.shape[0]
+                    surv_losses.append(ode_loss)
+                    
+                    # if _idx_ode in [129 - 1]:
+                    #     print(f"Hypertension supervised target token")
+                    #     print(k.shape)
+                    #     print(target_ages.shape)
+                    #     print(torch.hstack((k, target_tokens, target_ages)))
+                    #     assert 1 == 0 
+
+                # k = [torch.where(target_tokens == event + 1, 1, 0) for event, _ in enumerate(self.sr_ode)]
+                # surv_losses = [_sr_ode.loss(in_hidden_state, target_ages.reshape(-1), _k.reshape(-1)) / _k.shape[0] for _k, _sr_ode in zip(k, self.sr_ode)] 
+
             else:
                 surv_losses = None
 
             # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
-            surv ={"k": None,
-                   "tte_deltas": None,
-                   "surv_CDF":  self._predict_cdf(in_hidden_state) if return_cdf else None}
+            if return_cdf:
+                preds, pis = self._predict_cdf(in_hidden_state)
+            else:
+                preds, pis = None, None
+            surv ={"k": target_tokens,
+                   "tte_deltas": target_ages, 
+                   "surv_CDF":  preds,
+                   "surv_pi": pis}
             
         return surv, surv_losses
 
@@ -119,22 +143,26 @@ class ODESurvSingleRiskLayer(nn.Module):
         """
         Predict survival curves from the hidden states
         """
+
+        assert hidden_states.dim() == 2, hidden_states.shape
+        
         # The normalised grid over which to predict
         t_test = torch.tensor(np.concatenate([self.t_eval] * hidden_states.shape[0], 0), dtype=torch.float32, device=self.device)
         H_test = hidden_states.repeat_interleave(self.t_eval.size, 0).to(self.device, torch.float32)
 
         # Batched predict: Cannot make all predictions at once due to memory constraints
         preds = []
-        for _k, _sr_ode in enumerate(self.sr_ode):
-            pred_bsz = 512                                                        # Predict in batches of pred_bsz
+        for _sr_ode in self.sr_ode:
+            pred_bsz = 512                                                        # Predict in batches
             pred = []
+            pi = []
             for H_test_batched, t_test_batched in zip(torch.split(H_test, pred_bsz), torch.split(t_test, pred_bsz)):
-                pred.append(_sr_ode(H_test_batched, t_test_batched))
+                _pred = _sr_ode(H_test_batched, t_test_batched)
+                pred.append(_pred)
             pred = torch.concat(pred)
-            preds.append(pred.reshape((hidden_states.shape[0], self.t_eval.size)).cpu().detach().numpy())
-            
-        return preds
-        
+            preds.append(pred.reshape(hidden_states.shape[0], self.t_eval.size).cpu().detach().numpy())
+
+        return preds, None
 
     def sample_surv(self, surv):
 

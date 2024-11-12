@@ -2,6 +2,7 @@ from omegaconf import DictConfig, OmegaConf
 import os
 import hydra
 import torch
+import pytorch_lightning as pl
 import logging
 from pathlib import Path
 from CPRD.data.foundational_loader import FoundationalDataModule
@@ -14,10 +15,15 @@ from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalMod
 
 @hydra.main(version_base=None, config_path="confs", config_name="default")
 def run(cfg : DictConfig):
-
-    logging.basicConfig(level=logging.DEBUG)
     logging.info(f"Running {cfg.head.SurvLayer} on {os.cpu_count()} CPUs and {torch.cuda.device_count()} GPUs")
 
+    # Create logger
+    log_id = cfg.experiment.run_id
+    if cfg.experiment.fine_tune_id is not None:
+        log_id += "_" + cfg.experiment.fine_tune_id
+    logger = pl.loggers.WandbLogger(project=cfg.experiment.project_name, name=log_id, save_dir=cfg.experiment.log_dir)
+    logging.basicConfig(level=logging.DEBUG)
+    
     # Global settings
     torch.manual_seed(cfg.experiment.seed)
     torch.set_float32_matmul_precision('medium')
@@ -90,7 +96,8 @@ def run(cfg : DictConfig):
             experiment_instance, Experiment, trainer = setup_causal_experiment(cfg=cfg, 
                                                                                dm=dm, 
                                                                                vocab_size=vocab_size,
-                                                                               checkpoint=load_from_checkpoint
+                                                                               checkpoint=load_from_checkpoint,
+                                                                               logger=logger
                                                                               )
             new_checkpoint = pre_trained_ckpt_path
 
@@ -115,7 +122,8 @@ def run(cfg : DictConfig):
             experiment_instance, Experiment, trainer = setup_fewshot_experiment(cfg=cfg,
                                                                                 dm=dm, 
                                                                                 vocab_size=vocab_size,
-                                                                                checkpoint=load_from_checkpoint
+                                                                                checkpoint=load_from_checkpoint,
+                                                                                logger=logger
                                                                                )
             new_checkpoint = pre_trained_ckpt_path
 
@@ -159,7 +167,8 @@ def run(cfg : DictConfig):
             experiment_instance, Experiment, trainer = setup_fewshot_experiment(cfg=cfg, 
                                                                                 dm=dm, 
                                                                                 vocab_size=vocab_size,
-                                                                                checkpoint=load_from_checkpoint
+                                                                                checkpoint=load_from_checkpoint,
+                                                                                logger=logger
                                                                                )
             
             # Specfiy path we should will find the best attained model after training, so that this can be loaded before testing
@@ -212,6 +221,7 @@ def run(cfg : DictConfig):
                                                                                  mode=mode,
                                                                                  risk_model=risk_model,
                                                                                  checkpoint=ft_ckpt,
+                                                                                 logger=logger
                                                                                 )
             new_checkpoint = supervised_ckpt_path
             

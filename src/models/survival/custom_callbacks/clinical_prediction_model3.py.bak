@@ -30,20 +30,8 @@ class PerformanceMetrics(Callback):
                  log_ibs=True, 
                  log_inbll=True,
                 ):
-        r"""
+        """
 
-        ARGS:
-            outcome_token_to_desurv_output_index:
-                              A dictionary hash map where keys are the outcome token, and the values are the index of the DeSurv output index 
-                                they belong to. 
-                              In the pre-training (self-supervised/causal) and few-shot (supervised with unmodified architecture) cases,
-                                the map is from outcome to one of `vocab_size` indices, as the DeSurv heads (in both SR and CR) predict
-                                the risk of every token.
-                              In the fine-tuning (supervised) case, the DeSurv head is replaced with one that only predicts the relevant 
-                                outcomes. In the Single-Risk case, this gives a many-to-1 map, combining all the outcomes into a single-risk 
-                                and so every token included in this umbrella maps to the zero-index (as there is only one predicted survival 
-                                curve). In the Competing-Risk case, each will map 1-to-1 to the K considered competing-risk outcome indicies.
-                                
         KWARGS:
             log_individual:   Whether or not to log for the individual CIFs/CDFs. 
                                 For few-shot single-risk, this is the only appropriate choice. For few-shot competing-risk this may highlight which 
@@ -53,7 +41,7 @@ class PerformanceMetrics(Callback):
                                 If there are low prevalence outcome tokens then there are likeliy to be batches with no individuals  
                                 experiencing that outcome, leading to warnings. In this case, the batch's metric for that individual 
                                 CIF will not be logged which may bias the aggregated reported values.
-            log_combined:     Whether or not to log the marginal CIFs/CDFs. 
+            log_marginal:     Whether or not to log the marginal CIFs/CDFs. 
                                 This is only an appropriate choice for the Competing Risk case. In the SR setting, this will raise an
                                 exception.
                                 
@@ -63,7 +51,7 @@ class PerformanceMetrics(Callback):
         self.outcome_tokens = outcome_tokens
         self.outcome_token_to_desurv_output_index = outcome_token_to_desurv_output_index
         self.log_individual = log_individual
-        self.log_combined = log_combined
+        self.log_marginal = log_combined
         self.log_ctd = log_ctd
         self.log_ibs = log_ibs
         self.log_inbll = log_inbll
@@ -90,9 +78,9 @@ class PerformanceMetrics(Callback):
                 log_name + "-Survival": wandb.Image(fig)
             })
 
-    def get_metrics(self, cdf, lbls, target_ages, _trainer, _pl_module, log_name, suppress_warnings=True):
+    def get_metrics(self, cdf, lbls, target_ages, _trainer, _pl_module, log_name):
         
-        if np.sum(lbls) == 0 and suppress_warnings is False:
+        if np.sum(lbls) == 0:
             logging.warning(f"Only censored events in batch. Evaluating metrics will be unstable.")
 
         metric_dict = {}
@@ -115,10 +103,7 @@ class PerformanceMetrics(Callback):
 
             self.log_dict(metric_dict)
         except:
-            if suppress_warnings is False:
-                logging.warning("Unable to calculate metrics, this batch will be skipped - this will bias metrics.")
-            else:
-                pass
+            logging.warning("Unable to calculate metrics, this batch will be skipped - this will bias metrics.")
         
     def run_callback(self,
                      _trainer,
@@ -130,85 +115,104 @@ class PerformanceMetrics(Callback):
 
         # Make prediction of each survival curve
         all_outputs, _, _ = _pl_module(batch, return_loss=False, return_generation=True)
-        pred_surv_CDFs = all_outputs["surv"]["surv_CDF"]
-        pred_surv_pis = all_outputs["surv"]["surv_pi"]
+        pred_surv_CDFs = all_outputs["surv"]["surv_CDF"]      
+        pred_surv_pi = all_outputs["surv"]["surv_pi"]
         
         target_tokens = batch['target_token'].cpu().numpy()
         target_ages = batch['target_age_delta'].cpu().numpy()
         target_values = batch['target_value'].cpu().numpy()
 
-        # Log records for individual outcomes
-        ######################################
-        if self.log_combined:
+        # Merge (additively) each outcome risk curve into a single CDF, and update label for if outcome occurred or not
+        #    In the fine-tuning SR case, the outcomes are combined into a single event. In this case `log_individual` is  
+        #    repeatedly using the same shared event's CDF, but plotting/evaluating against just one of the outcome tokens 
+        #    which combine to create that single event.
+        cdf = np.zeros_like(pred_surv_CDFs[0])
+        lbls = np.zeros_like(target_tokens)
+        surv_indices_included = []               
+        for _outcome_token in self.outcome_tokens:
+            # print(f"{_outcome_token} of {self.outcome_tokens} included from {len(pred_surv_CDFs)} surv CDFs")
             
-            # Combine for labels, 1 if any of the outcomes, 0 otherwise
-            cdf = np.zeros_like(pred_surv_CDFs[0])
-            lbls = np.zeros_like(target_tokens)
-            surv_indices_included = []               
-            for _outcome_token in self.outcome_tokens:
-                # print(f"Adding contributions for outcome token {_outcome_token}")
-                _outcome_labels = (target_tokens == _outcome_token)
-                lbls += _outcome_labels
-                
-                _outcome_surv_index = self.outcome_token_to_desurv_output_index[_outcome_token]
-                _outcome_cdf = pred_surv_CDFs[_outcome_surv_index]
-                # print(f"These can be found in the DeSurv prediction index  {_outcome_surv_index}")
-    
-                # When different outcomes map to the same CIF/CDF curve, then we do not duplicate
-                #    This is only relevant in the supervised case, as the few-shot case will always have 1-to-1 _outcome_token to 
-                #    _outcome_surv_index maps
-                if _outcome_surv_index not in surv_indices_included:
-                    cdf += _outcome_cdf
-                    surv_indices_included.append(_outcome_surv_index)
+            _outcome_labels = (target_tokens == _outcome_token)             # 1 if == _outcome_token else 0
+            lbls += _outcome_labels
 
-            # Plot the outcome curves
-            if plot_outcome_curves:
-                ylabel = r"$\sum_{k\in{" + f"{','.join([str(i) for i in self.outcome_tokens])}" + r"}} F_k(t)$"
-                self.plot_outcome_curve(cdf, lbls, _trainer, log_name=log_name, ylabel=ylabel)
-            # Get metrics
-            self.get_metrics(cdf, lbls, target_ages, _trainer, _pl_module, log_name=log_name)
+            _outcome_surv_index = self.outcome_token_to_desurv_output_index[_outcome_token]
+            _outcome_cdf = pred_surv_CDFs[_outcome_surv_index]
+
+            # When different outcomes map to the same CIF/CDF curve, then we do not duplicate in `log_marginal`
+            if _outcome_surv_index not in surv_indices_included:
+                cdf += _outcome_cdf
+                surv_indices_included.append(_outcome_surv_index)
             
-        # Log records for individual outcomes
-        ######################################
-        #  Note: unless this is single risk causal model, then this may not be appropriate beyond diagnostics.
-        # For each of the DeSurv output curves, which we want to evaluate separately
-        #   1) collect the targets which are relevant to that curve. 
-        if self.log_individual:
-            assert pred_surv_pis is None, "Individual logging is not supported for Competing-Risk models."
-            
-            for _desurv_index, _outcome_cdf in enumerate(pred_surv_CDFs):
-                
-                _outcome_labels = np.zeros_like(target_tokens)
-                _outcome_tokens = []
-                for _outcome_token in self.outcome_token_to_desurv_output_index.keys():
-                    # For each outcome, if it belongs to the `_desurv_index` survival curve then update target labels
-                    _outcome_desurv_index = self.outcome_token_to_desurv_output_index[_outcome_token]
-                    if _outcome_desurv_index == _desurv_index:
-                        _outcome_labels += (target_tokens == _outcome_token)             # 1 if == _outcome_token else 0
-                        _outcome_tokens.append(_outcome_token)
-    
+            # Make log records for individual outcomes
+            #######
+            if self.log_individual:
                 # Plot the outcome curve
                 if plot_outcome_curves:
+                    ylabel = r"$F_{" + str(_outcome_token) + r"}(t)$"
                     self.plot_outcome_curve(_outcome_cdf, 
                                             _outcome_labels, 
                                             _trainer, 
-                                            log_name=log_name+f"_{_outcome_tokens}",
-                                            ylabel=r"$F_{" + f"{','.join([str(i) for i in _outcome_tokens])}" + r"}(t)$")
+                                            log_name=log_name+f"_{_outcome_token}", ylabel=ylabel)
                 # Log metrics
-                self.get_metrics(_outcome_cdf, #  if pred_surv_pis is None else _outcome_cdf / pred_surv_pis[_desurv_index], 
+                self.get_metrics(_outcome_cdf, 
                                  _outcome_labels,
                                  target_ages, 
                                  _trainer, 
                                  _pl_module, 
-                                 log_name+f"_{_outcome_tokens}")
+                                 log_name+f"_{_outcome_token}")
 
+        # Plot the outcome curves
+        if self.log_marginal:
+            if plot_outcome_curves:
+                ylabel = r"$\sum_{k\in{" + f"{','.join([str(i) for i in self.outcome_tokens])}" + r"}} F_k(t)$"
+                self.plot_outcome_curve(cdf, lbls, _trainer, log_name=log_name, ylabel=ylabel)
+            # Log metrics
+            #  Note: in the single risk case these metrics wont make sense. This is because the cdf is provided as the sum of the indendent CDFs, and 
+            #        there is no way to rescale them. We could take the average, but this will still be wrong.
+            self.get_metrics(cdf, lbls, target_ages, _trainer, _pl_module, log_name=log_name)
+
+        # # Merge (additively) each outcome risk curve into a single CDF, and update label for if outcome occurred or not
+        # #
+        # cdf = np.zeros_like(pred_surv_CDFs[0])
+        # lbls = np.zeros_like(target_tokens)
+        # for _outcome_token in self.outcome_tokens:
+        #     print(f"{_outcome_token} of {self.outcome_tokens} included from {len(pred_surv_CDFs)} surv CDFs")
+            
+        #     _outcome_labels = (target_tokens == _outcome_token)
+        #     lbls += _outcome_labels
+
+        #     _outcome_surv_index = self.outcome_token_to_desurv_output_index[_outcome_token]
+        #     _outcome_cdf = pred_surv_CDFs[_outcome_surv_index] 
+        #     cdf += _outcome_cdf
+            
+        #     # Make log records for individual outcomes
+        #     #######
+        #     if self.log_individual:
+        #         # Plot the outcome curve
+        #         if plot_outcome_curves:
+        #             ylabel = r"$F_{" + str(_outcome_token) + r"}(t)$"
+        #             self.plot_outcome_curve(_outcome_cdf, _outcome_labels, _trainer, log_name=log_name+f"_{_outcome_token}", ylabel=ylabel)
+        #         # Log metrics
+        #         self.get_metrics(_outcome_cdf, _outcome_labels, target_ages, _trainer, _pl_module, log_name+f"_{_outcome_token}")
+
+        # # Plot the outcome curves
+        # if self.log_marginal:
+        #     assert pred_surv_pi is not None, "Marginalising out the event type can only be done in the Competing-Risk case."
+        #     if plot_outcome_curves:
+        #         ylabel = r"$\sum_{k\in{" + f"{','.join([str(i) for i in self.outcome_tokens])}" + r"}} F_k(t)$"
+        #         self.plot_outcome_curve(cdf, lbls, _trainer, log_name=log_name, ylabel=ylabel)
+        #     # Log metrics
+        #     #  Note: in the single risk case these metrics wont make sense. This is because the cdf is provided as the sum of the indendent CDFs, and 
+        #     #        there is no way to rescale them. We could take the average, but this will still be wrong.
+        #     self.get_metrics(cdf, lbls, target_ages, _trainer, _pl_module, log_name=log_name)
+            
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
         # Run callback
         self.run_callback(_trainer=trainer, 
                           _pl_module = pl_module,
                           batch=batch,
                           log_name = "Val:OutcomePerformanceMetrics", 
-                          plot_outcome_curves = False
+                          plot_outcome_curves = True
                           )
 
     def on_test_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):

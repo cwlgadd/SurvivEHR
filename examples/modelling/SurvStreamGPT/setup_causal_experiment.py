@@ -151,7 +151,7 @@ class CausalExperiment(pl.LightningModule):
     def on_train_epoch_end(self):
         current_batchch = self.trainer.current_epoch
 
-def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None):
+def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
 
     if checkpoint is None:
         causal_experiment = CausalExperiment(cfg=cfg, vocab_size=vocab_size)
@@ -163,11 +163,12 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None):
 
     # Initialize wandb logger
     if cfg.experiment.log == True:
-        logger = pl.loggers.WandbLogger(project=cfg.experiment.project_name,
-                                        name=cfg.experiment.run_id,
-                                        job_type='train',
-                                        save_dir=cfg.experiment.log_dir
-                                        )
+        logger = logger
+        # logger = pl.loggers.WandbLogger(project=cfg.experiment.project_name,
+        #                                 name=cfg.experiment.run_id,
+        #                                 job_type='train',
+        #                                 save_dir=cfg.experiment.log_dir
+        #                                 )
     else:
         logger = None
 

@@ -31,7 +31,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         self.transformer = TTETransformer(cfg, vocab_size)
 
         match cfg.head.SurvLayer.lower():
-            # Removing padding token from vocab size as this is not considered an event in either case
+            # Removing padding token from vocab size as this is not considered an event in either case.
             case "single-risk" | "sr":
                 self.surv_layer = ODESurvSingleRiskLayer(self.n_embd - self.n_embd_private, [], num_risks=vocab_size - 1, device="cuda")
             case "competing-risk" | "cr":

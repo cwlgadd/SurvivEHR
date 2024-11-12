@@ -42,7 +42,6 @@ class ODESurvCompetingRiskLayer(nn.Module):
         """
 
         if not is_generation:
-            
 
             assert target_tokens is not None
             assert target_ages is not None
@@ -84,17 +83,21 @@ class ODESurvCompetingRiskLayer(nn.Module):
                 surv_loss = None
 
             # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
+            if return_cdf:
+                preds, pis = self._predict_cdf(in_hidden_state.reshape((-1,in_hidden_state.shape[-1]))) 
+            else:
+                preds, pis = None, None
             surv ={"k": [k],
                    "tte_deltas": tte_deltas,
-                   "surv_CDF":  self._predict_cdf(in_hidden_state.reshape((-1,in_hidden_state.shape[-1]))) if return_cdf else None}
-                
+                   "surv_CDF": preds,
+                   "surv_pi": pis}
 
         else:
             # inference-time mini-optimization: only forward the head on the very last position
             in_hidden_state = hidden_states[:, -1, :]                      # torch.Size([bsz, hid_dim])
             
             if return_loss:
-                # Forward the last state. This will be used for fine-tuning a clinical prediction model.
+                # Forward the last state. This will be used for few-shot training a clinical prediction model.
                 # Note: Padding doesn't matter as all the padded hidden_state values share the same value as the last observation's hidden state
                 assert target_tokens is not None
                 assert target_ages is not None
@@ -107,9 +110,14 @@ class ODESurvCompetingRiskLayer(nn.Module):
                 surv_loss = None
 
             # In generation mode we will return a cumulative density curve which can be used to generate sequences of events.
+            if return_cdf:
+                preds, pis = self._predict_cdf(in_hidden_state)
+            else:
+                preds, pis = None, None
             surv ={"k": target_tokens,
                    "tte_deltas": target_ages, 
-                   "surv_CDF":  self._predict_cdf(in_hidden_state) if return_cdf else None}
+                   "surv_CDF":  preds,
+                   "surv_pi": pis}
                 
         return surv, surv_loss
 
@@ -129,14 +137,20 @@ class ODESurvCompetingRiskLayer(nn.Module):
         # Batched predict: Cannot make all predictions at once due to memory constraints
         pred_bsz = 512                                                        # Predict in batches
         pred = []
+        pi = []
         for H_test_batched, t_test_batched in zip(torch.split(H_test, pred_bsz), torch.split(t_test, pred_bsz)):
-            pred.append(self.sr_ode(H_test_batched, t_test_batched)[0])
+            _pred, _pi = self.sr_ode(H_test_batched, t_test_batched)
+            pred.append(_pred)
+            pi.append(_pi)
+
         pred = torch.concat(pred)
-
+        pi = torch.concat(pi)
         pred = pred.reshape((hidden_states.shape[0], self.t_eval.size, -1)).cpu().detach().numpy()
+        pi = pi.reshape((hidden_states.shape[0], self.t_eval.size, -1)).cpu().detach().numpy()
         preds = [pred[:, :, _i] for _i in range(pred.shape[-1])]
+        pis = [pi[:, :, _i] for _i in range(pi.shape[-1])]
 
-        return preds
+        return preds, pis
 
     def sample_surv(self, surv):
         """ Generate samples from survival curves using inverse sampling
