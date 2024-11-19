@@ -9,6 +9,7 @@ data:
   path_to_ds: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/                # Path to Polars dataset
   # Path to meta_information. For example if we want to update outlier bounds to custom values
   meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information.pickle  
+  subsample_training: null
 
 experiment:
   type: 'pre-train'                  # Options: ['pre-train', 'zero-shot', 'fine-tune']

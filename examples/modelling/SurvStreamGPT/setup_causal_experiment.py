@@ -162,15 +162,7 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
     logging.debug(causal_experiment)
 
     # Initialize wandb logger
-    if cfg.experiment.log == True:
-        logger = logger
-        # logger = pl.loggers.WandbLogger(project=cfg.experiment.project_name,
-        #                                 name=cfg.experiment.run_id,
-        #                                 job_type='train',
-        #                                 save_dir=cfg.experiment.log_dir
-        #                                 )
-    else:
-        logger = None
+    logger = logger if cfg.experiment.log == True else None
 
     # Make all callbacks
     checkpoint_callback = pl.callbacks.ModelCheckpoint(

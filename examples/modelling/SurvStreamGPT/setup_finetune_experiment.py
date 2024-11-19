@@ -20,6 +20,7 @@ class FineTuneExperiment(pl.LightningModule):
                  cfg,
                  outcome_tokens,
                  risk_model,         # 'single-risk', 'competing-risk', or (TODO) False (for case of predicting value but not survival risk)
+                 pretrained_model=None,
                  vocab_size=265,
                  freeze_body=False
                 ):
@@ -27,25 +28,30 @@ class FineTuneExperiment(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()        
         self.cfg = cfg
-        self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size)
+        self.model = pretrained_model if pretrained_model is not None else SurvStreamGPTForCausalModelling(cfg, vocab_size)
 
-        # Create new survival head
+        # Replace survival head
         match risk_model.replace('-', '').replace(' ', '').lower():
 
             case "singlerisk" | "sr":
                 # Combine each of the given outcomes into a single event, and treat it as a single risk
                 # e.g. This could be a single event, or all events that constitute some form of umbrella, e.g. cardiovascular disease
-                self.surv_layer = ODESurvSingleRiskLayer(self.model.n_embd - self.model.n_embd_private, [32,32], num_risks=1, device="cuda")
+                self.surv_layer = ODESurvSingleRiskLayer(
+                    outcome_tokens,
+                    self.model.n_embd - self.model.n_embd_private, [32,32], device="cuda"
+                )
                 
                 # Create a method which reduces from the causal k={1,2,3,4,5,...} form to the single risk form k={\null, 1}
-                self.reduce_to_outcomes = lambda x: sum([torch.where(x==i, 1, 0) for i in outcome_tokens])
+                self.reduce_to_outcomes = lambda target_token: target_token
                 
             case "competingrisk" | "cr":
                 # Treat each risk as a competing risk
-                self.surv_layer = ODESurvCompetingRiskLayer(self.model.n_embd - self.model.n_embd_private, [32,32], num_risks=len(outcome_tokens), device="cuda")
+                self.surv_layer = ODESurvCompetingRiskLayer(
+                    self.model.n_embd - self.model.n_embd_private, [32,32], num_risks=len(outcome_tokens), device="cuda"
+                )
                 
                 # Create a method which reduces from the causal k={1,2,3,4,5,...} form to the competing risk form k={1,2,3,..., K}
-                self.reduce_to_outcomes = lambda x: sum([torch.where(x==i, idx+1, 0) for idx, i in enumerate(outcome_tokens)])
+                self.reduce_to_outcomes = lambda target_token: sum([torch.where(target_token==i, idx+1, 0) for idx, i in enumerate(outcome_tokens)])
 
             case _:
                 raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
@@ -53,10 +59,9 @@ class FineTuneExperiment(pl.LightningModule):
         # Freeze the pre-trained model body and only fine-tune the new head
         self.freeze_body = freeze_body
         if self.freeze_body:
-            logging.info(f"Fixing Transformer parameters and training only head.")
+            logging.info(f"Fixing Transformer parameters and training only new head.")
             for name, param in self.model.named_parameters():
-                if "surv_layer" not in name:
-                    param.requires_grad = False
+                param.requires_grad = False
 
         self.dropout = torch.nn.Dropout(p=0.0)
 
@@ -120,12 +125,12 @@ class FineTuneExperiment(pl.LightningModule):
         # survival time to event head (survival curve until next token)
         surv_dict, losses_desurv = self.surv_layer.predict(in_hidden_state[:,:,:self.model.n_embd - self.model.n_embd_private],
                                                            target_tokens=target_tokens,
-                                                                 target_ages=target_ages,
-                                                                 attention_mask=target_attention_mask,
-                                                                 is_generation=is_generation,
-                                                                 return_loss=return_loss,
-                                                                 return_cdf=return_generation,
-                                                                 )
+                                                           target_ages=target_ages,
+                                                           attention_mask=target_attention_mask,
+                                                           is_generation=is_generation,
+                                                           return_loss=return_loss,
+                                                           return_cdf=return_generation,
+                                                           )
 
         if return_loss:
             loss = torch.sum(torch.stack(losses_desurv))                                  # losses are returned as a list, as the Single-Risk head is many DeSurv models in parallel, combine
@@ -224,12 +229,11 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
             finetune_experiment = FineTuneExperiment.load_from_checkpoint(checkpoint, cfg=cfg, outcome_tokens=outcome_tokens, risk_model=risk_model)
         case "load_from_pretrain":
             assert checkpoint is not None
-            logging.info(f"Loading pre-trained checkpoint from {checkpoint}. Freezing body.")
-            pretrained_experiment = CausalExperiment.load_from_checkpoint(checkpoint, cfg=cfg)
-            finetune_experiment = FineTuneExperiment(cfg, outcome_tokens, risk_model=risk_model, freeze_body=True) 
-            finetune_experiment.model = pretrained_experiment.model
+            logging.info(f"Loading pre-trained model from checkpoint from {checkpoint}.")
+            finetune_experiment = FineTuneExperiment.load_from_checkpoint(checkpoint, cfg=cfg, outcome_tokens=outcome_tokens, risk_model=risk_model, freeze_body=True, strict=False)
         case "no_load":
             logging.info(f"Fine-tuning from scratch")
+            # causal_experiment = CausalExperiment(cfg=cfg, vocab_size=264)
             finetune_experiment = FineTuneExperiment(cfg, outcome_tokens, risk_model=risk_model) 
         case _:
             raise NotImplementedError
@@ -237,14 +241,7 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
     logging.debug(finetune_experiment)
 
     # Initialize wandb logger
-    if cfg.experiment.log == True:
-        logger = logger
-        # logger = pl.loggers.WandbLogger(project=cfg.experiment.project_name,
-        #                                 name=cfg.experiment.run_id + "_" + cfg.experiment.fine_tune_id, 
-        #                                 save_dir=cfg.experiment.log_dir
-        #                                 )
-    else:
-        logger = None
+    logger = logger if cfg.experiment.log == True else None
 
     # Make all callbacks
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
@@ -285,16 +282,21 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
 
     # Add callbacks which apply to outcome prediction tasks
     ###########
-    # Create a hash map which maps the token to corresponding desurv output. 
+    # Create a hash map which maps the tokens of interset to their corresponding desurv output index
+    #    For fine-tuning, where the token is condensed into a subset, this is a map from this new token value
+    #    and the corresponding DeSurv output index
+    # TODO:
+    #    SingleRisk and Competing Risk models have a slightly different structure now, and so they are treated 
+    #    a bit differently here also. TODO: update CompetingRisk to follow the same structure of taking in the
+    #    target tokens
     if risk_model == "single-risk":
-        outcome_token_to_desurv_output_index = {token: 0 for token in outcome_tokens}
+        outcome_token_to_desurv_output_index = {token: 0 for token_idx, token in enumerate(outcome_tokens)}
     if risk_model == "competing-risk":
-        outcome_token_to_desurv_output_index = {token: idx for idx, token in enumerate(outcome_tokens)}
+        outcome_token_to_desurv_output_index = {token: token_idx for token_idx, token in enumerate(outcome_tokens)}
     # Construct callback
-    metric_callback = PerformanceMetrics(outcome_tokens=outcome_tokens,
-                                         outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
-                                         log_individual=True if risk_model == "single-risk" else False,
+    metric_callback = PerformanceMetrics(outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
                                          log_combined=True,
+                                         log_individual=True if risk_model == "single-risk" else False,
                                          log_ctd=True, 
                                          log_ibs=True,
                                          log_inbll=True)

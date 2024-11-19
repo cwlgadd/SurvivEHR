@@ -101,6 +101,7 @@ class ODESurvCompetingRiskLayer(nn.Module):
                 # Note: Padding doesn't matter as all the padded hidden_state values share the same value as the last observation's hidden state
                 assert target_tokens is not None
                 assert target_ages is not None
+                assert attention_mask is None
 
                 surv_loss = [self.sr_ode.loss(in_hidden_state, target_ages.reshape(-1), target_tokens.reshape(-1)) / target_tokens.shape[0]]
                 

@@ -3,7 +3,7 @@ is_decoder: True
 data:
   batch_size: 64                    # Batch size
   unk_freq_threshold: 0.0           # Frequency required for token to be included. Tokens below threshold are transformed to <UNK>
-  min_workers: 20                   # The number of workers to create for dataloader
+  min_workers: 12                   # The number of workers to create for dataloader
   global_diagnoses: False           # Whether we enforce diagnoses which occurred before context block to prepend the block
   path_to_db: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/                         # Path to SQL database
   path_to_ds: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/                # Path to Polars dataset

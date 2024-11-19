@@ -59,6 +59,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
                  overwrite_practice_ids:     Optional[str] = None,
                  overwrite_meta_information: Optional[str] = None,
                  supervised:                 bool = False,
+                 subsample_training:         Optional[int] = None,
                  **kwargs   
                 ):
         """
@@ -146,7 +147,7 @@ class FoundationalDataModule(pl.LightningDataModule, ABC):
         
         # Train/test/validation GenerativeDatasets
         dataset_args = {"tokenizer": self.tokenizer, "meta_information": self.meta_information}
-        self.train_set = FoundationalDataset(path_to_ds, "train", **dataset_args, file_row_count_dict=file_row_count_dicts["train"], **kwargs)
+        self.train_set = FoundationalDataset(path_to_ds, "train", **dataset_args, file_row_count_dict=file_row_count_dicts["train"], **kwargs, subsample=subsample_training)
         self.test_set = FoundationalDataset(path_to_ds, "test", **dataset_args, file_row_count_dict=file_row_count_dicts["test"], **kwargs)
         self.val_set = FoundationalDataset(path_to_ds, "val", **dataset_args, file_row_count_dict=file_row_count_dicts["val"], **kwargs)
 
@@ -240,6 +241,7 @@ class FoundationalDataset(Dataset):
                  global_diagnoses:             bool = False,
                  random_context_window:        bool = False,
                  time_scale:                   float=1825.0,                     # Scale by 5 years so when we model on a standardised time grid we look 5 years ahead
+                 subsample:                    Optional[int] = None,
                  **kwargs
                 ):
         """
@@ -279,6 +281,7 @@ class FoundationalDataset(Dataset):
         self.random_context_window = random_context_window
         self.meta_information = meta_information
         self.time_scale = time_scale
+        self.subsample = subsample
 
         # Create a PyArrow dataset directly from the PolarsDataset saved hive partitioned dataset
         # NOTE:   This can take some time to initialise, but using the API is cleaner
@@ -299,9 +302,15 @@ class FoundationalDataset(Dataset):
         #         extract it from here as this information isn't aggregated across train/test/val splits.
         # self.total_samples = self.dataset.count_rows()   
         # self.total_samples = sum(_frag.count_rows() for _frag in self.dataset.get_fragments())
-        self.total_samples = sum(self.file_row_count_dict.values())
-        logging.info(f"Loaded {self.parquet_path + self.sub_dir} dataset, with {self.total_samples:,} samples")
-
+        if self.subsample is None:
+            self.total_samples = sum(self.file_row_count_dict.values())
+            logging.info(f"Loaded {self.parquet_path + self.sub_dir} dataset, with {self.total_samples:,} samples")
+        else: 
+            self.total_samples = self.subsample
+            logging.info(f"Loaded {self.parquet_path + self.sub_dir} dataset, with {self.total_samples:,} subsamples")
+            np.random.seed(42)
+            self.subsample_indicies = np.random.randint(low=0, high=self.total_samples, size=self.subsample)
+        
         # Create one-hot encoder map for static categorical variables.
         #   Note we use one hot even when the data is ordinal (e.g. with IMD deprivation score) so we can include the predict with missing data at inference time
         self.static_1hot = {}
@@ -309,7 +318,7 @@ class FoundationalDataset(Dataset):
             encoder = OneHotEncoder(handle_unknown='error')
             encoder.fit([[cat] for cat in self.meta_information["static_table"][_key]["category"]])
             self.static_1hot[_key] = encoder
-        
+
     def __len__(self):
         """ 
             Get the total number of rows across all Parquet files.
@@ -322,6 +331,10 @@ class FoundationalDataset(Dataset):
             
             tokenized and padded event stream and static variables
         """
+
+        if self.subsample is not None:
+            idx = self.subsample_indicies[idx]
+            
         return self.getitem(idx)
 
     def getitem(self, idx):

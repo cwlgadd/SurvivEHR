@@ -20,7 +20,7 @@ def run(cfg : DictConfig):
     # Create logger
     log_id = cfg.experiment.run_id
     if cfg.experiment.fine_tune_id is not None:
-        log_id += "_" + cfg.experiment.fine_tune_id
+        log_id += "_" + cfg.experiment.fine_tune_id + "_a"
     logger = pl.loggers.WandbLogger(project=cfg.experiment.project_name, name=log_id, save_dir=cfg.experiment.log_dir)
     logging.basicConfig(level=logging.DEBUG)
     
@@ -45,6 +45,7 @@ def run(cfg : DictConfig):
                                 min_workers=cfg.data.min_workers,
                                 overwrite_meta_information=cfg.data.meta_information_path,
                                 supervised=supervised,
+                                subsample_training=cfg.data.subsample_training
                                )
     
     # Get required information from initialised dataloader
@@ -152,7 +153,7 @@ def run(cfg : DictConfig):
             elif Path(pre_trained_ckpt_path).is_file():
                 # Create new fine-tuning experiment
                 logging.info(f"Creating new few-shot model at the path {supervised_ckpt_path}. " + \
-                             f"This is initialised from a checkpointed pre-trained causal experiment, which can be found at {pre_trained_ckpt_path}.")
+                             f"This is initialised from a pre-trained causal model, which can be found at checkpoint {pre_trained_ckpt_path}.")
                 
                 assert cfg.experiment.train is True, f"If you are not training a new few-shot model, please load a valid checkpoint. {pre_trained_ckpt_path} is not valid."
                 

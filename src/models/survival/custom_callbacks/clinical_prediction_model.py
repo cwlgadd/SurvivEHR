@@ -22,7 +22,6 @@ class PerformanceMetrics(Callback):
     """
 
     def __init__(self, 
-                 outcome_tokens,
                  outcome_token_to_desurv_output_index,
                  log_individual=True,
                  log_combined=False,
@@ -34,8 +33,8 @@ class PerformanceMetrics(Callback):
 
         ARGS:
             outcome_token_to_desurv_output_index:
-                              A dictionary hash map where keys are the outcome token, and the values are the index of the DeSurv output index 
-                                they belong to. 
+                              A dictionary hash map where keys are the outcome tokens of interest, and the values are the index of the DeSurv 
+                                output index they belong to. 
                               In the pre-training (self-supervised/causal) and few-shot (supervised with unmodified architecture) cases,
                                 the map is from outcome to one of `vocab_size` indices, as the DeSurv heads (in both SR and CR) predict
                                 the risk of every token.
@@ -60,13 +59,14 @@ class PerformanceMetrics(Callback):
         """
         
         Callback.__init__(self)
-        self.outcome_tokens = outcome_tokens
         self.outcome_token_to_desurv_output_index = outcome_token_to_desurv_output_index
+        self.outcome_tokens = outcome_token_to_desurv_output_index.keys()
         self.log_individual = log_individual
         self.log_combined = log_combined
         self.log_ctd = log_ctd
         self.log_ibs = log_ibs
         self.log_inbll = log_inbll
+        logging.info(f"Created Performance metric callback. Calculating metrics for {self.outcome_tokens} with map {self.outcome_token_to_desurv_output_index}")
 
     def plot_outcome_curve(self, cdf, lbls, _trainer, log_name="outcome_split_curve", ylabel=None):
         
@@ -90,7 +90,7 @@ class PerformanceMetrics(Callback):
                 log_name + "-Survival": wandb.Image(fig)
             })
 
-    def get_metrics(self, cdf, lbls, target_ages, _trainer, _pl_module, log_name, suppress_warnings=True):
+    def get_metrics(self, cdf, lbls, target_ages, _trainer, _pl_module, log_name, suppress_warnings=False):
         
         if np.sum(lbls) == 0 and suppress_warnings is False:
             logging.warning(f"Only censored events in batch. Evaluating metrics will be unstable.")
@@ -117,6 +117,7 @@ class PerformanceMetrics(Callback):
         except:
             if suppress_warnings is False:
                 logging.warning("Unable to calculate metrics, this batch will be skipped - this will bias metrics.")
+                logging.warning(f"{lbls}, {target_ages}")
             else:
                 pass
         

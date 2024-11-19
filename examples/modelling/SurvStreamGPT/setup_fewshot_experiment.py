@@ -172,17 +172,18 @@ def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
     # print(dm.train_set.tokenizer._stoi.keys())
 
     if checkpoint is not None:
-        logging.info("Loading from checkpoint and freezing model body")
+        logging.info("Loading from checkpoint")
         fewshot_experiment = FewShotExperiment.load_from_checkpoint(checkpoint, cfg=cfg, freeze_body=True)
-        fewshot_experiment._reinit_weights()
+        if cfg.experiment.train:
+            logging.info("Re-initialising survival head weights")
+            fewshot_experiment._reinit_weights()
     else:
         logging.info("Creating new experiment")
         fewshot_experiment = FewShotExperiment(cfg=cfg, vocab_size=vocab_size, freeze_body=False)
     logging.debug(fewshot_experiment)
 
     # Initialize wandb logger
-    if cfg.experiment.log == False:
-        logger = None
+    logger = logger if cfg.experiment.log == True else None
 
     ####################
     # Make all callbacks
@@ -200,11 +201,10 @@ def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
     
     # Add callbacks which apply to outcome prediction tasks
     ############
-    # Create a hash map which maps the token to corresponding desurv output. 
+    # Create a hash map which maps the tokens of interset to their corresponding desurv output index
     # For few-shot this is simply converting token to the index (PAD token takes value zero so we shift)
     outcome_token_to_desurv_output_index = {token: token - 1 for token in outcome_tokens}        
-    metric_callback = PerformanceMetrics(outcome_tokens=outcome_tokens,
-                                         outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
+    metric_callback = PerformanceMetrics(outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
                                          log_individual=True if cfg.head.SurvLayer.lower() == "sr" else False,
                                          log_combined=True, # True if cfg.head.SurvLayer.lower() == "cr" else False,
                                          log_ctd=True, 
