@@ -17,7 +17,7 @@ from omegaconf import OmegaConf
 from CPRD.data.foundational_loader import FoundationalDataModule
 import logging
 import time
-from CPRD.examples.data.study_data.study_criteria import cvd_inclusion_method, ckd_inclusion_method
+from CPRD.examples.data.study_data.study_criteria import t2d_inclusion_method, hypertension_inclusion_method
 
 
 if __name__ == "__main__":
@@ -26,14 +26,15 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     logging.info(f"Building study dataset on {os.cpu_count()} CPUs and {torch.cuda.device_count()} GPUs")
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    num_threads = 3
+    num_threads = 1
     print(f"Using device: {device}.")
     print(f"Fitting dataset over {num_threads} threads")
 
     # load the configuration file, override any settings 
-    with initialize(version_base=None, config_path="../../modelling/SurvStreamGPT/confs", job_name="dataset_creation_notebook"):
-        cfg = compose(config_name="config_CompetingRisk11M")
-    cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CKD/"
+    with initialize(version_base=None, config_path="../../modelling/SurvStreamGPT/confs", job_name="dataset_creation_job"):
+        cfg = compose(config_name="config_CompetingRisk37M", overrides=[])
+    # Create new dataset 
+    cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_BPpostHypertension/"
     print(OmegaConf.to_yaml(cfg))
 
     # Build 
@@ -47,7 +48,7 @@ if __name__ == "__main__":
                                 tokenizer="tabular",
                                 overwrite_practice_ids = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/practice_id_splits.pickle",
                                 overwrite_meta_information=cfg.data.meta_information_path,
-                                study_inclusion_method=cvd_inclusion_method(outcomes=["HYPERTENSION"]),  # min_events=50
+                                study_inclusion_method=hypertension_inclusion_method(),  # min_events=50
                                 num_threads=num_threads
                                )
     

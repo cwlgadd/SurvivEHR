@@ -87,11 +87,16 @@ class Diagnoses():
             # Conditions
             #####################
             # Rename the column headers: Get diagnosis columns and a mapping to re-name them to something more appropriate
-            date_columns = df.columns[list(range(19,164,2))]                                                           # Take only the columns with diagnosis dates
+            # date_columns = df.columns[list(range(19,164,2))]                                                           # Take only the columns with diagnosis dates
+            date_columns = [cn for cn in df.columns if "BD_MEDI:" in cn  and "LEARNINGDISABILITY_BIRM_CAM_V3" not in cn]
+            # Note, this change would include the LEARNINGDISABILITY_BIRM_CAM_V3:73 column in DEXTER output, but for consistency with current pre-trained models I exclude it again.
+
+            # Clean names: Specific to CPRD DEXTER output
             condition_names = [_condition.removeprefix('BD_MEDI:') for _condition in date_columns]                     # Remove pre-fix
-            for replace in ["_BHAM_CAM", "_FINAL", "_BIRM_CAM", "_MM", "_11_3_21", "_20092020", "_120421"]:            #   and a number of polluting values in titles
+            for replace in ["_BHAM_CAM", "_FINAL", "_BIRM_CAM", "_MM", "_11_3_21", "_20092020", "_120421"]:            #   and any polluting values in titles if exists, specific to CPRD DEXTER extraction
                 condition_names = [_condition.replace(replace, '') for _condition in condition_names]
-            condition_names = [ _condition.split(":", 1)[0] for _condition in condition_names]                         # and finally strip the condition number
+            condition_names = [ _condition.split(":", 1)[0] for _condition in condition_names]                         #   and finally strip the condition number if exists, specific again to CPRD DEXTER extraction
+            
             rename_dict = dict(zip(date_columns, condition_names))
             
             # Convert to days since birth: Get dates of diagnosis and year of birth so we can calculate the time difference

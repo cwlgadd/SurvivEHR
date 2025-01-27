@@ -1,8 +1,12 @@
 import polars as pl
 import logging
 
-def cvd_inclusion_method(index_on_event="TYPE2DIABETES", 
-                         outcomes=["IHDINCLUDINGMI_OPTIMALV2", "ISCHAEMICSTROKE_V2", "MINFARCTION", "STROKEUNSPECIFIED_V2", "STROKE_HAEMRGIC"],
+def t2d_inclusion_method(index_on_event="TYPE2DIABETES", 
+                         outcomes=["IHDINCLUDINGMI_OPTIMALV2", 
+                                   "ISCHAEMICSTROKE_V2", 
+                                   "MINFARCTION",
+                                   "STROKEUNSPECIFIED_V2", 
+                                   "STROKE_HAEMRGIC"],
                          exclude_on_events=["TYPE1DM"],                         
                          exclude_on_events_prior_to_index=['Statins'],
                          study_period=["1998-01-01", "2019-12-31"],
@@ -11,22 +15,78 @@ def cvd_inclusion_method(index_on_event="TYPE2DIABETES",
                          min_events=None,
                          ):
 
-    CVD_inclusion = index_inclusion_method(index_on_event=index_on_event, 
+    T2D_inclusion = index_inclusion_method(index_on_event=index_on_event, 
+                                           outcomes=outcomes,                                           
                                            exclude_on_events_prior_to_index=exclude_on_events_prior_to_index,
                                            exclude_on_events=exclude_on_events,
-                                           outcomes=outcomes,
                                            study_period=study_period,
                                            age_at_entry_range=age_at_entry_range,
                                            min_registered_years=min_registered_years,
                                            min_events=min_events,
                                            )
-    return CVD_inclusion.fit
+    return T2D_inclusion.fit
+
+
+def hypertension_inclusion_method(index_on_event=["ACE_Inhibitors_D2T", 
+                                                  "ARBs_Luyuan", 
+                                                  "BetaBlockers_OPTIMAL",
+                                                  "CalciumChannelBlck_D2T",
+                                                  "Thiazide_Diuretics_v2",
+                                                  # "All_Diuretics_D2T",                       # Not using these as not all diuretics are used for BP lowering
+                                                  # "All_Diuretics_ExclLactones_D2T",
+                                                  "AlphaBlocker",
+                                                  "AldosteroneAntagonist_D2T"                  # Used in extremely treatment resistant HTN
+                                                 ],
+                                  outcomes=["Systolic_blood_pressure_4"],
+                                  require_outcome=True,                                        # Remove right-censoring of patients who do not observe the outcome
+                                  include_on_events_prior_to_index=("HYPERTENSION",30*2),      # Must have had a hypertension diagnosis in the 60 days prior to index date
+                                  exclude_on_events=None,
+                                  exclude_on_events_prior_to_index=None,
+                                  study_period=["1998-01-01", "2019-12-31"],
+                                  age_at_entry_range=[25, 85],
+                                  min_registered_years=1,
+                                  min_events=None,
+                                 ):
+    
+    hyp_inclusion = index_inclusion_method(index_on_event=index_on_event, 
+                                           outcomes=outcomes,
+                                           require_outcome=require_outcome,
+                                           include_on_events_prior_to_index=include_on_events_prior_to_index,
+                                           exclude_on_events_prior_to_index=exclude_on_events_prior_to_index,
+                                           exclude_on_events=exclude_on_events,
+                                           study_period=study_period,
+                                           age_at_entry_range=age_at_entry_range,
+                                           min_registered_years=min_registered_years,
+                                           min_events=min_events,
+                                           )
+    return hyp_inclusion.fit
+
+# def multimorbidity_inclusion_method(index_on_age=50,
+#                                     outcomes=["A",
+#                                               "B"],
+#                                     study_period=["1998-01-01", "2019-12-31"],
+#                                     age_at_entry_range=[25, 85],
+#                                     min_registered_years=1,
+#                                     min_events=None,
+#                                    )
+
+#      mm_inclusion = index_inclusion_method(index_on_age=index_on_age, 
+#                                            outcomes=outcomes,
+#                                            study_period=study_period,
+#                                            age_at_entry_range=age_at_entry_range,
+#                                            min_registered_years=min_registered_years,
+#                                            min_events=min_events,
+#                                            )
+#     return mm_inclusion.fit
+
 
 class index_inclusion_method():
     
     def __init__(self,
                  index_on_event,
                  outcomes,
+                 require_outcome=False,
+                 include_on_events_prior_to_index=None,
                  exclude_on_events_prior_to_index=None,
                  exclude_on_events=None,
                  study_period=["1998-01-01", "2019-12-31"],
@@ -36,13 +96,19 @@ class index_inclusion_method():
                  ):
         """
         ARGS:
-            lazy_static
+            index_on_event
     
-            lazy_combined_frame
+            outcomes
     
         KWARGS:
-            index_on_event
-                The condition each patient must have.
+            require_outcome
+                Whether we require the outcome to be seen (within the study period constraints).
+                E.g. False: if we are predicting survival then we want to include patients who have not (yet) seen the outcome.
+                     True:  if we are predicting value, then we may want to only include patients who have observed that outcome (this outcome's value may still be missing) 
+            include_on_events_prior_to_index
+                Include patients based on whether they have experiencedevents prior to their index date for the study.
+                This is given in the form of a tuple, where the first element is a string indicating the token and the second element is how many days before index event this must occur
+                For example, if the study goal is to predict the effect of a medication following a diagnosis, we may want to include only those with that diagnosis 60 days prior to the medication.
             exclude_on_events_prior_to_index
                 Remove patients based on whether they have experienced events prior to their index date for the study.
                 For example, if the study goal is to screen for being placed on a medication, we may want to remove those already on the medication from the study
@@ -65,6 +131,8 @@ class index_inclusion_method():
         
         self._index_on_event = index_on_event
         self._outcomes = outcomes
+        self._require_outcome = require_outcome
+        self._include_on_events_prior_to_index = include_on_events_prior_to_index
         self._exclude_on_events_prior_to_index = exclude_on_events_prior_to_index
         self._exclude_on_events = exclude_on_events
         self._study_period = study_period
@@ -76,28 +144,40 @@ class index_inclusion_method():
             lazy_static,
             lazy_combined_frame):
 
-        # patient_id_for_checking = 5922416221434
+        ###################
         # Reduce the frames by removing any patients who do not satisfy global criteria
+        ###################
         lazy_static, lazy_combined_frame = self._remove_on_global_criteria(lazy_static, lazy_combined_frame)
-        # Force collection
-        lazy_static = lazy_static.collect().lazy()
+        lazy_static = lazy_static.collect().lazy()                                      # Force collection (TODO: remove)
         lazy_combined_frame = lazy_combined_frame.collect().lazy()
-        # print(lazy_static.filter(pl.col("PATIENT_ID")==patient_id_for_checking).collect()) 
-        # print(lazy_combined_frame.filter(pl.col("PATIENT_ID")==patient_id_for_checking).sort(["PRACTICE_ID", "PATIENT_ID", "DATE"]).collect())
 
+        ###################
         # Set an index date
+        ###################
         lazy_static, lazy_combined_frame = self._set_index_date(lazy_static, lazy_combined_frame)
-        # Force collection
-        lazy_static = lazy_static.collect().lazy()
+        lazy_static = lazy_static.collect().lazy()                                      # Force collection (TODO: remove)
         lazy_combined_frame = lazy_combined_frame.collect().lazy()
+
+        ###################
+        # Given the index date, reduce to patient satisfying pre- and post- index criteria
+        ###################
+        lazy_static, lazy_combined_frame = self._reduce_on_index_date(lazy_static, lazy_combined_frame)
+
+        ###################
+        # Given this index date, reduce events to those leading to and including the date, and the final observation (observed or last seen within study period)
+        ###################
+        lazy_static, lazy_combined_frame = self._reduce_on_outcome(lazy_static, lazy_combined_frame)
+
+        ###################
+        # Optionally remove patients who did not experience more than self._min_events
+        ###################
+        lazy_static, lazy_combined_frame = self._reduce_on_dynamic_events(lazy_static, lazy_combined_frame)
+
+        
+        # patient_id_for_checking = 5922416221434
         # print(lazy_static.filter(pl.col("PATIENT_ID")==patient_id_for_checking).collect())
         # print(lazy_combined_frame.filter(pl.col("PATIENT_ID")==patient_id_for_checking).sort(["PRACTICE_ID", "PATIENT_ID", "DATE"]).collect())
         
-        # Given this index date, reduce events to those leading to and including the date, and the final observation (observed or last seen within study period)
-        lazy_static, lazy_combined_frame = self._reduce_on_index_date(lazy_static, lazy_combined_frame)
-        # print(lazy_static.collect())  # .filter(pl.col("PATIENT_ID")==patient_id_for_checking)
-        # print(lazy_combined_frame.filter(pl.col("PATIENT_ID")==patient_id_for_checking).sort(["PRACTICE_ID", "PATIENT_ID", "DATE"]).collect())
-
         return lazy_static, lazy_combined_frame
 
     
@@ -140,10 +220,16 @@ class index_inclusion_method():
                         lazy_combined_frame):
         
         # Retain only patients with the required events occurring (at any time)
-        patients_with_index_event = (
-            lazy_combined_frame
-            .filter(pl.col("EVENT") == self._index_on_event)                                                      # Include only patients who experienced the events                  
-        )
+        if type(self._index_on_event) is list:
+            patients_with_index_event = (
+                lazy_combined_frame
+                .filter(pl.col("EVENT").is_in(self._index_on_event))                                                    # Include only patients who experienced the events                  
+            )
+        else:
+            patients_with_index_event = (
+                lazy_combined_frame
+                .filter(pl.col("EVENT") == self._index_on_event)                                                      # Include only patients who experienced the events                  
+            )
     
         # Reduce this list to include only patients with the required events occuring during the study period
         patients_with_index_event = (
@@ -159,7 +245,7 @@ class index_inclusion_method():
             .filter(pl.col('DAYS_SINCE_BIRTH') <= self._age_at_entry_range[1]*365.25)               # index event occurred before maximum age
         )
 
-        # Get the first valid index event if multiple exist (e.g. repeat diagnosis), and set the date as the index date
+        # Get the first valid index event if multiple exist (e.g. repeat diagnosis, multiple index events considered), and set the date as the index date
         patients_with_index_event = (
             patients_with_index_event
             .sort(["PRACTICE_ID", "PATIENT_ID", "DATE"])                   # Sort to ensure date order within patients
@@ -190,11 +276,10 @@ class index_inclusion_method():
         # occured before the index event
         #############################################################
 
-        # TODO: this is a costly operation
+        # Get the patients without any of the `_exclude_on_events_prior_to_index` events occurring before the index date
+        # For example, if we are interested in the possibility of prescribing a medicine then we may want to exclude those already on the medicine
+        # TODO: this can be optimised further
         if self._exclude_on_events_prior_to_index is not None:
-            
-            # Get the patients who have any of these events occurring before the index date
-            # For example, if we are interested in the possibility of prescribing a medicine then we may want to exclude those already on the medicine
             patients_without_excluded_prior_events = (
                 lazy_combined_frame
                 .filter(pl.col('DATE') < pl.col('INDEX_DATE'))
@@ -209,15 +294,45 @@ class index_inclusion_method():
             # and reduce original frames using this list
             lazy_combined_frame = patients_without_excluded_prior_events.join(lazy_combined_frame, on=["PATIENT_ID"], how="inner")  
             lazy_static = patients_without_excluded_prior_events.join(lazy_static, on=["PATIENT_ID"], how="inner")  
+
+        # Get the patients with any of the `_include_on_events_prior_to_index` events occurring before the index date
+        # For example, if we are interested in the effect of prescribing a medicine for a diagnosis, then we may want to include those with the diagnosis
+        # TODO: this can be optimised further
+        if self._include_on_events_prior_to_index is not None:
+            patients_with_included_prior_events = (
+                lazy_combined_frame
+                .filter(pl.col('DATE') < pl.col('INDEX_DATE'))                                                                             # keep only events before index date
+                # .select([
+                # (pl.col("INDEX_DATE") - pl.col("DATE")).dt.days().alias("DAYS_BEFORE_INDEX"), "*"
+                # ])
+                .filter((pl.col("INDEX_DATE") - pl.col("DATE")).dt.days() <= self._include_on_events_prior_to_index[1])                     # and less than X days before index date
+                .with_columns( (pl.col("EVENT") == self._include_on_events_prior_to_index[0]).alias("IS_INC_EVENT"))                      # create a new column indicating inclusion events
+                .groupby("PATIENT_ID")
+                .agg(pl.col("IS_INC_EVENT").sum())                                                                                         # and count how many inclusion events per patient
+                .filter(pl.col("IS_INC_EVENT")>0)                                                                                          # take all patients with inclusion events
+                .unique("PATIENT_ID")
+                .select(pl.col('PATIENT_ID'))
+            )
             
+            # and reduce original frames using this list
+            lazy_combined_frame = patients_with_included_prior_events.join(lazy_combined_frame, on=["PATIENT_ID"], how="inner")  
+            lazy_static = patients_with_included_prior_events.join(lazy_static, on=["PATIENT_ID"], how="inner")  
+            
+        return lazy_static, lazy_combined_frame
+
+    
+    def _reduce_on_outcome(self,
+                           lazy_static,
+                           lazy_combined_frame,): 
+        
         #############################################################
         # Retain only patients with valid events following the index date 
         # ... as we want followup predictions, we need to ensure an 
         #     event occurs - even if this is not an outcome
         #############################################################
 
-        # Keep only patients with an event occurring between index and study end
-        #   (remove patients where index event is last event in study)
+        # Keep only patients with any event occurring between index and study end
+        #   (i.e. remove patients where index event is last event in study)
         patients_with_target = (
             lazy_combined_frame
             .filter(pl.col("DATE") > pl.col("INDEX_DATE"))
@@ -233,9 +348,9 @@ class index_inclusion_method():
             
         #############################################################
         # GET OUTCOMES 
-        # or if no outcome, the last seen event within study period
+        # or (by default) if no outcome, the last seen event within study period
         #############################################################
-            
+
         # Get all possible outcomes occurring after index, and before study end
         # If multiple outcomes follow index, we take all for now, but later reduce this to the first seen.
         lazy_combined_frame_outcomes = (
@@ -245,60 +360,94 @@ class index_inclusion_method():
             .filter(pl.col("DATE") <= pl.lit(self._study_period[1]).str.strptime(pl.Date, fmt="%F"))  # Only look at outcomes within study period
         )
     
-        # Get last observation within study period
-        lazy_combined_frame_last_event_in_study = (
-            lazy_combined_frame
-            .filter(pl.col("DATE") <= pl.lit(self._study_period[1]).str.strptime(pl.Date, fmt="%F"))  # Only look at events within study period
-            .sort(["PRACTICE_ID", "PATIENT_ID", "DATE"])                                        # Sort to ensure date order within patients
-            .unique(subset=["PRACTICE_ID", "PATIENT_ID"], keep="last")                          # Keep chronologically last event experienced by patient
-        )
-    
-        # Take first between these - this will the first outcome if one has occurred, otherwise the last event
-        outcome = (
-            pl.concat([lazy_combined_frame_outcomes, lazy_combined_frame_last_event_in_study])
-            .sort(["PRACTICE_ID", "PATIENT_ID", "DATE"])                                        # Sort to ensure date order within patients
-            .unique(subset=["PRACTICE_ID", "PATIENT_ID"], keep="first")                          # Keep chronologically last event experienced by patient
-        )
+        # If we do not require the outcome to have occurred - for example in survival cases where we are also interested in right-censored events
+        # For example:
+        #    if we are predicting the outcome of Hypertension, we are still interested in cases where an event has not occurred `yet`, but may still occur
+        #    e.g. a patient has experienced the index event, hypertension hasn't occurred within study period, but there is knowledge in knowing that
+        #    it has not occurred by the end of the study period.
+        if self._require_outcome is False:
+            
+            # Get last observation within study period
+            lazy_combined_frame_last_event_in_study = (
+                lazy_combined_frame
+                .filter(pl.col("DATE") <= pl.lit(self._study_period[1]).str.strptime(pl.Date, fmt="%F"))  # Only look at events within study period
+                .sort(["PRACTICE_ID", "PATIENT_ID", "DATE"])                                        # Sort to ensure date order within patients
+                .unique(subset=["PRACTICE_ID", "PATIENT_ID"], keep="last")                          # Keep chronologically last event experienced by patient
+            )
+        
+            # Take first between these - this will be the first outcome if one has occurred, otherwise the last event
+            outcome = (
+                pl.concat([lazy_combined_frame_outcomes, lazy_combined_frame_last_event_in_study])
+                .sort(["PRACTICE_ID", "PATIENT_ID", "DATE"])                                        # Sort to ensure date order within patients
+                .unique(subset=["PRACTICE_ID", "PATIENT_ID"], keep="first")                         # Keep chronologically last event experienced by patient
+            )
+            
+        else:
+            
+            # Take first of the valid outcomes 
+            outcome = (
+                lazy_combined_frame_outcomes
+                .sort(["PRACTICE_ID", "PATIENT_ID", "DATE"])                                        # Sort to ensure date order within patients
+                .unique(subset=["PRACTICE_ID", "PATIENT_ID"], keep="first")                         # Keep chronologically last event experienced by patient
+            )
 
-        # If this event occurs beyond 10 years beyond the index date, then replace with UNK event at index date + 10 years
-    
+            # Unlike the above case, where we know every patient will have a valid outcome, here some will now be excluded.
+            # Remove these patients from the `lazy_combined_frame` and `lazy_static` lazy frames
+            patients_with_valid_outcome = (
+                outcome
+                .select(pl.col('PATIENT_ID'))                                                       # get the patient list
+            )
+            patients_with_valid_outcome_list = patients_with_valid_outcome.collect().to_series().to_list()
+
+            lazy_combined_frame = lazy_combined_frame.filter(pl.col("PATIENT_ID").is_in(patients_with_valid_outcome_list))
+            lazy_static = lazy_static.filter(pl.col("PATIENT_ID").is_in(patients_with_valid_outcome_list))
+
+            # print(patients_with_valid_outcome_list)
+            # print(lazy_static.collect())
+            # print(lazy_combined_frame.collect())
+            # assert 1 ==0 
+        
         #############################################################
         # MERGE EVENTS UP TO AND INCLUDING INDEX, AND OUTCOME
         #############################################################
     
-        # Get events which occured before index (this is re-used later)
+        # Get events which occured before index
         lazy_combined_frame_before_index = (
             lazy_combined_frame
             .filter(pl.col('DATE') <= pl.col('INDEX_DATE'))
         )
         
         # and merge this with the events that occurred up to and including the index from the last section
-                # NOTE: As this is a vertical contatenation between the events, if for example, no outcome for a patient exists, then
-                #        the resulting combined frame will only contain one event for that patient which could lead to downstream problems.
-                #        This is not a problem currently as we filter out all patients without multiple events later.
         new_combined_frame = (
                 pl.concat([lazy_combined_frame_before_index, outcome])
                 .sort(["PRACTICE_ID", "PATIENT_ID", "DATE"])                                        # Sort to ensure date order within patients
             )
+        
+        return lazy_static, new_combined_frame
 
+    def _reduce_on_dynamic_events(self,
+                                 lazy_static,
+                                 lazy_combined_frame,):
+        
         #############################################################
-        # REMOVE PATIENTS WITH FEWER THAN MIN EVENTS (EXCLUDING OUTCOME)
+        # Remove patients with fewer than self._min_events events up to and including the index event.
         #############################################################
-        if self._min_events is not None:
-            patients_with_min_events = (
+        
+        minimum_dynamic_events = self._min_events if self._min_events is not None else 1
+
+        patients_with_min_events = (
                 lazy_combined_frame
-                .filter(pl.col('DATE') <= pl.col('INDEX_DATE'))
-                .with_columns(pl.col("EVENT"))
+                .filter(pl.col('DATE') <= pl.col('INDEX_DATE'))               # Look at first N-1 events (exclude outcome)
+                .with_columns(pl.col("EVENT"))                                
                 .groupby("PATIENT_ID")
-                .agg(pl.col("EVENT").count())
-                .filter(pl.col("EVENT")>=self._min_events)
+                .agg(pl.col("EVENT").count())                                 # Count the number of events experienced
+                .filter(pl.col("EVENT")>=minimum_dynamic_events)              # Only include patients with minimum requirement
                 .unique("PATIENT_ID")
                 .select(pl.col('PATIENT_ID'))
             )
-            
-            # and reduce original frames using this list
-            new_combined_frame = patients_with_min_events.join(new_combined_frame, on=["PATIENT_ID"], how="inner")  
-            lazy_static = patients_with_min_events.join(lazy_static, on=["PATIENT_ID"], how="inner")  
         
+        # and reduce original frames using this list
+        lazy_combined_frame = patients_with_min_events.join(lazy_combined_frame, on=["PATIENT_ID"], how="inner")  
+        lazy_static = patients_with_min_events.join(lazy_static, on=["PATIENT_ID"], how="inner")  
     
-        return lazy_static, new_combined_frame
+        return lazy_static, lazy_combined_frame

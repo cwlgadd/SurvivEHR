@@ -239,6 +239,7 @@ class FoundationalDataset(Dataset):
                  max_seq_length:               int = 256,
                  standardise_values:           bool = True,
                  global_diagnoses:             bool = False,
+                 repeating_events:             bool = True,
                  random_context_window:        bool = False,
                  time_scale:                   float=1825.0,                     # Scale by 5 years so when we model on a standardised time grid we look 5 years ahead
                  subsample:                    Optional[int] = None,
@@ -264,6 +265,10 @@ class FoundationalDataset(Dataset):
 
             global_diagnoses:
                 Whether to enforce all diagnoses are included in the context window
+
+            repeating_events:
+                Whether we allow repeated events. For example, if two Body Mass Index records exist then True retains both, whilst False keeps only the latest record.
+            
             random_context_window:
                 Whether to randomly sample context window (True) or use latest events (False)
 
@@ -278,6 +283,7 @@ class FoundationalDataset(Dataset):
         self.max_seq_length = max_seq_length
         self.standardise_values = standardise_values
         self.global_diagnoses = global_diagnoses 
+        self.repeating_events = repeating_events
         self.random_context_window = random_context_window
         self.meta_information = meta_information
         self.time_scale = time_scale
@@ -422,15 +428,23 @@ class FoundationalDataset(Dataset):
             # e.g. [6661, 7569, 7866, ...]
             sequence_ages.append(next_age)
 
+        # Optionally, keep only the last record of each event
+        if not self.repeating_events:
+            last_unique_indices  = sorted({x: i for i, x in enumerate(sequence_tokens)}.values())   # Get the indices of the last record of each seen event.
+            sequence_tokens = [sequence_tokens[i] for i in last_unique_indices]
+            sequence_values = [sequence_values[i] for i in last_unique_indices]
+            sequence_ages = [sequence_ages[i] for i in last_unique_indices]
+
         if not self.tokenizer.is_tabular:
-            # Merge together events and their values (and when value is None, do not include it)
-            #     E.g. events = ["bmi", "DEPRESSION", "bmi"] and values = [23.3, None, 27.7] --> merge to --> "bmi", "2", "3", ".", "3", "DEPRESSION", "bmi", "2", "7", ".", "7""
-            #          ages   = [6661, 7569, 7866] --> merge to --> [6661,6661,6661,6661,6661,7569, ...]
-            sequence_tokens = [[_event] + wrap(str(_value), 1) if _value is not np.nan else [_event] for _event, _value in zip(sequence_tokens, sequence_values)]
-            sequence_tokens = sum(sequence_tokens, [])        # concat list of lists            
-            sequence_ages = [[_age] + [_age for _ in range(len(str(_value)))] if _value is not np.nan else [_age] for _age, _value in zip(sequence_ages, sequence_values)]
-            sequence_ages = sum(sequence_ages, [])            # concat list of lists
-            sequence_values = [np.nan for _ in range(len(sequence_tokens))]
+            raise NotImplementedError
+            # # Merge together events and their values (and when value is None, do not include it)
+            # #     E.g. events = ["bmi", "DEPRESSION", "bmi"] and values = [23.3, None, 27.7] --> merge to --> "bmi", "2", "3", ".", "3", "DEPRESSION", "bmi", "2", "7", ".", "7""
+            # #          ages   = [6661, 7569, 7866] --> merge to --> [6661,6661,6661,6661,6661,7569, ...]
+            # sequence_tokens = [[_event] + wrap(str(_value), 1) if _value is not np.nan else [_event] for _event, _value in zip(sequence_tokens, sequence_values)]
+            # sequence_tokens = sum(sequence_tokens, [])        # concat list of lists            
+            # sequence_ages = [[_age] + [_age for _ in range(len(str(_value)))] if _value is not np.nan else [_age] for _age, _value in zip(sequence_ages, sequence_values)]
+            # sequence_ages = sum(sequence_ages, [])            # concat list of lists
+            # sequence_values = [np.nan for _ in range(len(sequence_tokens))]
 
         # Then encode the sequence
         ##########################
@@ -441,6 +455,7 @@ class FoundationalDataset(Dataset):
         else:
             start_pos = len(encoded_tokens)-self.max_seq_length if len(encoded_tokens) > self.max_seq_length else 0
         end_pos = start_pos + self.max_seq_length
+        
         # Get the diagnoses that we will (optionally) not be dropping, as these have life long implications        
         if self.global_diagnoses:
             # Replace the first X events with the diagnoses that occurred before this sampled context block

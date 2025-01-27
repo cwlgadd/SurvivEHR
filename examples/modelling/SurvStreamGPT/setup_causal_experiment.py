@@ -169,7 +169,7 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
         dirpath=cfg.experiment.ckpt_dir,
         filename=cfg.experiment.run_id,
         verbose=cfg.experiment.verbose,
-        monitor="val_loss_desurv",
+        monitor="val_loss",
     )
 
     lr_monitor = pl.callbacks.LearningRateMonitor(logging_interval='step')
@@ -196,12 +196,16 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
         )
         callbacks.append(early_stop_callback)
 
-    # Add callbacks which apply to outcome prediction tasks (currently numerically unstable to evaluate)
-    # metric_callback = PerformanceMetrics(log_ctd=True,
-    #                                      log_ibs=True,
-    #                                      log_inbll=True
-    #                                      )
-    # callbacks.append(metric_callback)
+    # Add callbacks which apply to outcome prediction tasks- should already be sorted, but sort again 
+    #   NOTE: by default the tokenizer already orders them by frequency, and so prevelance_based_risk_score
+    #         will just be an ordered list
+    event_counts = dm.tokenizer._event_counts.sort("FREQUENCY", descending=False)
+    prevelance_based_risk_score = []
+    for row in event_counts.rows(named=True):
+        next_most_prevalent_k = dm.encode([row["EVENT"]])[0]
+        prevelance_based_risk_score.append(next_most_prevalent_k)
+    metric_callback = PerformanceMetrics(prevelance_based_risk_score, log_concordance=True)
+    callbacks.append(metric_callback)
 
     _trainer = pl.Trainer(
         logger=logger,

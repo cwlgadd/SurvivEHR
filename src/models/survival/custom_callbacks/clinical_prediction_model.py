@@ -126,7 +126,7 @@ class PerformanceMetrics(Callback):
                      _pl_module,
                      batch,
                      log_name:               str='Metrics',
-                     plot_outcome_curves = False,
+                     plot_outcome_curves:    bool=False,
                     ):
 
         # Make prediction of each survival curve
@@ -136,7 +136,6 @@ class PerformanceMetrics(Callback):
         
         target_tokens = batch['target_token'].cpu().numpy()
         target_ages = batch['target_age_delta'].cpu().numpy()
-        target_values = batch['target_value'].cpu().numpy()
 
         # Log records for individual outcomes
         ######################################

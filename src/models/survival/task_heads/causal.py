@@ -16,7 +16,9 @@ class SurvStreamGPTForCausalModelling(nn.Module):
     
     def __init__(self, 
                  cfg,
-                 vocab_size):
+                 vocab_size,
+                 use_adapter=False,
+                ):
         super().__init__()
         
         total_weight = cfg.head.surv_weight + cfg.head.value_weight
@@ -28,7 +30,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         self.n_embd_per_head = cfg.transformer.n_embd // cfg.transformer.n_head                   # How many of these dimensions belong to each head
         self.n_embd_private = cfg.transformer.private_heads * self.n_embd_per_head                # and how many of these dimensions are private
         
-        self.transformer = TTETransformer(cfg, vocab_size)
+        self.transformer = TTETransformer(cfg, vocab_size, use_adapter=use_adapter)
 
         match cfg.head.SurvLayer.lower():
             # Removing padding token from vocab size as this is not considered an event in either case.
@@ -36,7 +38,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                 raise NotImplementedError    #  this has been replaced with a SingleRisk layer, which must now be wrapped with a new class for the causal case
                 # self.surv_layer = ODESurvSingleRiskLayer(self.n_embd - self.n_embd_private, [], num_risks=vocab_size - 1, device="cuda")
             case "competing-risk" | "cr":
-                self.surv_layer = ODESurvCompetingRiskLayer(self.n_embd - self.n_embd_private, [], num_risks=vocab_size - 1, device="cuda")
+                self.surv_layer = ODESurvCompetingRiskLayer(self.n_embd - self.n_embd_private, [32, 32], num_risks=vocab_size - 1, device="cuda")    # 32
             case _:
                 raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
 
@@ -44,7 +46,8 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         # Regression layers, create a separate regression layer for each measurement
         #   In the case we want to include private_heads, then 
         self.value_layer = GaussianRegressionLayer(self.n_embd - self.n_embd_private,
-                                                   measurement_tokens=cfg.head.tokens_for_univariate_regression
+                                                   measurement_tokens=cfg.head.tokens_for_univariate_regression,
+                                                   base_hidden_dim=32,  # None
                                                    )
 
         # apply special scaled init to the residual projections, per GPT-2

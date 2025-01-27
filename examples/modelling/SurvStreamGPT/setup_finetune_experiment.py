@@ -20,25 +20,55 @@ class FineTuneExperiment(pl.LightningModule):
                  cfg,
                  outcome_tokens,
                  risk_model,         # 'single-risk', 'competing-risk', or (TODO) False (for case of predicting value but not survival risk)
-                 pretrained_model=None,
                  vocab_size=265,
-                 freeze_body=False
+                 use_adapter=False    # If True, we freeze the body and use an `Adapter` module to allow parameter efficient fine-tuning. If False, we train all parameters
                 ):
         
         super().__init__()
         self.save_hyperparameters()        
         self.cfg = cfg
-        self.model = pretrained_model if pretrained_model is not None else SurvStreamGPTForCausalModelling(cfg, vocab_size)
+        self.use_adapter = use_adapter
 
+        # Load the pre-trained Transformer
+        adapter_dim = cfg.transformer.adapter_dim if use_adapter is True else False
+        self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size, use_adapter=adapter_dim)
+
+        # Approaches for freezing the pre-trained model body whilst fine-tuning the new head
+        if self.use_adapter is True:
+            logging.info(f"Fixing Transformer parameters and fine-tuning using an Adapter mechanism.")
+            for name, param in self.model.named_parameters():
+                if "adapter" in name.lower() or "ln_" in name.lower():
+                    # If parameter is in adapter or a layer_norm then fine-tune it
+                    param.requires_grad = True
+                else:
+                    # If the parameter is in the body, fix it.
+                    param.requires_grad = False
+                    
+        elif self.use_adapter == "fix":
+            logging.info(f"Fixing Transformer parameters.")
+            for name, param in self.model.named_parameters():
+                if ("ln_" in name.lower()
+                    or "layernorm" in name.lower()                     
+                   ):
+                    # If parameter is in a layer_norm then allow fine-tuning it
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+                
+        else:
+            logging.info(f"Training all Transformer parameters")
+            for name, param in self.model.named_parameters():
+                param.requires_grad = True
+                    
         # Replace survival head
+        hidden_dimensions = self.model.n_embd - self.model.n_embd_private
         match risk_model.replace('-', '').replace(' ', '').lower():
-
             case "singlerisk" | "sr":
                 # Combine each of the given outcomes into a single event, and treat it as a single risk
                 # e.g. This could be a single event, or all events that constitute some form of umbrella, e.g. cardiovascular disease
                 self.surv_layer = ODESurvSingleRiskLayer(
                     outcome_tokens,
-                    self.model.n_embd - self.model.n_embd_private, [32,32], device="cuda"
+                    hidden_dimensions, [32, 32], device="cuda"
                 )
                 
                 # Create a method which reduces from the causal k={1,2,3,4,5,...} form to the single risk form k={\null, 1}
@@ -47,7 +77,7 @@ class FineTuneExperiment(pl.LightningModule):
             case "competingrisk" | "cr":
                 # Treat each risk as a competing risk
                 self.surv_layer = ODESurvCompetingRiskLayer(
-                    self.model.n_embd - self.model.n_embd_private, [32,32], num_risks=len(outcome_tokens), device="cuda"
+                    hidden_dimensions, [32, 32], num_risks=len(outcome_tokens), device="cuda"
                 )
                 
                 # Create a method which reduces from the causal k={1,2,3,4,5,...} form to the competing risk form k={1,2,3,..., K}
@@ -56,15 +86,7 @@ class FineTuneExperiment(pl.LightningModule):
             case _:
                 raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
 
-        # Freeze the pre-trained model body and only fine-tune the new head
-        self.freeze_body = freeze_body
-        if self.freeze_body:
-            logging.info(f"Fixing Transformer parameters and training only new head.")
-            for name, param in self.model.named_parameters():
-                param.requires_grad = False
-
-        self.dropout = torch.nn.Dropout(p=0.0)
-
+        
     def forward(self, batch, is_generation=False, return_loss=True, return_generation=False):
         # Because of how DeSurv is coded we have the loss returned in the forward, so we have some redundancy
 
@@ -90,8 +112,6 @@ class FineTuneExperiment(pl.LightningModule):
                                                 attention_mask=attention_mask
                                                 )
 
-        hidden_states = self.dropout(hidden_states)
-
         # Convert attention mask to a mask which we can use to predict only the final transition
         #   this mask is 1 if last observation, 0 otherwise. This ensures we can only push the last observation through.
         #   this is required because of padding leaving variable sequence lengths
@@ -109,7 +129,6 @@ class FineTuneExperiment(pl.LightningModule):
         # Note, we add the hidden state again as the padding target, as in generation this will be what is forwarded
         in_hidden_state = torch.stack((in_hidden_state, in_hidden_state), axis=1)         # bsz, seq_len=2, embd_dim
 
-        
         # The target states, made of a padded zero, and the target states
         target_tokens = torch.hstack((torch.zeros((bsz,1), device=self.device), target_token))              # bsz, seq_len=2
 
@@ -199,9 +218,9 @@ class FineTuneExperiment(pl.LightningModule):
         lr_scheduler_config = {
             "frequency": freq,                                                          # How many epochs/steps should pass between calls to `scheduler.step()`
             "scheduler": scheduler,                                                     # The scheduler instance
-            "interval": "step",                                                         # The unit of the scheduler's step size
+            "interval": "epoch",         #step                                                # The unit of the scheduler's step size
             "monitor": "val_loss",                                                      # Metric to monitor for scheduler, if needed
-            "strict": False,                                                            # Enforce that "val_loss" is available when the scheduler is updated
+            "strict": True,              #False                                              # Enforce that "val_loss" is available when the scheduler is updated
             "name": 'Scheduler',                                                        # For `LearningRateMonitor`, specify a custom logged name
         }
         return {
@@ -230,11 +249,11 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
         case "load_from_pretrain":
             assert checkpoint is not None
             logging.info(f"Loading pre-trained model from checkpoint from {checkpoint}.")
-            finetune_experiment = FineTuneExperiment.load_from_checkpoint(checkpoint, cfg=cfg, outcome_tokens=outcome_tokens, risk_model=risk_model, freeze_body=True, strict=False)
+            finetune_experiment = FineTuneExperiment.load_from_checkpoint(checkpoint, cfg=cfg, outcome_tokens=outcome_tokens, risk_model=risk_model, use_adapter=cfg.transformer.use_fine_tune_adapter, strict=False)
         case "no_load":
+            assert cfg.transformer.use_fine_tune_adapter is False, "If fine-tuning from scratch do not freeze any Transformer parameters through the adapter module."
             logging.info(f"Fine-tuning from scratch")
-            # causal_experiment = CausalExperiment(cfg=cfg, vocab_size=264)
-            finetune_experiment = FineTuneExperiment(cfg, outcome_tokens, risk_model=risk_model) 
+            finetune_experiment = FineTuneExperiment(cfg, outcome_tokens, risk_model=risk_model, use_adapter=False, ) 
         case _:
             raise NotImplementedError
             
@@ -263,12 +282,11 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
     test_batch = next(iter(dm.test_dataloader()))
     
     # Hidden state embedding
-    if not finetune_experiment.freeze_body:
-        logging.debug("Creating hidden state embedding callback: We are fine-tuning the entire model and so latent embeddings will be changed")
-        embedding_callback = Embedding(val_batch=val_batch,
-                                       test_batch=test_batch
-                                      )
-        callbacks.append(embedding_callback)
+    logging.debug("Creating hidden state embedding callback")
+    embedding_callback = Embedding(val_batch=val_batch,
+                                   test_batch=test_batch
+                                  )
+    callbacks.append(embedding_callback)
 
     if cfg.optim.early_stop:
         logging.debug("Creating early stopping callback")
@@ -310,6 +328,8 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
         val_check_interval=cfg.optim.val_check_interval,
         limit_val_batches=cfg.optim.limit_val_batches,
         limit_test_batches=cfg.optim.limit_test_batches,
+        accumulate_grad_batches=cfg.optim.accumulate_grad_batches,
+        # gradient_clip_val=0.5
     )
 
     return finetune_experiment, FineTuneExperiment, _trainer

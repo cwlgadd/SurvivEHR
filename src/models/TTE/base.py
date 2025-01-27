@@ -59,7 +59,7 @@ class TTETransformer(nn.Module, ModuleUtilsMixin):
     
     TODO: ModuleUtilsMixin can be inherited from PreTrainedModel instead later
     """
-    def __init__(self, cfg, vocab_size):
+    def __init__(self, cfg, vocab_size, use_adapter=False):
         super().__init__()
         self.cfg = cfg
         self.config = cfg
@@ -79,13 +79,13 @@ class TTETransformer(nn.Module, ModuleUtilsMixin):
             case "neo":
                 Block = NeoBlock
             case "nano": 
+                # Deprecated 
+                raise NotImplementedError
                 Block = NanoBlock
-            case "hybrid": 
-                Block = HybridBlock
             case _:
                 raise ValueError(f"Transformer block must be either 'Neo' or 'Nano'")
         self.drop = torch.nn.Dropout(p=cfg.transformer.dropout) if cfg.transformer.dropout is not None else None      # embed dropout
-        self.blocks = nn.ModuleList([Block(cfg) for _ in range(cfg.transformer.n_layer)])
+        self.blocks = nn.ModuleList([Block(cfg, use_adapter=use_adapter) for _ in range(cfg.transformer.n_layer)])
         self.ln_f = nn.LayerNorm(self.embed_dim, eps=layer_norm_epsilon)
 
         # init all weights  

@@ -20,8 +20,8 @@ def run(cfg : DictConfig):
     # Create logger
     log_id = cfg.experiment.run_id
     if cfg.experiment.fine_tune_id is not None:
-        log_id += "_" + cfg.experiment.fine_tune_id + "_a"
-    logger = pl.loggers.WandbLogger(project=cfg.experiment.project_name, name=log_id, save_dir=cfg.experiment.log_dir)
+        log_id += "_" + cfg.experiment.fine_tune_id
+    logger = pl.loggers.WandbLogger(project=cfg.experiment.project_name, name=log_id, save_dir=cfg.experiment.log_dir, notes=cfg.experiment.notes, tags=cfg.experiment.tags)
     logging.basicConfig(level=logging.DEBUG)
     
     # Global settings
@@ -41,6 +41,7 @@ def run(cfg : DictConfig):
                                 batch_size=cfg.data.batch_size,
                                 max_seq_length=cfg.transformer.block_size,
                                 global_diagnoses=cfg.data.global_diagnoses,
+                                repeating_events=cfg.data.repeating_events,
                                 freq_threshold=cfg.data.unk_freq_threshold,
                                 min_workers=cfg.data.min_workers,
                                 overwrite_meta_information=cfg.data.meta_information_path,
@@ -77,12 +78,13 @@ def run(cfg : DictConfig):
                 # Load existing experiment from checkpoint
                 logging.info(f"Loading a pre-trained model with the checkpoint path {pre_trained_ckpt_path}.")
 
-                # Catch cases where user loads a pre-trained model and tries to pre-train it further, as this edge case is not supported 
+                # Catch cases where user loads a pre-trained model to pre-train it further
                 #   (it will result in checkpointing to a new pre_train_ckpt-V2.ckpt file and then re-loading the original after training)
                 if cfg.experiment.train:
-                    raise FileExistsError(f"Further training on a checkpoint is not supported.")
+                    logging.warning(f"Further training on a checkpoint {pre_trained_ckpt_path} which will create a new checkpoint. Ensure evaluation is not on the original checkpoint.")
                     
                 load_from_checkpoint = pre_trained_ckpt_path
+                new_checkpoint = None  # Not implemented a versioning control on iterative checkpointing
                 
             else:
                 # Create new experiment
@@ -93,6 +95,7 @@ def run(cfg : DictConfig):
                 
                 logging.info(f"# This will create / evaluate a pre-trained Foundation Model on a causal (next-event prediction) modelling task.")
                 load_from_checkpoint = None
+                new_checkpoint = pre_trained_ckpt_path
                 
             experiment_instance, Experiment, trainer = setup_causal_experiment(cfg=cfg, 
                                                                                dm=dm, 
@@ -100,9 +103,7 @@ def run(cfg : DictConfig):
                                                                                checkpoint=load_from_checkpoint,
                                                                                logger=logger
                                                                               )
-            new_checkpoint = pre_trained_ckpt_path
 
-            
         case "zeroshot":
             # Evaluate an existing pre-trained experiment
             logging.info("="*100)

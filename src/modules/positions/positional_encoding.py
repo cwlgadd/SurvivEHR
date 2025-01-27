@@ -85,8 +85,8 @@ class TemporalPositionalEncoding(torch.nn.Module):
 
         # pre-compute positional encoding matrix. 
         div_term = torch.exp(torch.arange(0, encoding_dim, 2) * (-math.log(n_scalar) / encoding_dim))
-        # We assume that positions are scaled (in SurvivEHR this is a 5 year scale). Consequently we also scale the encoding to something reasonable
-        div_term *= 1000
+        # We assume that time positions are scaled by year (in our CPRD example this is a 5 year scale). Unscale here to an order of days
+        div_term *= 5*365
         self.div_term = torch.nn.Parameter(div_term, requires_grad=False)
 
         logging.info("Using Temporal Positional Encoding. This module uses the patient's age at an event within their time series.")
@@ -105,11 +105,11 @@ class TemporalPositionalEncoding(torch.nn.Module):
 
         bsz, seq_len = ages.shape
         ages = ages.unsqueeze(-1)                    # Unsqueeze for broadcasting through the encoding dim
- 
+        
         temporal_encodings = torch.zeros(bsz, seq_len, self.encoding_dim, device=ages.device)
         temporal_encodings[:, :, 0::2] = torch.sin(ages * self.div_term.unsqueeze(0).unsqueeze(0))    # [bsz, seq_len, 1] * [1, 1, encoding_dim / 2]
         temporal_encodings[:, :, 1::2] = torch.cos(ages * self.div_term.unsqueeze(0).unsqueeze(0))
-        
+
         return temporal_encodings
     
 

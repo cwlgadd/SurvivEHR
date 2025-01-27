@@ -11,39 +11,66 @@ from CPRD.src.models.survival.custom_callbacks.clinical_prediction_model import 
 import os
 # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
+def reset_module_parameters(module: torch.nn.Module):
+    for child in module.children():
+        reset_module_parameters(child)
+        if hasattr(child, 'reset_parameters'):
+            child.reset_parameters()
+
 class FewShotExperiment(pl.LightningModule):
 
     def __init__(self,
                  cfg,
                  vocab_size,
-                 freeze_body=False
+                 use_adapter=False    # If True, we freeze the body and use an `Adapter` module to allow parameter efficient fine-tuning. If False, we train all parameters
                 ):
         
         super().__init__()
         self.save_hyperparameters()
         self.cfg = cfg
-        self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size)
+        self.use_adapter = use_adapter
 
-        self.freeze_body = freeze_body
-        if self.freeze_body:
-            logging.info(f"Fixing Transformer parameters and training only head.")
+        # Pre-trained Transformer
+        adapter_dim = cfg.transformer.adapter_dim if use_adapter is True else False
+        self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size, use_adapter=adapter_dim)
+                    
+        # Freeze the pre-trained model body and only fine-tune the new head
+        if self.use_adapter:
+            logging.info(f"Fixing Transformer parameters and fine-tuning using an Adapter mechanism.")
             for name, param in self.model.named_parameters():
-                if "surv_layer" not in name:
-                    # If the parameter is in the body, retain it and fix it.
+                if ("adapter" in name.lower() 
+                    or "ln_" in name.lower()
+                    or "layernorm" in name.lower()                     
+                    or "surv_layer" in name.lower() 
+                    or "value_layer" in name.lower()
+                   ):
+                    # If parameter is in adapter or a layer_norm then fine-tune it
+                    param.requires_grad = True
+                else:
+                    # If the parameter is in the body, fix it.
                     param.requires_grad = False
+        else:
+            logging.info(f"Training all Transformer parameters")
+            for name, param in self.model.named_parameters():
+                param.requires_grad = True
                     
     def _reinit_weights(self):
         # Else, if it is in the (pre-train architecure) head, re-initialise and re-train. 
         #    This is important in the Few-Shot setting to not get stuck in local optima.
         #    As we transition from the task of predicting the `next` event risk, to the 
         #    task of predicting risk within X years, the time-scales vary drastically.
-        logging.info(f"Re-initialising survival head parameters.")
+        logging.info(f"Re-initialising value/survival head parameters.")
+        # reset_module_parameters(self.model.surv_layer)
+        # reset_module_parameters(self.model.value_layer)
         for name, param in self.model.named_parameters():
-            if "surv_layer" in name:
+            if "surv_layer" in name or "value_layer" in name:
                 if param.dim() > 1:              # weight parameters 
                     torch.nn.init.xavier_uniform_(param)
                 else:
                     torch.nn.init.zeros_(param)  # Initialize biases or other 1D parameters
+            else:
+                # Transformer params
+                pass
 
     def forward(self, batch, return_loss=True, return_generation=False):
 
@@ -85,7 +112,8 @@ class FewShotExperiment(pl.LightningModule):
             loss = torch.sum(torch.stack(losses_desurv))         # losses are returned as a list, as the Single-Risk head is many DeSurv models in parallel, combine
 
             if torch.isnan(loss):
-                logging.warning(f"Invalid loss {loss}: with target tokens {target_tokens}, target values {target_values} and target ages {target_ages}")
+                logging.warning(f"Invalid loss {loss}: with target tokens {target_token}, target values {target_value} and target ages {target_age_delta}")
+                logging.warning(f"DeSurv losses {losses_desurv}")
                 logging.warning(f"from hidden state {torch.sum(in_hidden_state, axis=2)/128}")
                 raise NotImplementedError
         else:
@@ -112,6 +140,9 @@ class FewShotExperiment(pl.LightningModule):
         return loss_dict['loss'] 
 
     def configure_optimizers(self):
+
+        # parameters = self.parameters_head if self.freeze_body else self.parameters()
+        # optimizer = torch.optim.AdamW(parameters, lr=self.cfg.optim.learning_rate)
 
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.cfg.optim.learning_rate)
 
@@ -173,13 +204,13 @@ def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
 
     if checkpoint is not None:
         logging.info("Loading from checkpoint")
-        fewshot_experiment = FewShotExperiment.load_from_checkpoint(checkpoint, cfg=cfg, freeze_body=True)
+        use_adapter = cfg.transformer.use_fine_tune_adapter
+        fewshot_experiment = FewShotExperiment.load_from_checkpoint(checkpoint, cfg=cfg, use_adapter=use_adapter, strict=not use_adapter)
         if cfg.experiment.train:
-            logging.info("Re-initialising survival head weights")
-            fewshot_experiment._reinit_weights()
+            fewshot_experiment._reinit_weights()                        # Re-initialise the survival head weights
     else:
         logging.info("Creating new experiment")
-        fewshot_experiment = FewShotExperiment(cfg=cfg, vocab_size=vocab_size, freeze_body=False)
+        fewshot_experiment = FewShotExperiment(cfg=cfg, vocab_size=vocab_size, use_adapter=False)
     logging.debug(fewshot_experiment)
 
     # Initialize wandb logger
@@ -217,13 +248,12 @@ def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
     ######################
     # Hidden state embedding
     #    as we are fine-tuning the entire model the latent embeddings will be changed
-    if not fewshot_experiment.freeze_body:
-        logging.debug("Creating hidden state embedding callback.")
-        # We do not want to plot every single validation/test sample, so pass in a batch of each
-        embedding_callback = Embedding(val_batch=next(iter(dm.val_dataloader())),
-                                       test_batch=next(iter(dm.test_dataloader()))
-                                      )
-        callbacks.append(embedding_callback)
+    logging.debug("Creating hidden state embedding callback.")
+    # We do not want to plot every single validation/test sample, so pass in a batch of each
+    embedding_callback = Embedding(val_batch=next(iter(dm.val_dataloader())),
+                                   test_batch=next(iter(dm.test_dataloader()))
+                                  )
+    callbacks.append(embedding_callback)
         
     # Early stopping callback
     if cfg.optim.early_stop:
@@ -244,6 +274,8 @@ def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
         val_check_interval=cfg.optim.val_check_interval,
         limit_val_batches=cfg.optim.limit_val_batches,
         limit_test_batches=cfg.optim.limit_test_batches,
+        accumulate_grad_batches=cfg.optim.accumulate_grad_batches,
+        # gradient_clip_val=0.5
     )
 
     return fewshot_experiment, FewShotExperiment, _trainer

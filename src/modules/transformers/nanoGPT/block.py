@@ -40,10 +40,12 @@ class Block(nn.Module):
     """
     architecture from: https://github.com/karpathy/nanoGPT/blob/master/model.py
     """
-    def __init__(self, cfg):
+    def __init__(self, cfg, use_adapter=False):
         """
         """
         super().__init__()
+        assert use_adapter is False, "Adapter is not implemented for Nano architecture"
+        
         self.ln_1 = LayerNorm(cfg.transformer.n_embd, bias=cfg.transformer.layer_norm_bias)
         self.attn = MultiHeadedSelfAttention(cfg)
         self.ln_2 = LayerNorm(cfg.transformer.n_embd, bias=cfg.transformer.layer_norm_bias)

@@ -90,7 +90,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 3,
+   "execution_count": 4,
    "metadata": {},
    "outputs": [
     {
@@ -188,7 +188,7 @@
       "0.21102227598165343\n",
       "1.3744715215274252\n",
       "1.0762837222632102\n",
-      "0.12590238\n",
+      "0.12590231\n",
       "0.0005474090576171875\n",
       "4.402192115783691\n",
       "(array([0, 1]), array([28325,  7433]))\n"
@@ -200,7 +200,7 @@
        "dict_keys(['X_train', 'y_train', 'X_val', 'y_val', 'X_test', 'y_test'])"
       ]
      },
-     "execution_count": 3,
+     "execution_count": 4,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -252,7 +252,7 @@
     "\n",
     "    case \"hypertension\" | \"cvd\":\n",
     "        \n",
-    "        with open(f'/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_{dataset}/CrossSectionalData.pickle', \"rb\") as handle:\n",
+    "        with open(f'/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_{dataset}/benchmark_data/all.pickle', \"rb\") as handle:\n",
     "            data = pickle.load(handle)\n",
     "        \n",
     "        # display(data[\"X_train\"].head())\n",
@@ -326,7 +326,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 4,
+   "execution_count": 5,
    "metadata": {},
    "outputs": [
     {
@@ -334,8 +334,8 @@
      "output_type": "stream",
      "text": [
       "<class 'numpy.ndarray'>\n",
-      "[(False, 1.96876717) (False, 2.2164402 ) (False, 0.77205467)\n",
-      " (False, 1.29315042) (False, 0.07013702)]\n",
+      "[(False, 2.27561665) (False, 1.58904171) (False, 0.39890385)\n",
+      " (False, 0.59397316) (False, 0.46027374)]\n",
       "[( True, 1.11616468) (False, 0.34082222) (False, 2.12383461)\n",
       " (False, 1.8065753 ) (False, 0.76219177)]\n"
      ]
@@ -363,7 +363,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 5,
+   "execution_count": 6,
    "metadata": {},
    "outputs": [
     {
@@ -779,7 +779,7 @@
        "RandomSurvivalForest(max_samples=1000, random_state=20)"
       ]
      },
-     "execution_count": 5,
+     "execution_count": 6,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -791,8 +791,10 @@
     "\n",
     "rsf = RandomSurvivalForest(\n",
     "    # n_estimators=100, min_samples_split=10, min_samples_leaf=15, n_jobs=-1, \n",
-    "    bootstrap=True, max_samples=1000,    \n",
-    "    random_state=random_state, low_memory=False\n",
+    "    bootstrap=True,\n",
+    "    max_samples=1000,    \n",
+    "    random_state=random_state,\n",
+    "    low_memory=False\n",
     ")\n",
     "rsf.fit(x_train, y_train)\n"
    ]
@@ -823,19 +825,19 @@
     {
      "data": {
       "text/plain": [
-       "array([[1.        , 1.        , 0.99991667, ..., 0.45752568, 0.45752568,\n",
-       "        0.45752568],\n",
-       "       [1.        , 1.        , 1.        , ..., 0.8550001 , 0.8550001 ,\n",
-       "        0.8550001 ],\n",
-       "       [1.        , 1.        , 1.        , ..., 0.75860176, 0.75860176,\n",
-       "        0.75860176],\n",
+       "array([[1.        , 1.        , 0.99973247, ..., 0.47307705, 0.47307705,\n",
+       "        0.47307705],\n",
+       "       [1.        , 1.        , 1.        , ..., 0.87283333, 0.87283333,\n",
+       "        0.87283333],\n",
+       "       [1.        , 1.        , 0.9975    , ..., 0.78299287, 0.78299287,\n",
+       "        0.78299287],\n",
        "       ...,\n",
-       "       [0.99971429, 0.99871429, 0.99871429, ..., 0.68479718, 0.68479718,\n",
-       "        0.68479718],\n",
-       "       [1.        , 0.99857143, 0.99703734, ..., 0.53051778, 0.53051778,\n",
-       "        0.53051778],\n",
-       "       [1.        , 1.        , 0.998     , ..., 0.69425414, 0.69425414,\n",
-       "        0.69425414]])"
+       "       [1.        , 1.        , 0.99969697, ..., 0.74767457, 0.74767457,\n",
+       "        0.74767457],\n",
+       "       [1.        , 1.        , 1.        , ..., 0.5851907 , 0.5851907 ,\n",
+       "        0.5851907 ],\n",
+       "       [1.        , 1.        , 1.        , ..., 0.63999841, 0.63999841,\n",
+       "        0.63999841]])"
       ]
      },
      "metadata": {},
@@ -873,17 +875,36 @@
     }
    ],
    "source": [
-    "for fn in surv_funcs:\n",
-    "   plt.step(fn.x, fn(fn.x), where=\"post\")"
+    "# for fn in surv_funcs:\n",
+    "#    plt.step(fn.x, fn(fn.x), where=\"post\")"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": null,
+   "execution_count": 9,
    "metadata": {},
-   "outputs": [],
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Evaluating survival metrics\n"
+     ]
+    },
+    {
+     "ename": "NameError",
+     "evalue": "name 'lbls' is not defined",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mNameError\u001b[0m                                 Traceback (most recent call last)",
+      "Cell \u001b[0;32mIn [9], line 5\u001b[0m\n\u001b[1;32m      1\u001b[0m \u001b[38;5;66;03m# surv = pd.DataFrame(np.transpose((1 - cdf.reshape((x_test.shape[0],t_eval.size)))), index=t_eval)\u001b[39;00m\n\u001b[1;32m      2\u001b[0m \n\u001b[1;32m      3\u001b[0m \u001b[38;5;66;03m# Evaluate surv curve with unscaled index with unscaled test times to event \u001b[39;00m\n\u001b[1;32m      4\u001b[0m \u001b[38;5;28mprint\u001b[39m(\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mEvaluating survival metrics\u001b[39m\u001b[38;5;124m\"\u001b[39m)\n\u001b[0;32m----> 5\u001b[0m ev \u001b[38;5;241m=\u001b[39m EvalSurv(surv, t_test, \u001b[43mlbls\u001b[49m, censor_surv\u001b[38;5;241m=\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mkm\u001b[39m\u001b[38;5;124m'\u001b[39m)\n\u001b[1;32m      7\u001b[0m \u001b[38;5;28mprint\u001b[39m(ev\u001b[38;5;241m.\u001b[39mconcordance_td())\n\u001b[1;32m      8\u001b[0m \u001b[38;5;28mprint\u001b[39m(ev\u001b[38;5;241m.\u001b[39mintegrated_brier_score(time_grid))\n",
+      "\u001b[0;31mNameError\u001b[0m: name 'lbls' is not defined"
+     ]
+    }
+   ],
    "source": [
-    "surv = pd.DataFrame(np.transpose((1 - cdf.reshape((x_test.shape[0],t_eval.size)))), index=t_eval)\n",
+    "# surv = pd.DataFrame(np.transpose((1 - cdf.reshape((x_test.shape[0],t_eval.size)))), index=t_eval)\n",
     "\n",
     "# Evaluate surv curve with unscaled index with unscaled test times to event \n",
     "print(\"Evaluating survival metrics\")\n",

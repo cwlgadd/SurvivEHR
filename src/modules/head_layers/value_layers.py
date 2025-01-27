@@ -21,7 +21,7 @@ class GaussianRegressionLayer(torch.nn.Module):
     def __init__(self,
                  in_dim: int,
                  measurement_tokens: Optional[list[int]] = None,
-                 # base_hidden_dim: Optional[int] = None
+                 base_hidden_dim: Optional[int] = None
                 ):
         super().__init__()
         
@@ -30,14 +30,14 @@ class GaussianRegressionLayer(torch.nn.Module):
 
         # Optional shared base layers for each of the values predicted. 
         # This all results in a FC head. Structured like this as we want a dictionary module for easier code readability
-        # if base_hidden_dim is not None:
-        #     self.base_regression_layer = nn.Sequential(
-        #                 nn.Linear(in_dim, base_hidden_dim),
-        #                 nn.ReLU(),
-        #                 nn.Linear(base_hidden_dim, base_hidden_dim),
-        #                 nn.ReLU()
-        #     )
         self.base_regression_layer = None
+        if base_hidden_dim is not None:
+            self.base_regression_layer = nn.Sequential(
+                        nn.Linear(in_dim, base_hidden_dim),
+                        nn.ReLU(),
+                        nn.Linear(base_hidden_dim, base_hidden_dim),
+                        nn.ReLU()
+            )
         
         # Create a separate network for each separate univariate Gaussian measurement that will be predicted
         self.regression_layers = torch.nn.ModuleDict({})
@@ -49,13 +49,13 @@ class GaussianRegressionLayer(torch.nn.Module):
                 if self.token_key(token) in self.regression_layers:
                     raise ValueError(f"{self.token_key(token)} duplicated in configuration")
 
-                # if base_hidden_dim is None:
-                self.regression_layers[self.token_key(token)] = torch.nn.Linear(in_dim, 2)
-                # else:
-                #     self.regression_layers[self.token_key(token)] = nn.Sequential(
-                #         self.base_regression_layer,
-                #         torch.nn.Linear(base_hidden_dim, 2)
-                #     )
+                if base_hidden_dim is None:
+                    self.regression_layers[self.token_key(token)] = torch.nn.Linear(in_dim, 2)
+                else:
+                    self.regression_layers[self.token_key(token)] = nn.Sequential(
+                        self.base_regression_layer,
+                        torch.nn.Linear(base_hidden_dim, 2)
+                    )
         
         logging.debug(f"Value base regression layer {self.base_regression_layer} " + \
                       f"regression layers {self.regression_layers}")
