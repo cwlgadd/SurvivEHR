@@ -1,0 +1,32 @@
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Sat Nov 30 04:01:31 2024 for gaddcz(836045)
+| Identity jobid 15551653 jobname sbatch
+| Running against project subramaa-mum-predict and in partition icelake-gpua100-shared
+| Requested cpu=56,mem=224G,node=1,billing=56,gres/gpu=1 - 17:30:00 walltime
+| Assigned to nodes bear-pg0208u23a
+| Command (null)
+| WorkDir /rds/homes/g/gaddcz/ondemand/data/sys/myjobs/projects/default/16
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Sat Nov 30 14:47:01 2024 for gaddcz(836045) on the BlueBEAR Cluster
+| Required (00:39.683 cputime, 6580913K memory used) - 10:45:30 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:15
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Sat Nov 30 14:49:09 2024 for gaddcz(836045)
+| Identity jobid 15596796 jobname sbatch
+| Running against project subramaa-mum-predict and in partition icelake-gpua100-shared
+| Requested cpu=56,mem=224G,node=1,billing=56,gres/gpu=1 - 17:30:00 walltime
+| Assigned to nodes bear-pg0208u04a
+| Command (null)
+| WorkDir /rds/homes/g/gaddcz/ondemand/data/sys/myjobs/projects/default/16
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Sun Dec  1 05:39:41 2024 for gaddcz(836045) on the BlueBEAR Cluster
+| Required (06:51:17 cputime, 10780797K memory used) - 14:50:33 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+

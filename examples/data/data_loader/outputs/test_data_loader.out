@@ -1,173 +1,0 @@
-GCCcore/11.3.0
-zlib/1.2.12-GCCcore-11.3.0
-binutils/2.38-GCCcore-11.3.0
-GCC/11.3.0
-numactl/2.0.14-GCCcore-11.3.0
-XZ/5.2.5-GCCcore-11.3.0
-libxml2/2.9.13-GCCcore-11.3.0
-libpciaccess/0.16-GCCcore-11.3.0
-hwloc/2.7.1-GCCcore-11.3.0
-OpenSSL/1.1
-libevent/2.1.12-GCCcore-11.3.0
-UCX/1.12.1-GCCcore-11.3.0
-libfabric/1.15.1-GCCcore-11.3.0
-PMIx/4.1.2-GCCcore-11.3.0
-UCC/1.0.0-GCCcore-11.3.0
-OpenMPI/4.1.4-GCC-11.3.0
-OpenBLAS/0.3.20-GCC-11.3.0
-FlexiBLAS/3.2.0-GCC-11.3.0
-FFTW/3.3.10-GCC-11.3.0
-gompi/2022a
-FFTW.MPI/3.3.10-gompi-2022a
-ScaLAPACK/2.2.0-gompi-2022a-fb
-foss/2022a
-CUDA/11.7.0
-bzip2/1.0.8-GCCcore-11.3.0
-ncurses/6.3-GCCcore-11.3.0
-libreadline/8.1.2-GCCcore-11.3.0
-ncurses/6.3-GCCcore-11.3.0
-Tcl/8.6.12-GCCcore-11.3.0
-SQLite/3.38.3-GCCcore-11.3.0
-GMP/6.2.1-GCCcore-11.3.0
-libffi/3.4.2-GCCcore-11.3.0
-Python/3.10.4-GCCcore-11.3.0
-pybind11/2.9.2-GCCcore-11.3.0
-SciPy-bundle/2022.05-foss-2022a
-libyaml/0.2.5-GCCcore-11.3.0
-PyYAML/6.0-GCCcore-11.3.0
-Ninja/1.10.2-GCCcore-11.3.0
-protobuf/3.19.4-GCCcore-11.3.0
-protobuf-python/3.19.4-GCCcore-11.3.0
-MPFR/4.1.0-GCCcore-11.3.0
-NASM/2.15.05-GCCcore-11.3.0
-x264/20220620-GCCcore-11.3.0
-LAME/3.100-GCCcore-11.3.0
-x265/3.5-GCCcore-11.3.0
-expat/2.4.8-GCCcore-11.3.0
-libpng/1.6.37-GCCcore-11.3.0
-Brotli/1.0.9-GCCcore-11.3.0
-freetype/2.12.1-GCCcore-11.3.0
-util-linux/2.38-GCCcore-11.3.0
-fontconfig/2.14.0-GCCcore-11.3.0
-freetype/2.12.1-GCCcore-11.3.0
-xorg-macros/1.19.3-GCCcore-11.3.0
-X11/20220504-GCCcore-11.3.0
-freetype/2.12.1-GCCcore-11.3.0
-fontconfig/2.14.0-GCCcore-11.3.0
-FriBidi/1.0.12-GCCcore-11.3.0
-FFmpeg/4.4.2-GCCcore-11.3.0
-libjpeg-turbo/2.1.3-GCCcore-11.3.0
-jbigkit/2.1-GCCcore-11.3.0
-gzip/1.12-GCCcore-11.3.0
-lz4/1.9.3-GCCcore-11.3.0
-zstd/1.5.2-GCCcore-11.3.0
-libdeflate/1.10-GCCcore-11.3.0
-LibTIFF/4.3.0-GCCcore-11.3.0
-Pillow/9.1.1-GCCcore-11.3.0
-cuDNN/8.4.1.50-CUDA-11.7.0
-GDRCopy/2.3-GCCcore-11.3.0
-UCX-CUDA/1.12.1-GCCcore-11.3.0-CUDA-11.7.0
-magma/2.6.2-foss-2022a-CUDA-11.7.0
-NCCL/2.12.12-GCCcore-11.3.0-CUDA-11.7.0
-expecttest/0.1.3-GCCcore-11.3.0
-PyTorch/1.12.1-foss-2022a-CUDA-11.7.0
-tqdm/4.64.0-GCCcore-11.3.0
-Transformers/4.24.0-foss-2022a-CUDA-11.7.0
-ICU/71.1-GCCcore-11.3.0
-Boost/1.79.0-GCC-11.3.0
-snappy/1.1.9-GCCcore-11.3.0
-RapidJSON/1.1.0-GCCcore-11.3.0
-RE2/2022-06-01-GCCcore-11.3.0
-utf8proc/2.7.0-GCCcore-11.3.0
-Arrow/8.0.0-foss-2022a
-Tk/8.6.12-GCCcore-11.3.0
-Tkinter/3.10.4-GCCcore-11.3.0
-Qhull/2020.2-GCCcore-11.3.0
-matplotlib/3.5.2-foss-2022a
-polars/0.17.12-foss-2022a
-poetry/1.2.2-GCCcore-11.3.0
-aiohttp/3.8.3-GCCcore-11.3.0
-BeautifulSoup/4.10.0-GCCcore-11.3.0
-deepdiff/5.8.1-GCCcore-11.3.0
-tensorboardX/2.5.1-foss-2022a
-PyTorch-Lightning/1.9.3-foss-2022a-CUDA-11.7.0
-Hydra/1.3.2-GCCcore-11.3.0
-scikit-learn/1.1.2-foss-2022a
-sklearn-pandas/2.2.0-foss-2022a
-dumb
-icelake
-/rds/homes/g/gaddcz/Projects/CPRD/virtual-env-icelake
-Testing data loader
-INFO:root:Building Polars dataset and saving to /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/archive/Version2/polars/
-INFO:root:Connected to SQLite database
-INFO:root:Extracting list of unique practice IDs for chunking with no inclusion conditions
-DEBUG:root:Query: SELECT DISTINCT SUBSTR(PRACTICE_PATIENT_ID, 1, INSTR(PRACTICE_PATIENT_ID, '_') - 1) FROM static_table WHERE PRACTICE_PATIENT_ID LIKE '%_%'
-cuda
-Processing database into a DL friendly format - train split:   0%|          | 0/27 [00:00<?, ?it/s]DEBUG:root:Removing patients with no observed events
-DEBUG:root:Query: SELECT DISTINCT EVENT FROM diagnosis_table;
-DEBUG:root:Query: SELECT DISTINCT EVENT FROM measurement_table;
-Processing database into a DL friendly format - train split:   4%|▎         | 1/27 [00:40<17:28, 40.33s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:   7%|▋         | 2/27 [00:52<09:57, 23.89s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  11%|█         | 3/27 [01:21<10:27, 26.16s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  15%|█▍        | 4/27 [01:41<09:03, 23.62s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  19%|█▊        | 5/27 [01:57<07:37, 20.79s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  22%|██▏       | 6/27 [02:10<06:26, 18.41s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  26%|██▌       | 7/27 [02:34<06:44, 20.24s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  30%|██▉       | 8/27 [02:46<05:32, 17.51s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  33%|███▎      | 9/27 [03:09<05:43, 19.08s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  37%|███▋      | 10/27 [03:32<05:48, 20.52s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  41%|████      | 11/27 [03:51<05:18, 19.93s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  44%|████▍     | 12/27 [04:13<05:09, 20.63s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  48%|████▊     | 13/27 [04:31<04:36, 19.76s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  52%|█████▏    | 14/27 [04:50<04:15, 19.68s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  56%|█████▌    | 15/27 [05:10<03:54, 19.57s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  59%|█████▉    | 16/27 [05:26<03:24, 18.56s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  63%|██████▎   | 17/27 [05:43<03:01, 18.20s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  67%|██████▋   | 18/27 [06:15<03:19, 22.21s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  70%|███████   | 19/27 [06:35<02:51, 21.47s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  74%|███████▍  | 20/27 [06:58<02:33, 21.98s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  78%|███████▊  | 21/27 [07:13<01:59, 19.95s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  81%|████████▏ | 22/27 [07:31<01:36, 19.26s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  85%|████████▌ | 23/27 [07:49<01:15, 18.96s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  89%|████████▉ | 24/27 [08:08<00:57, 19.02s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  93%|█████████▎| 25/27 [08:31<00:40, 20.24s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  96%|█████████▋| 26/27 [08:43<00:17, 17.87s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split: 100%|██████████| 27/27 [09:07<00:00, 19.43s/it]Processing database into a DL friendly format - train split: 100%|██████████| 27/27 [09:07<00:00, 20.26s/it]
-Processing database into a DL friendly format - test split:   0%|          | 0/2 [00:00<?, ?it/s]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - test split:  50%|█████     | 1/2 [00:15<00:15, 15.87s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - test split: 100%|██████████| 2/2 [00:43<00:00, 22.62s/it]Processing database into a DL friendly format - test split: 100%|██████████| 2/2 [00:43<00:00, 21.61s/it]
-Processing database into a DL friendly format - val split:   0%|          | 0/2 [00:00<?, ?it/s]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - val split:  50%|█████     | 1/2 [00:25<00:25, 25.49s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - val split: 100%|██████████| 2/2 [00:49<00:00, 24.91s/it]Processing database into a DL friendly format - val split: 100%|██████████| 2/2 [00:49<00:00, 25.00s/it]
-INFO:root:Disconnected from SQLite database
-DEBUG:root:{'diagnosis_table':                                   event  count
-0                                    HF  10933
-1                                    AF  14135
-2                       ISCHAEMICSTROKE   3199
-3                     STROKEUNSPECIFIED   9713
-4                       STROKE_HAEMRGIC   1537
-..                                  ...    ...
-69  POLYCYSTIC_OVARIAN_SYNDROME_PCOS_V2   5684
-70               SICKLE_CELL_DISEASE_V2    131
-71                  HAEMOCHROMATOSIS_V2    396
-72                         FIBROMYALGIA   3107
-73                                DEATH  30201
-
-[74 rows x 2 columns], 'measurement_table':                                                  event  ...           std
-0                      Serum_LDL_cholesterol_level_102  ...      1.876623
-1                                    Basophil_count_22  ...      0.151700
-2             Plasma_alanine_aminotransferase_level_45  ...     29.053838
-3    eGFR_using_creatinine__CKD-EPI__per_1.73_squar...  ...     18.366602
-4                                       O_E_-_height_1  ...    515.167534
-..                                                 ...  ...           ...
-103                                  Serum_ferritin_63  ...    355.731103
-104                          Plasma_potassium_level_27  ...      2.639141
-105                     Serum_total_bilirubin_level_56  ...  12473.187371
-106                       HbA1c_level__DCCT_aligned__7  ...      4.569041
-107                                       Ex_smoker_84  ...    235.344818
-
-[108 rows x 5 columns]}
-INFO:root:Using tokenizer non-tabular
-INFO:root:Tokenzier created based on 64.66M tokens
-INFO:root:Creating dataset
-Calculating chunk index splits : 0it [00:00, ?it/s]Calculating chunk index splits : 1it [00:08,  8.07s/it]Calculating chunk index splits : 2it [00:13,  6.38s/it]Calculating chunk index splits : 3it [00:16,  5.02s/it]/var/spool/slurmd/job7249083/slurm_script: line 43: 2148889 Segmentation fault      (core dumped) python test_dataloader_speed.py

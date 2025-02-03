@@ -1,132 +1,0 @@
-GCCcore/11.3.0
-zlib/1.2.12-GCCcore-11.3.0
-binutils/2.38-GCCcore-11.3.0
-GCC/11.3.0
-numactl/2.0.14-GCCcore-11.3.0
-XZ/5.2.5-GCCcore-11.3.0
-libxml2/2.9.13-GCCcore-11.3.0
-libpciaccess/0.16-GCCcore-11.3.0
-hwloc/2.7.1-GCCcore-11.3.0
-OpenSSL/1.1
-libevent/2.1.12-GCCcore-11.3.0
-UCX/1.12.1-GCCcore-11.3.0
-libfabric/1.15.1-GCCcore-11.3.0
-PMIx/4.1.2-GCCcore-11.3.0
-UCC/1.0.0-GCCcore-11.3.0
-OpenMPI/4.1.4-GCC-11.3.0
-OpenBLAS/0.3.20-GCC-11.3.0
-FlexiBLAS/3.2.0-GCC-11.3.0
-FFTW/3.3.10-GCC-11.3.0
-gompi/2022a
-FFTW.MPI/3.3.10-gompi-2022a
-ScaLAPACK/2.2.0-gompi-2022a-fb
-foss/2022a
-CUDA/11.7.0
-bzip2/1.0.8-GCCcore-11.3.0
-ncurses/6.3-GCCcore-11.3.0
-libreadline/8.1.2-GCCcore-11.3.0
-ncurses/6.3-GCCcore-11.3.0
-Tcl/8.6.12-GCCcore-11.3.0
-SQLite/3.38.3-GCCcore-11.3.0
-GMP/6.2.1-GCCcore-11.3.0
-libffi/3.4.2-GCCcore-11.3.0
-Python/3.10.4-GCCcore-11.3.0
-pybind11/2.9.2-GCCcore-11.3.0
-SciPy-bundle/2022.05-foss-2022a
-libyaml/0.2.5-GCCcore-11.3.0
-PyYAML/6.0-GCCcore-11.3.0
-Ninja/1.10.2-GCCcore-11.3.0
-protobuf/3.19.4-GCCcore-11.3.0
-protobuf-python/3.19.4-GCCcore-11.3.0
-MPFR/4.1.0-GCCcore-11.3.0
-NASM/2.15.05-GCCcore-11.3.0
-x264/20220620-GCCcore-11.3.0
-LAME/3.100-GCCcore-11.3.0
-x265/3.5-GCCcore-11.3.0
-expat/2.4.8-GCCcore-11.3.0
-libpng/1.6.37-GCCcore-11.3.0
-Brotli/1.0.9-GCCcore-11.3.0
-freetype/2.12.1-GCCcore-11.3.0
-util-linux/2.38-GCCcore-11.3.0
-fontconfig/2.14.0-GCCcore-11.3.0
-freetype/2.12.1-GCCcore-11.3.0
-xorg-macros/1.19.3-GCCcore-11.3.0
-X11/20220504-GCCcore-11.3.0
-freetype/2.12.1-GCCcore-11.3.0
-fontconfig/2.14.0-GCCcore-11.3.0
-FriBidi/1.0.12-GCCcore-11.3.0
-FFmpeg/4.4.2-GCCcore-11.3.0
-libjpeg-turbo/2.1.3-GCCcore-11.3.0
-jbigkit/2.1-GCCcore-11.3.0
-gzip/1.12-GCCcore-11.3.0
-lz4/1.9.3-GCCcore-11.3.0
-zstd/1.5.2-GCCcore-11.3.0
-libdeflate/1.10-GCCcore-11.3.0
-LibTIFF/4.3.0-GCCcore-11.3.0
-Pillow/9.1.1-GCCcore-11.3.0
-cuDNN/8.4.1.50-CUDA-11.7.0
-GDRCopy/2.3-GCCcore-11.3.0
-UCX-CUDA/1.12.1-GCCcore-11.3.0-CUDA-11.7.0
-magma/2.6.2-foss-2022a-CUDA-11.7.0
-NCCL/2.12.12-GCCcore-11.3.0-CUDA-11.7.0
-expecttest/0.1.3-GCCcore-11.3.0
-PyTorch/1.12.1-foss-2022a-CUDA-11.7.0
-tqdm/4.64.0-GCCcore-11.3.0
-Transformers/4.24.0-foss-2022a-CUDA-11.7.0
-ICU/71.1-GCCcore-11.3.0
-Boost/1.79.0-GCC-11.3.0
-snappy/1.1.9-GCCcore-11.3.0
-RapidJSON/1.1.0-GCCcore-11.3.0
-RE2/2022-06-01-GCCcore-11.3.0
-utf8proc/2.7.0-GCCcore-11.3.0
-Arrow/8.0.0-foss-2022a
-Tk/8.6.12-GCCcore-11.3.0
-Tkinter/3.10.4-GCCcore-11.3.0
-Qhull/2020.2-GCCcore-11.3.0
-matplotlib/3.5.2-foss-2022a
-polars/0.17.12-foss-2022a
-poetry/1.2.2-GCCcore-11.3.0
-aiohttp/3.8.3-GCCcore-11.3.0
-BeautifulSoup/4.10.0-GCCcore-11.3.0
-deepdiff/5.8.1-GCCcore-11.3.0
-tensorboardX/2.5.1-foss-2022a
-PyTorch-Lightning/1.9.3-foss-2022a-CUDA-11.7.0
-Hydra/1.3.2-GCCcore-11.3.0
-scikit-learn/1.1.2-foss-2022a
-sklearn-pandas/2.2.0-foss-2022a
-dumb
-icelake
-/rds/homes/g/gaddcz/Projects/CPRD/virtual-env-icelake
-Testing data loader
-INFO:root:Building Polars dataset and saving to /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/archive/Version2/polars/
-INFO:root:Connected to SQLite database
-INFO:root:Extracting list of unique practice IDs for chunking with no inclusion conditions
-DEBUG:root:Query: SELECT DISTINCT SUBSTR(PRACTICE_PATIENT_ID, 1, INSTR(PRACTICE_PATIENT_ID, '_') - 1) FROM static_table WHERE PRACTICE_PATIENT_ID LIKE '%_%'
-cuda
-Processing database into a DL friendly format - train split:   0%|          | 0/27 [00:00<?, ?it/s]DEBUG:root:Removing patients with no observed events
-DEBUG:root:Query: SELECT DISTINCT EVENT FROM diagnosis_table;
-DEBUG:root:Query: SELECT DISTINCT EVENT FROM measurement_table;
-Processing database into a DL friendly format - train split:   4%|▎         | 1/27 [00:40<17:39, 40.77s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:   7%|▋         | 2/27 [01:00<11:45, 28.22s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  11%|█         | 3/27 [01:17<09:18, 23.29s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  15%|█▍        | 4/27 [01:48<10:06, 26.35s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  19%|█▊        | 5/27 [02:10<09:04, 24.74s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  22%|██▏       | 6/27 [02:32<08:23, 23.96s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  26%|██▌       | 7/27 [02:50<07:19, 21.97s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  30%|██▉       | 8/27 [03:04<06:06, 19.27s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  33%|███▎      | 9/27 [03:30<06:24, 21.34s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  37%|███▋      | 10/27 [03:59<06:41, 23.64s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  41%|████      | 11/27 [04:10<05:20, 20.00s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  44%|████▍     | 12/27 [04:28<04:49, 19.32s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  48%|████▊     | 13/27 [04:47<04:27, 19.08s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  52%|█████▏    | 14/27 [04:59<03:41, 17.06s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  56%|█████▌    | 15/27 [05:23<03:51, 19.28s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  59%|█████▉    | 16/27 [05:40<03:23, 18.50s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  63%|██████▎   | 17/27 [05:56<02:56, 17.64s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  67%|██████▋   | 18/27 [06:15<02:43, 18.14s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  70%|███████   | 19/27 [06:43<02:49, 21.16s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  74%|███████▍  | 20/27 [06:59<02:17, 19.58s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  78%|███████▊  | 21/27 [07:23<02:04, 20.77s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  81%|████████▏ | 22/27 [07:42<01:41, 20.37s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  85%|████████▌ | 23/27 [08:06<01:25, 21.30s/it]DEBUG:root:Removing patients with no observed events
-Processing database into a DL friendly format - train split:  89%|████████▉ | 24/27 [08:28<01:05, 21.75s/it]slurmstepd: error: *** JOB 7248359 ON bear-pg0208u15a CANCELLED AT 2024-03-06T19:20:32 DUE TO TIME LIMIT ***

@@ -6,7 +6,7 @@ data:
   min_workers: 12                   # The number of workers to create for dataloader
   global_diagnoses: False           # Whether we enforce diagnoses which occurred before context block to prepend the block
   repeating_events: True            # Whether we allow repeated events. For example, if two Body Mass Index records exist then True retains both, whilst False keeps only the latest record.
-  path_to_db: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/                         # Path to SQL database
+  path_to_db: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/cprd.db                         # Path to SQL database
   path_to_ds: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/                # Path to Polars dataset
   # Path to meta_information. This is created when building datasets. It can then be modified, for example here we updated the default outlier bounds to custom values
   meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle  

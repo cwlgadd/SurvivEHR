@@ -5,7 +5,7 @@ data:
   unk_freq_threshold: 0.0           # Frequency required for token to be included. Tokens below threshold are transformed to <UNK>
   min_workers: 20                   # The number of workers to create for dataloader
   global_diagnoses: False           # Whether we enforce diagnoses which occurred before context block to prepend the block
-  path_to_db: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/                         # Path to SQL database
+  path_to_db: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/cprd.db                         # Path to SQL database
   path_to_ds: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/                # Path to Polars dataset
   # Path to meta_information. This is created when building datasets. It can then be modified, for example here we updated the default outlier bounds to custom values
   meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle
