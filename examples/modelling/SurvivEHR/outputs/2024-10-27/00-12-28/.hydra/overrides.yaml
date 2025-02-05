@@ -1,0 +1,3 @@
+- experiment.run_id=CR_11M_Natalia
+- data.meta_information_path=/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle
+- optim.scheduler=decaycawarmrestarts

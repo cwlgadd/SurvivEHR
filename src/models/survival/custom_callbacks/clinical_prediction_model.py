@@ -219,3 +219,81 @@ class PerformanceMetrics(Callback):
                           log_name = "Test:OutcomePerformanceMetrics", 
                           plot_outcome_curves = True
                           )
+
+class PerformanceValueMetrics(Callback):
+    """
+    Record metrics for survival model.
+    """
+
+    def __init__(self, 
+                 outcome_token_to_desurv_output_index,
+                ):
+        r"""
+
+        ARGS:
+            outcome_token_to_desurv_output_index:
+                              A dictionary hash map where keys are the outcome tokens of interest, and the values are the index of the DeSurv 
+                                output index they belong to. 
+                              In the pre-training (self-supervised/causal) and few-shot (supervised with unmodified architecture) cases,
+                                the map is from outcome to one of `vocab_size` indices, as the DeSurv heads (in both SR and CR) predict
+                                the risk of every token.
+                              In the fine-tuning (supervised) case, the DeSurv head is replaced with one that only predicts the relevant 
+                                outcomes. In the Single-Risk case, this gives a many-to-1 map, combining all the outcomes into a single-risk 
+                                and so every token included in this umbrella maps to the zero-index (as there is only one predicted survival 
+                                curve). In the Competing-Risk case, each will map 1-to-1 to the K considered competing-risk outcome indicies.
+                                
+        """
+        
+        Callback.__init__(self)
+        self.outcome_token_to_desurv_output_index = outcome_token_to_desurv_output_index
+        self.outcome_tokens = outcome_token_to_desurv_output_index.keys()
+        logging.info(f"Created Value Performance metric callback. Calculating metrics for {self.outcome_tokens} with map {self.outcome_token_to_desurv_output_index}")
+
+
+    def get_metrics(self, _trainer, _pl_module, log_name, suppress_warnings=False):
+        
+        metric_dict = {}
+        try:
+            # Evaluate metrics
+
+            metric_dict = {**metric_dict, log_name+"MSE": 0}
+            self.log_dict(metric_dict)
+            
+        except:
+            if suppress_warnings is False:
+                logging.warning("Unable to calculate metrics, this batch will be skipped - this will bias metrics.")
+            else:
+                pass
+        
+    def run_callback(self, _trainer, _pl_module, batch,
+                     log_name:               str='Metrics',
+                    ):
+
+        # Make prediction of each survival curve
+        all_outputs, _, _ = _pl_module(batch, return_loss=False, return_generation=True)
+        value_distributions = all_outputs["values_dist"]
+        print(value_distributions)
+        
+        target_tokens = batch['target_token'].cpu().numpy()
+        target_ages = batch['target_age_delta'].cpu().numpy()
+
+        # Log records for individual outcome values
+        ######################################
+        self.get_metrics(_trainer, _pl_module, log_name=log_name)
+            
+
+    def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+        # Run callback
+        self.run_callback(_trainer=trainer, 
+                          _pl_module = pl_module,
+                          batch=batch,
+                          log_name = "Val:OutcomeValuePM", 
+                          )
+
+    def on_test_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+        # Run callback
+        self.run_callback(_trainer=trainer, 
+                          _pl_module = pl_module,
+                          batch=batch,
+                          log_name = "Test:OutcomeValuePM", 
+                          )

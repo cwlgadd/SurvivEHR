@@ -1,0 +1,17 @@
+- experiment.type=clinicalpredictionmodel
+- experiment.run_id=CR_11M_new
+- experiment.fine_tune_outcomes=["IHDINCLUDINGMI_OPTIMALV2", "ISCHAEMICSTROKE_V2",
+  "MINFARCTION", "STROKEUNSPECIFIED_V2", "STROKE_HAEMRGIC"]
+- data.path_to_ds=/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/
+- data.meta_information_path=/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle
+- data.batch_size=512
+- data.min_workers=12
+- optim.num_epochs=10
+- optim.limit_test_batches=null
+- optim.scheduler=ReduceOnPlateau
+- optim.learning_rate=1e-3
+- optim.scheduler_warmup=False
+- optim.val_check_interval=50
+- optim.early_stop=True
+- head.surv_weight=1
+- head.value_weight=0

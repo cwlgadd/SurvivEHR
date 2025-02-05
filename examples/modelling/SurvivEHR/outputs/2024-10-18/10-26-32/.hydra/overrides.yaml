@@ -1,0 +1,5 @@
+- experiment.run_id=SR_11M
+- data.meta_information_path=/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle
+- data.batch_size=32
+- optim.scheduler=decaycawarmrestarts
+- head.SurvLayer=sr

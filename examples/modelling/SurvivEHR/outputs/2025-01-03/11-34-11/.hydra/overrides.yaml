@@ -1,0 +1,5 @@
+- experiment.run_id=SurvivEHR-cr-small-2304
+- optim.scheduler=ReduceOnPlateau
+- optim.scheduler_warmup=False
+- optim.learning_rate=1e-3
+- transformer.n_embd=2304

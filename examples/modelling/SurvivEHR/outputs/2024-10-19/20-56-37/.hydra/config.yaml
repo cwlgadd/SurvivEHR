@@ -1,0 +1,54 @@
+is_decoder: true
+data:
+  batch_size: 32
+  unk_freq_threshold: 0.0
+  min_workers: 20
+  global_diagnoses: false
+  path_to_db: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/
+  path_to_ds: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/
+  meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle
+experiment:
+  type: pre-train
+  project_name: SurvEHR_${head.SurvLayer}
+  run_id: SR_11M_private2
+  fine_tune_id: null
+  train: true
+  test: true
+  verbose: true
+  seed: 1337
+  log: true
+  log_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/
+  ckpt_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/
+  fine_tune_outcomes: null
+  fine_tune_collapse: null
+optim:
+  num_epochs: 5
+  learning_rate: 0.0001
+  scheduler_warmup: true
+  scheduler: decaycawarmrestarts
+  scheduler_periods: 10000
+  learning_rate_decay: 0.8
+  val_check_interval: 1000
+  early_stop: true
+  early_stop_patience: 30
+  log_every_n_steps: 20
+  limit_val_batches: 0.025
+  limit_test_batches: 0.025
+transformer:
+  block_type: Neo
+  block_size: 256
+  n_layer: 6
+  n_head: 6
+  n_embd: 384
+  layer_norm_bias: false
+  attention_type: global
+  bias: true
+  dropout: 0.0
+  attention_dropout: 0.0
+  resid_dropout: 0.0
+  private_heads: 2
+head:
+  SurvLayer: sr
+  surv_weight: 0.5
+  tokens_for_univariate_regression: None
+  value_weight: 0.5

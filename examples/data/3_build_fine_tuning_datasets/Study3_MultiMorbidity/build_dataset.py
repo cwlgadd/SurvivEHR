@@ -26,12 +26,12 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     logging.info(f"Building study dataset on {os.cpu_count()} CPUs and {torch.cuda.device_count()} GPUs")
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    num_threads = 5
+    num_threads = 1
     print(f"Using device: {device}.")
     print(f"Fitting dataset over {num_threads} threads")
 
     # load the configuration file, override any settings 
-    with initialize(version_base=None, config_path="../../../modelling/SurvStreamGPT/confs", job_name="dataset_creation_multimorbidity_job"):
+    with initialize(version_base=None, config_path="../../../modelling/SurvivEHR/confs", job_name="dataset_creation_multimorbidity_job"):
         cfg = compose(config_name="config_CompetingRisk11M", overrides=[])
         
     # Create new dataset 
