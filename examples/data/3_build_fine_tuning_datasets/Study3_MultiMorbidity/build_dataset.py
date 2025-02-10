@@ -26,7 +26,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     logging.info(f"Building study dataset on {os.cpu_count()} CPUs and {torch.cuda.device_count()} GPUs")
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    num_threads = 1
+    num_threads = 5
     print(f"Using device: {device}.")
     print(f"Fitting dataset over {num_threads} threads")
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
         cfg = compose(config_name="config_CompetingRisk11M", overrides=[])
         
     # Create new dataset 
-    cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_MultiMorbidity/"
+    cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_MultiMorbidity2/"
     print(OmegaConf.to_yaml(cfg))
 
     # Build 
