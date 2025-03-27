@@ -63,9 +63,8 @@ def hypertension_inclusion_method(index_on_event=["ACE_Inhibitors_D2T",
 
 def multimorbidity_inclusion_method(index_on_age=50,
                                     study_period=["1998-01-01", "2019-12-31"],
-                                    age_at_entry_range=[25, 85],
                                     min_registered_years=1,
-                                    min_events=None,
+                                    min_events=50,
                                    ):
 
     # Custom function which is used as a filter on the dynamic frame to select outcomes as events which are a diagnosis.
@@ -76,7 +75,6 @@ def multimorbidity_inclusion_method(index_on_age=50,
     mm_inclusion = index_inclusion_method(index_on=index_on_age, 
                                            outcomes=custom_mm_filter,
                                            study_period=study_period,
-                                           age_at_entry_range=age_at_entry_range,
                                            min_registered_years=min_registered_years,
                                            min_events=min_events,
                                            )

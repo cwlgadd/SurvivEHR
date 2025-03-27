@@ -1,12 +1,18 @@
 import logging
+from hydra.utils import instantiate
+import functools
 import pytorch_lightning as pl
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlateau, CosineAnnealingLR, LambdaLR, SequentialLR, ChainedScheduler
 from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
 from CPRD.src.modules.head_layers.survival.competing_risk import ODESurvCompetingRiskLayer
 from CPRD.src.modules.head_layers.survival.single_risk import ODESurvSingleRiskLayer
+from CPRD.src.modules.head_layers.value_layers import GaussianRegressionLayer
+
 from CPRD.src.models.base_callback import Embedding
 from CPRD.src.models.survival.custom_callbacks.clinical_prediction_model import PerformanceMetrics
+from CPRD.src.models.survival.custom_callbacks.mm_clinical_prediction_model import RestrictedMeanSurvivalTime
+import importlib
 
 
 class FineTuneExperiment(pl.LightningModule):
@@ -23,8 +29,10 @@ class FineTuneExperiment(pl.LightningModule):
         self.save_hyperparameters()        
         self.cfg = cfg
         self.use_adapter = use_adapter
-
+        self.reduced_hidden_dim = 384
+        
         # Load the pre-trained Transformer
+        ###################################
         adapter_dim = cfg.transformer.adapter_dim if use_adapter is True else False
         self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size, use_adapter=adapter_dim)
 
@@ -33,19 +41,14 @@ class FineTuneExperiment(pl.LightningModule):
             logging.info(f"Fixing Transformer parameters and fine-tuning using an Adapter mechanism.")
             for name, param in self.model.named_parameters():
                 if "adapter" in name.lower() or "ln_" in name.lower():
-                    # If parameter is in adapter or a layer_norm then fine-tune it
                     param.requires_grad = True
                 else:
-                    # If the parameter is in the body, fix it.
                     param.requires_grad = False
                     
         elif self.use_adapter == "fix":
             logging.info(f"Fixing Transformer parameters.")
             for name, param in self.model.named_parameters():
-                if ("ln_" in name.lower()
-                    or "layernorm" in name.lower()                     
-                   ):
-                    # If parameter is in a layer_norm then allow fine-tuning it
+                if ("ln_" in name.lower() or "layernorm" in name.lower()):
                     param.requires_grad = True
                 else:
                     param.requires_grad = False
@@ -54,34 +57,52 @@ class FineTuneExperiment(pl.LightningModule):
             logging.info(f"Training all Transformer parameters")
             for name, param in self.model.named_parameters():
                 param.requires_grad = True
+
+        # Drop down network to compress GPT hidden dimensions before new heads
+        self.reduce_hidden = torch.nn.Sequential(
+            torch.nn.Linear(self.model.n_embd, self.reduced_hidden_dim),
+            torch.nn.ReLU()
+        )
+
+        # Create new heads
+        ##################
+        total_weight = cfg.fine_tuning.head.surv_weight + cfg.fine_tuning.head.value_weight
+        self.surv_weight = cfg.fine_tuning.head.surv_weight / total_weight
+        self.value_weight = cfg.fine_tuning.head.value_weight / total_weight
                     
-        # Replace survival head
-        hidden_dimensions = self.model.n_embd - self.model.n_embd_private
+        # Create a new survival head
+        hidden_dimensions = self.reduced_hidden_dim #self.model.n_embd - self.model.n_embd_private
         match risk_model.replace('-', '').replace(' ', '').lower():
             case "singlerisk" | "sr":
                 # Combine each of the given outcomes into a single event, and treat it as a single risk
-                # e.g. This could be a single event, or all events that constitute some form of umbrella, e.g. cardiovascular disease
-                self.surv_layer = ODESurvSingleRiskLayer(
-                    outcome_tokens,
-                    hidden_dimensions, [32, 32], device="cuda"
-                )
-                
-                # Create a method which reduces from the causal k={1,2,3,4,5,...} form to the single risk form k={\null, 1}
+                #    e.g. This could be a single event, or all events that constitute some form of umbrella, e.g. cardiovascular disease
+                self.surv_layer = ODESurvSingleRiskLayer(outcome_tokens, hidden_dimensions, [32, 32], device="cuda")
+                # Create a method which reduces batch["tokens"] from the causal k={1,2,3,4,5,...\vocab_size} form to the single risk 
+                #    form k={\null, 1} that surv_layer is expecting
                 self.reduce_to_outcomes = lambda target_token: target_token
                 
             case "competingrisk" | "cr":
                 # Treat each risk as a competing risk
-                self.surv_layer = ODESurvCompetingRiskLayer(
-                    hidden_dimensions, [32, 32], num_risks=len(outcome_tokens), device="cuda"
-                )
-                
-                # Create a method which reduces from the causal k={1,2,3,4,5,...} form to the competing risk form k={1,2,3,..., K}
+                self.surv_layer = ODESurvCompetingRiskLayer(hidden_dimensions, [32, 32], num_risks=len(outcome_tokens), device="cuda")
+                # Create a method which reduces batch["tokens"] from the causal k={1,2,3,4,5,...\vocab_size} form to the competing risk 
+                #    form k={1,2,3,..., K} that surv_layer is expecting
                 self.reduce_to_outcomes = lambda target_token: sum([torch.where(target_token==i, idx+1, 0) for idx, i in enumerate(outcome_tokens)])
 
             case _:
                 raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
 
+        # Create a new value head
+        if self.value_weight > 0:
+            self.value_layer = GaussianRegressionLayer(hidden_dimensions,
+                                                       measurement_tokens=outcome_tokens,
+                                                       base_hidden_dim=32,
+                                                       )
+            logging.debug(f"Created value layer:\n{self.value_layer}")
+        else:
+            logging.debug(f"Did not create value layer as weighting set to zero")
+
         
+
     def forward(self, batch, is_generation=False, return_loss=True, return_generation=False):
         # Because of how DeSurv is coded we have the loss returned in the forward, so we have some redundancy
 
@@ -94,7 +115,6 @@ class FineTuneExperiment(pl.LightningModule):
         
         # targets
         target_token = batch['target_token'].reshape((-1,1)).to(self.device)               # torch.Size([bsz, 1])
-        target_token = self.reduce_to_outcomes(target_token)                               # torch.Size([bsz, 1])
         target_age_delta = batch['target_age_delta'].reshape((-1,1)).to(self.device)       # torch.Size([bsz, 1]),
         target_value = batch['target_value'].reshape((-1,1)).to(self.device)               # torch.Size([bsz, 1])
         bsz, seq_len = tokens.shape
@@ -120,6 +140,9 @@ class FineTuneExperiment(pl.LightningModule):
             assert sum(gen_mask[idx, :]) == 1
             in_hidden_state[idx, :] = hidden_states[idx, gen_mask[idx, :]==1, :]
 
+        # Reduce hidden dimension
+        in_hidden_state = self.reduce_hidden(in_hidden_state)
+        
         # The hidden states, made of the last hidden state of input sequence, and a padded zero
         # Note, we add the hidden state again as the padding target, as in generation this will be what is forwarded
         in_hidden_state = torch.stack((in_hidden_state, in_hidden_state), axis=1)         # bsz, seq_len=2, embd_dim
@@ -137,8 +160,8 @@ class FineTuneExperiment(pl.LightningModule):
         target_attention_mask = torch.ones_like(target_tokens, device=self.device) == 1
 
         # survival time to event head (survival curve until next token)
-        surv_dict, losses_desurv = self.surv_layer.predict(in_hidden_state[:,:,:self.model.n_embd - self.model.n_embd_private],
-                                                           target_tokens=target_tokens,
+        surv_dict, losses_desurv = self.surv_layer.predict(in_hidden_state,
+                                                           target_tokens=self.reduce_to_outcomes(target_tokens),
                                                            target_ages=target_ages,
                                                            attention_mask=target_attention_mask,
                                                            is_generation=is_generation,
@@ -146,17 +169,36 @@ class FineTuneExperiment(pl.LightningModule):
                                                            return_cdf=return_generation,
                                                            )
 
-        if return_loss:
-            loss = torch.sum(torch.stack(losses_desurv))                                  # losses are returned as a list, as the Single-Risk head is many DeSurv models in parallel, combine
-
-            if torch.isnan(loss):
-                logging.warning(f"Invalid loss {loss}: with target tokens {target_tokens}, target values {target_values} and target ages {target_ages}")
-                logging.warning(f"from hidden state {torch.sum(in_hidden_state, axis=2)/128}")
-                raise NotImplementedError
+        # regression head (values of next token if applicable)
+        if self.value_weight > 0:
+            values_dist, loss_values = self.value_layer.predict(in_hidden_states,
+                                                                target_tokens=target_tokens,
+                                                                target_values=target_values,
+                                                                attention_mask=target_attention_mask,
+                                                                is_generation=is_generation,
+                                                                return_loss=return_loss,
+                                                                return_value_dist=return_generation,
+                                                                )
         else:
+            values_dist = None
+            loss_values = 0 
+
+        if return_loss:
+            loss_desurv = torch.sum(torch.stack(losses_desurv))                                  # losses are returned as a list, as the Single-Risk head is many DeSurv models in parallel, combine
+            loss = (self.surv_weight * loss_desurv) + (self.value_weight * loss_values)          # Weight the loss
+        else:
+            loss_desurv = None
             loss = None
-            
-        return {"surv": surv_dict}, {"loss": loss}, in_hidden_state
+
+        outputs = {"surv": surv_dict,
+                   "values_dist": values_dist
+                  }
+        losses = {"loss": loss,
+                  "loss_desurv": loss_desurv,
+                  "loss_values": loss_values
+                 }
+        
+        return outputs, losses, in_hidden_state
 
     def training_step(self, batch, batch_idx):
         _, loss_dict, _ = self(batch)   
@@ -178,8 +220,33 @@ class FineTuneExperiment(pl.LightningModule):
 
     def configure_optimizers(self):
 
-        optimizer = torch.optim.AdamW(self.parameters(), lr=self.cfg.optim.learning_rate)
-
+        # Split parameters by those in new fine-tuning head and those in backbone
+        head_params = list(self.surv_layer.parameters())
+        if self.value_weight > 0:
+            head_params += list(self.value_layer.parameters())
+        body_params = [p for n, p in self.model.named_parameters() if p.requires_grad and not any(h is p for h in head_params)]
+        
+        match self.use_adapter:
+            case "fix":
+                optimizer = torch.optim.AdamW(head_params, lr=self.cfg.optim.learning_rate)
+                logging.info(f"Fixing backbone, and using head learning rate {self.cfg.optim.learning_rate}")
+                
+            case True:
+                body_lr = self.cfg.optim.learning_rate # * 0.1
+                optimizer = torch.optim.AdamW([
+                    {'params': body_params, 'lr': body_lr}, 
+                    {'params': head_params, 'lr': self.cfg.optim.learning_rate}
+                    ])
+                logging.info(f"Using adpater on backbone with learning rate {body_lr}, and using head learning rate {self.cfg.optim.learning_rate}")
+                
+            case _:
+                body_lr = self.cfg.optim.learning_rate # * 0.01
+                optimizer = torch.optim.AdamW([
+                    {'params': body_params, 'lr': body_lr}, 
+                    {'params': head_params, 'lr': self.cfg.optim.learning_rate}
+                    ])
+                logging.info(f"Full training backbone with learning rate {body_lr}, and using head learning rate {self.cfg.optim.learning_rate}")
+        
         freq = 1
         match self.cfg.optim.scheduler.lower():
             case 'cawarmrestarts':
@@ -223,7 +290,7 @@ class FineTuneExperiment(pl.LightningModule):
             "lr_scheduler": lr_scheduler_config
         }
 
-def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger=None):
+def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger=None, **kwargs):
 
     assert dm.is_supervised, "Datamodule for must be supervised for `setup_finetune_experiment` ."
     assert cfg.experiment.fine_tune_outcomes is not None, "Must provide outcome list for `setup_finetune_experiment`."
@@ -244,13 +311,17 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
         case "load_from_pretrain":
             assert checkpoint is not None
             logging.info(f"Loading pre-trained model from checkpoint from {checkpoint}.")
-            finetune_experiment = FineTuneExperiment.load_from_checkpoint(checkpoint, cfg=cfg, outcome_tokens=outcome_tokens, risk_model=risk_model, use_adapter=cfg.transformer.use_fine_tune_adapter, strict=False)
+            finetune_experiment = FineTuneExperiment.load_from_checkpoint(checkpoint, cfg=cfg, outcome_tokens=outcome_tokens, risk_model=risk_model,
+                                                                          use_adapter=cfg.transformer.use_fine_tune_adapter, strict=False)
         case "no_load":
             assert cfg.transformer.use_fine_tune_adapter is False, "If fine-tuning from scratch do not freeze any Transformer parameters through the adapter module."
             logging.info(f"Fine-tuning from scratch")
             finetune_experiment = FineTuneExperiment(cfg, outcome_tokens, risk_model=risk_model, use_adapter=False, ) 
         case _:
             raise NotImplementedError
+
+    if torch.cuda.is_available():
+        finetune_experiment = torch.compile(finetune_experiment)
             
     logging.debug(finetune_experiment)
 
@@ -264,7 +335,6 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
         verbose=cfg.experiment.verbose,
         monitor="val_loss",
     )
-
     
     lr_monitor = pl.callbacks.LearningRateMonitor(logging_interval='step')
 
@@ -309,22 +379,44 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
     # Construct callback
     metric_callback = PerformanceMetrics(outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
                                          log_combined=True,
-                                         log_individual=True if risk_model == "single-risk" else False,
+                                         log_individual=False if risk_model == "single-risk" else False,
                                          log_ctd=True, 
                                          log_ibs=True,
                                          log_inbll=True)
     callbacks.append(metric_callback)
 
+    # Construct callback
+    try:
+        # Extract the module and function names from the configuration string
+        module_name, function_name = cfg.fine_tuning.custom_stratification_method._target_.rsplit(".", 1)
+        # Dynamically import the module and retrieve the function reference
+        stratification_method = getattr(importlib.import_module(module_name), function_name)
+        # Extract fixed keyword arguments from the configuration (excluding the function target path)
+        fixed_kwargs = {k: v for k, v in cfg.fine_tuning.custom_stratification_method.items() if k != "_target_"}
+        # Create a partially applied function with pre-defined keyword arguments
+        custom_stratification_method = functools.partial(stratification_method, **fixed_kwargs)
+        # Instantiate the metric callback, passing the partially applied function
+        metric_callback = RestrictedMeanSurvivalTime(outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
+                                                     log_combined=True,
+                                                     log_individual=False,
+                                                     custom_stratification_method=custom_stratification_method
+                                                    )
+        callbacks.append(metric_callback)
+    except:        
+        print(cfg.fine_tuning.custom_stratification_method)
+
     _trainer = pl.Trainer(
         logger=logger,
+        # precision="bf16-mixed" if torch.cuda.is_bf16_supported() else "16-mixed",
         callbacks=callbacks,
+        min_epochs=30,
         max_epochs=cfg.optim.num_epochs,
         log_every_n_steps=cfg.optim.log_every_n_steps,
         val_check_interval=cfg.optim.val_check_interval,
         limit_val_batches=cfg.optim.limit_val_batches,
         limit_test_batches=cfg.optim.limit_test_batches,
         accumulate_grad_batches=cfg.optim.accumulate_grad_batches,
-        # gradient_clip_val=0.5
+        # gradient_clip_val=1.0,
     )
 
     return finetune_experiment, FineTuneExperiment, _trainer

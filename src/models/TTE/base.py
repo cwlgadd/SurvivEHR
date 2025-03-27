@@ -11,47 +11,8 @@ from CPRD.src.modules.data_embeddings.data_embedding_layer import DataEmbeddingL
 from CPRD.src.modules.transformers.nanoGPT.block import Block as NanoBlock
 from CPRD.src.modules.transformers.neoGPT.block import Block as NeoBlock
 # from CPRD.src.modules.transformers.hybridGPT.block import Block as HybridBlock
-
-
 import logging
 from typing import Optional
-
-# class GPTPreTrainedModel(PreTrainedModel):
-#     """
-#     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
-#     models.
-#     """
-
-#     # config_class = GPTNeoConfig
-#     # load_tf_weights = load_tf_weights_in_gpt_neo
-#     # base_model_prefix = "transformer"
-#     # supports_gradient_checkpointing = True
-#     # _no_split_modules = ["GPTNeoBlock"]
-#     # _skip_keys_device_placement = "past_key_values"
-    
-#     def __init__(self, *inputs, **kwargs):
-#         super().__init__(*inputs, **kwargs)
-
-#     def _init_weights(self, module, init_std=0.1):
-#         """Initialize the weights."""
-#         if isinstance(module, (nn.Linear,)):
-#             # Slightly different from TF versions which use truncated_normal for initialization
-#             # cf https://github.com/pytorch/pytorch/pull/5617
-#             module.weight.data.normal_(mean=0.0, std=init_std)
-#             if module.bias is not None:
-#                 module.bias.data.zero_()
-#         elif isinstance(module, nn.Embedding):
-#             module.weight.data.normal_(mean=0.0, std=init_std)
-#             if module.padding_idx is not None:
-#                 module.weight.data[module.padding_idx].zero_()
-#         elif isinstance(module, nn.LayerNorm):
-#             module.bias.data.zero_()
-#             module.weight.data.fill_(1.0)
-
-#     def _set_gradient_checkpointing(self, module, gradient_checkpointing_func=None):
-#         if isinstance(module, GPTModel):
-#             module.gradient_checkpointing_func = gradient_checkpointing_func
-#             module.gradient_checkpointing = gradient_checkpointing_func is not None
 
             
 class TTETransformer(nn.Module, ModuleUtilsMixin):
@@ -79,9 +40,7 @@ class TTETransformer(nn.Module, ModuleUtilsMixin):
             case "neo":
                 Block = NeoBlock
             case "nano": 
-                # Deprecated 
-                raise NotImplementedError
-                Block = NanoBlock
+                raise NotImplementedError("Nano block type is deprecated.")
             case _:
                 raise ValueError(f"Transformer block must be either 'Neo' or 'Nano'")
         self.drop = torch.nn.Dropout(p=cfg.transformer.dropout) if cfg.transformer.dropout is not None else None      # embed dropout
@@ -100,11 +59,11 @@ class TTETransformer(nn.Module, ModuleUtilsMixin):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
             
     def forward(self, 
-                tokens:                torch.tensor, 
-                ages:                  torch.tensor,
+                tokens:                torch.Tensor, 
+                ages:                  torch.Tensor,
                 values:                Optional[torch.Tensor] = None,           # bsz, seq_len
                 covariates:            Optional[torch.Tensor] = None,           # bsz, seq_len
-                attention_mask:        Optional[torch.tensor] = None
+                attention_mask:        Optional[torch.Tensor] = None            # bsz, seq_len, 1 = observed and 0 = masked
                ):
         """
         
@@ -116,7 +75,6 @@ class TTETransformer(nn.Module, ModuleUtilsMixin):
             Optional[torch.tensor], shape ``[bsz, seq_len]``
 
         
-        targets:
         
         
         return:
@@ -126,7 +84,6 @@ class TTETransformer(nn.Module, ModuleUtilsMixin):
 
         if attention_mask is not None:
             attention_mask = self.get_extended_attention_mask(attention_mask, tokens.shape)
-            # attention_mask = self.create_extended_attention_mask_for_decoder(tokens.shape, attention_mask)
                                              
         # Get token embeddings
         tok_emb = self.wte(tokens=tokens, values=values, covariates=covariates)   #  shape (bsz, seq_len, embed_dim)

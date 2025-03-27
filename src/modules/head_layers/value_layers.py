@@ -9,13 +9,36 @@ import numpy as np
 
 
 class GaussianRegressionLayer(torch.nn.Module):
-    """A probabilistic regression layer that outputs a normal distribution for univariate measurement and test values.
-
-    This module is used to predict value of a test or measurement event in the CausalTimeSeriesModelling set of heads. The input tensor is
-    projected to get the implied normal distribution.
+    """
+    A probabilistic regression layer that models univariate measurements with a Normal distribution.
     
-    Args:
-        in_dim: The dimensionality of the input.
+    This layer can generate mean and standard deviation parameters for each measurement token.
+    Optionally, it uses a shared MLP (`base_regression_layer`) before per-measurement heads.
+
+    Parameters
+    ----------
+    in_dim : int
+        Dimensionality of the input embeddings.
+    measurement_tokens : list of int, optional
+        A list of measurement tokens for which separate Gaussian heads are created. If None or empty,
+        no measurement heads are instantiated.
+    base_hidden_dim : int, optional
+        If provided, creates a shared MLP before each per-measurement output layer. If not provided,
+        parameters for the Normal distribution are regressed directly from the input embeddings.
+
+    Attributes
+    ----------
+    base_regression_layer : torch.nn.Sequential or None
+        A shared MLP applied before each measurement-specific head. None if no shared MLP is used.
+    regression_layers : torch.nn.ModuleDict
+        A dictionary of measurement-token-specific regression heads. Each head outputs parameters
+        for a Normal distribution (mean and standard deviation).
+
+    Notes
+    -----
+    - Each measurement token has its own head that returns a Normal(loc, scale).
+    - If `measurement_tokens` is not provided or empty, the layer logs a warning but will still
+      instantiate successfully (no measurement heads).
     """
 
     def __init__(self,
@@ -57,9 +80,12 @@ class GaussianRegressionLayer(torch.nn.Module):
                         torch.nn.Linear(base_hidden_dim, 2)
                     )
         
-        logging.debug(f"Value base regression layer {self.base_regression_layer} " + \
-                      f"regression layers {self.regression_layers}")
-
+    def __str__(self):
+        s = "Gaussian Regression layer, with token keys:"
+        for key, item in self.regression_layers.items():
+            s += f"\n\t{key}"
+        return s
+    
     def predict(self,
                 hidden_states: torch.tensor,                    # shape: torch.Size([bsz, seq_len, n_embd])
                 target_tokens: Optional[torch.tensor] = None,
@@ -69,19 +95,57 @@ class GaussianRegressionLayer(torch.nn.Module):
                 return_value_dist: bool = False,
                 return_loss: bool = True,
                 ):
-        r"""
-    
-        TODO: merge val_dists so only valid ones are returned
-        
-        TODO: At the moment we predict every possible measure at every point during training and generation
-                In reality we know what the target token was and so during training only the relevant hidden
-                states need to be forwarded.
+        """
+        Predict measurement values (mean, std) for each token and optionally compute log-likelihood loss.
 
-        Note:
-                In the generation case, we do not know yet what logit will be sampled as this sampling is
-                performed after this. Consequently we return all forwarded regression layers for every hidden
-                state. This may also be useful for analysis. and so we only need to forward the relevant ones 
-                regression layers at those hidden states.
+        Parameters
+        ----------
+        hidden_states : torch.Tensor
+            Shape: (batch_size, seq_len, in_dim).
+            The input embeddings or hidden states from which to predict measurement distributions.
+        target_tokens : torch.Tensor, optional
+            The integer tokens at each sequence position, shape: (batch_size, seq_len).
+        target_values : torch.Tensor, optional
+            Continuous target values for each token, shape: (batch_size, seq_len).
+            Missing or invalid values should be NaN to ensure they're masked out of the loss.
+        attention_mask : torch.Tensor, optional
+            Binary mask for valid positions: 1 means valid, 0 means masked, shape: (batch_size, seq_len).
+        is_generation : bool
+            - If False, we process all positions except the final one for training.
+            - If True, we might forward only the last state or handle generation-specific logic.
+        return_value_dist : bool
+            If True, returns the predicted Normal distributions. If False, returns None for distributions.
+        return_loss : bool
+            If True, computes and returns the negative log-likelihood loss. Otherwise, returns None for loss.
+
+        Returns
+        -------
+        value_dist : dict of {str : torch.distributions.Normal} or None
+            If `return_value_dist=True` and `is_generation=False`, a dict mapping token_key to Normal distributions
+            (each has shape `[batch_size, seq_len-1]` in training, or `[batch_size, 1]` in generation). 
+            If `is_generation=True`, may only contain the final position distribution.
+            Returns None if `return_value_dist=False`.
+        loss : torch.Tensor or None
+            The average negative log-likelihood loss over the batch, or None if `return_loss=False`.
+
+        Notes
+        -----
+        - When `is_generation=True` and `return_loss=True`, this method currently raises
+          `NotImplementedError`. Implementation depends on your generation-time loss usage.
+        - This method predicts distributions for all measurement tokens at every time step;
+          you may further optimize by only forwarding the relevant tokens.
+
+        Raises
+        ------
+        NotImplementedError
+            If `is_generation=True` and `return_loss=True`, as that path is not implemented.            
+
+        TODO
+        -----
+        - merge val_dists so only valid ones are returned
+        - At the moment we predict every possible measure at every point during training and generation
+          In reality we know what the target token was and so during training only the relevant hidden
+          states need to be forwarded.
         """
         
         if not is_generation:
@@ -108,6 +172,9 @@ class GaussianRegressionLayer(torch.nn.Module):
                 # combine
                 mask = token_mask & value_mask & atn_mask
                 
+                # if mask.sum().item() < 1:
+                #     logging.info("Ran value layer predict with no observed values")
+                
                 # Pass the first N-1 hidden states through the token specific regression layer. 
                 # We do not need the last hidden state as there is no target
                 # TODO: We pass everything, even if it is later masked - this can be significantly optimised but kept like this for readability.
@@ -132,7 +199,8 @@ class GaussianRegressionLayer(torch.nn.Module):
                 token_ll_per_patient = (log_prob * token_mask.float()).sum(-1) / (token_mask.float().sum(-1) + 1e-5)  # shape: torch.Size([bsz])
                 # print(token_ll_per_patient.shape)
                 
-                # average across batch
+                # average/sum across batch
+                # loss += -token_ll_per_patient.sum() 
                 loss += -token_ll_per_patient.mean() 
                 
             # loss /= len(self.measurement_tokens)
@@ -180,14 +248,23 @@ class GaussianRegressionLayer(torch.nn.Module):
     def forward(self, 
                 hidden_states: torch.Tensor,
                 token_key: str) -> torch.distributions.exponential.Exponential:
-        """Forward pass.
+        """
+        Forward pass for a single token's regression head, returning a Normal distribution.
 
-        Args:
-            hidden_states: The input tensor of shape (batch_size, sequence_length, in_dim)
+        Parameters
+        ----------
+        hidden_states : torch.Tensor
+            Shape: (batch_size, sequence_length, in_dim).
+            The embedding or hidden representation from which we predict measurement parameters.
+        token_key : str
+            A key (e.g. "Token 123") identifying the specific measurement token head to use.
 
-        Returns:
-            The `torch.distributions.normal.Normal` distribution with parameters `self.proj(hidden_states)`,
-            which will have output shape `(batch_size, sequence_length, 1)`.
+        Returns
+        -------
+        torch.distributions.Normal
+            A normal distribution parameterized by (mean, std), each of shape
+            (batch_size, sequence_length).
+
         """
         # The projection has shape (batch_size, sequence_length, 1). We want to squeeze that last dimension.
         Z = self.regression_layers[token_key](hidden_states)

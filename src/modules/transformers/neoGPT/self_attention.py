@@ -32,10 +32,6 @@ class MultiHeadedSelfAttention(nn.Module):
         elif attention_type == "global":
             # Just calculate attention over the full block
             pass
-        elif attention_type == "sparse":
-            # TODO: add sparse attention. This will be the last record of each token,
-            #       and longer ranges with specified tokens (e.g. diagnoses)
-            raise NotImplementedError
         else:
             raise NotImplementedError
         
@@ -48,13 +44,16 @@ class MultiHeadedSelfAttention(nn.Module):
         
         self.head_dim = self.embed_dim // self.num_heads
         if self.head_dim * self.num_heads != self.embed_dim:
-            raise ValueError(f"embed_dim must be divisible by num_heads (got `embed_dim`: {self.embed_dim} " +
-                             f"and `num_heads`: {self.num_heads}).")
+            raise ValueError(f"embed_dim must be divisible by num_heads")
 
         self.k_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=False)
         self.v_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=False)
         self.q_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=False)
         self.out_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=True)
+
+        # Check if we can use FlashAttention via scaled_dot_product_attention
+        # self.use_flash_attention = torch.cuda.is_available() and hasattr(nn.functional, "scaled_dot_product_attention")
+        self.use_flash_attention = False
         
     def _split_heads(self, tensor, num_heads, attn_head_size):
         """
@@ -87,6 +86,7 @@ class MultiHeadedSelfAttention(nn.Module):
         mask_value = torch.tensor(mask_value, dtype=attn_weights.dtype).to(attn_weights.device)
         attn_weights = torch.where(causal_mask, attn_weights, mask_value)
 
+        # TODO: does this do anything?
         if attention_mask is not None:
             # Apply the attention mask
             attn_weights = attn_weights + attention_mask
@@ -115,6 +115,7 @@ class MultiHeadedSelfAttention(nn.Module):
         use_cache:   GPT Cache is a system that enhances the performance and efficiency of language models by incorporating caching mechanisms. 
                      It aims to optimize the retrieval process of relevant information by storing precomputed embeddings and their corresponding similar vectors.
         """
+        B, T, C = hidden_states.size()
         
         query = self.q_proj(hidden_states)
         key = self.k_proj(hidden_states)
@@ -129,21 +130,43 @@ class MultiHeadedSelfAttention(nn.Module):
             past_value = layer_past[1]
             key = torch.cat((past_key, key), dim=-2)
             value = torch.cat((past_value, value), dim=-2)
-            raise NotImplementedError # Not tested
+            raise NotImplementedError("Key/value caching not implemented for this version")
 
-        if use_cache is True:
-            present = (key, value)
+        present = (key, value) if use_cache else None
+
+        attn_weights = None
+        if self.use_flash_attention and hidden_states.device.type == "cuda" and hidden_states.dtype in [torch.float16, torch.bfloat16]:
+            
+            # Update PAD mask to be compatible 
+            if attention_mask is not None:
+                additive_mask = attention_mask[..., :key.shape[2]]
+                additive_mask = additive_mask.expand(B, self.num_heads, query.shape[2], key.shape[2])
+            else:
+                additive_mask = None
+
+            if head_mask is not None:
+                logging.warning("head_mask is not supported in FlashAttention and will be ignored.")
+
+            # Flash-style attention via PyTorch native API
+            attn_output = nn.functional.scaled_dot_product_attention(
+                query, key, value,
+                attn_mask=additive_mask,
+                dropout_p=self.attn_dropout.p if self.training else 0.0,
+                is_causal=True
+            )
         else:
-            present = None
-
-        attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
+            attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
 
         attn_output = self._merge_heads(attn_output, self.num_heads, self.head_dim)
         attn_output = self.out_proj(attn_output)
         attn_output = self.resid_dropout(attn_output)
 
         outputs = (attn_output, present)
+        
         if output_attentions:
-            outputs += (attn_weights,)
+            if attn_weights is None:
+                logging.warning("output_attentions=True requested, but not available with FlashAttention.")
+            else:
+                outputs += (attn_weights,)
 
         return outputs  # a, present, (attentions)

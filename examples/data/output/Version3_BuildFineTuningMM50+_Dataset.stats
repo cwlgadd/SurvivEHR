@@ -1,0 +1,17 @@
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Fri Feb 28 20:35:13 2025 for gaddcz(836045)
+| Identity jobid 18602343 jobname sbatch
+| Running against project gokhalkm-optimal and in partition icelake-gpua100-shared
+| Requested cpu=24,mem=96G,node=1,billing=24,gres/gpu=1 - 1-04:00:00 walltime
+| Allocated cpu=24,mem=96G,node=1,billing=24,gres/gpu=1
+| Assigned to nodes bear-pg0208u15a
+| Command (null)
+| WorkDir /rds/homes/g/gaddcz/ondemand/data/sys/myjobs/projects/default/16
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Sat Mar  1 11:32:48 2025 for gaddcz(836045) on the BlueBEAR Cluster
+| Required (21:11:55 cputime, 13065633K memory used) - 14:57:34 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+

@@ -209,12 +209,15 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
 
     _trainer = pl.Trainer(
         logger=logger,
+        precision="bf16-mixed" if torch.cuda.is_bf16_supported() else "16-mixed",
         callbacks=callbacks,
         max_epochs=cfg.optim.num_epochs,
         log_every_n_steps=cfg.optim.log_every_n_steps,
         val_check_interval=cfg.optim.val_check_interval,
         limit_val_batches=cfg.optim.limit_val_batches,
         limit_test_batches=cfg.optim.limit_test_batches,
+        # accumulate_grad_batches=cfg.optim.accumulate_grad_batches,
+        # gradient_clip_val=1.0
     )
 
     return causal_experiment, CausalExperiment, _trainer

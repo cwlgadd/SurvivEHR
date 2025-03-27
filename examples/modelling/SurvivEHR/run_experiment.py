@@ -46,7 +46,8 @@ def run(cfg : DictConfig):
                                 min_workers=cfg.data.min_workers,
                                 overwrite_meta_information=cfg.data.meta_information_path,
                                 supervised=supervised,
-                                subsample_training=cfg.data.subsample_training
+                                subsample_training=cfg.data.subsample_training,
+                                seed=cfg.experiment.seed,
                                )
     
     # Get required information from initialised dataloader
@@ -101,7 +102,7 @@ def run(cfg : DictConfig):
                                                                                dm=dm, 
                                                                                vocab_size=vocab_size,
                                                                                checkpoint=load_from_checkpoint,
-                                                                               logger=logger
+                                                                               logger=logger,
                                                                               )
 
         case "zeroshot":
@@ -170,7 +171,7 @@ def run(cfg : DictConfig):
                                                                                 dm=dm, 
                                                                                 vocab_size=vocab_size,
                                                                                 checkpoint=load_from_checkpoint,
-                                                                                logger=logger
+                                                                                logger=logger,
                                                                                )
             
             # Specfiy path we should will find the best attained model after training, so that this can be loaded before testing
@@ -224,7 +225,7 @@ def run(cfg : DictConfig):
                                                                                  mode=mode,
                                                                                  risk_model=risk_model,
                                                                                  checkpoint=ft_ckpt,
-                                                                                 logger=logger
+                                                                                 logger=logger,
                                                                                 )
             new_checkpoint = supervised_ckpt_path
 

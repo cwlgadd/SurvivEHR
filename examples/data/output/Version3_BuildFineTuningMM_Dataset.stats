@@ -1,17 +1,34 @@
 +--------------------------------------------------------------------------+
 | Job on the BlueBEAR cluster:
-| Starting at Wed Feb  5 17:12:55 2025 for gaddcz(836045)
-| Identity jobid 17730413 jobname sbatch
+| Starting at Thu Feb 13 16:33:23 2025 for gaddcz(836045)
+| Identity jobid 17924060 jobname sbatch
 | Running against project gokhalkm-optimal and in partition icelake-gpua100-shared
-| Requested cpu=12,mem=48G,node=1,billing=12,gres/gpu=1 - 20:30:00 walltime
-| Allocated cpu=12,mem=48G,node=1,billing=12,gres/gpu=1
-| Assigned to nodes bear-pg0208u09a
+| Requested cpu=24,mem=96G,node=1,billing=24,gres/gpu=1 - 1-04:00:00 walltime
+| Allocated cpu=24,mem=96G,node=1,billing=24,gres/gpu=1
+| Assigned to nodes bear-pg0208u03a
 | Command (null)
 | WorkDir /rds/homes/g/gaddcz/ondemand/data/sys/myjobs/projects/default/16
 +--------------------------------------------------------------------------+
 +--------------------------------------------------------------------------+
-| Finished at Wed Feb  5 17:13:03 2025 for gaddcz(836045) on the BlueBEAR Cluster
-| Required (Unknown) - 00:00:08 walltime
+| Finished at Fri Feb 14 08:12:50 2025 for gaddcz(836045) on the BlueBEAR Cluster
+| Required (20:34:36 cputime, 12872557K memory used) - 15:39:26 walltime
 | JobState COMPLETING - Reason None
 | Exitcode 0:0
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Fri Feb 28 19:56:43 2025 for gaddcz(836045)
+| Identity jobid 18600384 jobname sbatch
+| Running against project gokhalkm-optimal and in partition icelake-gpua100-shared
+| Requested cpu=24,mem=96G,node=1,billing=24,gres/gpu=1 - 1-04:00:00 walltime
+| Allocated cpu=24,mem=96G,node=1,billing=24,gres/gpu=1
+| Assigned to nodes bear-pg0208u35a
+| Command (null)
+| WorkDir /rds/homes/g/gaddcz/ondemand/data/sys/myjobs/projects/default/16
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Fri Feb 28 20:04:02 2025 for gaddcz(836045) on the BlueBEAR Cluster
+| Required (00:38.058 cputime, 413443K memory used) - 00:07:20 walltime
+| JobState COMPLETING - Reason NonZeroExitCode
+| Exitcode 1:0
 +--------------------------------------------------------------------------+

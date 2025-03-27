@@ -29,6 +29,14 @@ experiment:
   # If we are evaluating the pre-trained model (with zero-shot, or fine-tuning), which outcomes do we consider
   fine_tune_outcomes: null           # For zero-shot, few-shot, and fine-tuning experiments 
 
+fine_tuning:
+  custom_stratification_method:
+    _target_: null                    # Used to add custom functions which take as argument the batch and return stratification labels for metrics calculated during callbacks
+    tokens: null                      # List[int]. Hydra will pass this kwarg into your callback's custom stratification function
+  head:
+    surv_weight: 1
+    value_weight: 0
+    
 optim: 
   num_epochs: 1                      # Number of epochs
   learning_rate: 3e-4                # AdamW learning rate (initial)
@@ -59,7 +67,7 @@ transformer:
   private_heads: 0                   # The number of heads to make private for value and survival prediction.
                                      #    E.g. if private_heads == 2, we have 2 MHA blocks whose n_embd//n_head dimensions are only used to predict values,
                                      #         and another two only used to predict survival curves - and the remainder are shared.
-  use_fine_tune_adapter: True        # Whether to freeze the Transformer body in fine-tuning and add an adapter module to reduce parameter count
+  use_fine_tune_adapter: False        # Whether to freeze the Transformer body in fine-tuning and add an adapter module to reduce parameter count
   adapter_dim: 8
 
 head:

@@ -2,28 +2,42 @@ import numpy as np
 import torch
 import torch.nn as nn
 import logging
-from CPRD.src.modules.head_layers.survival.desurv import ODESurvMultiple
+from CPRD.src.modules.head_layers.survival.desurv import ODESurvMultiple, ODESurvMultipleWithZeroTime
+
 from typing import Optional
 
 class ODESurvCompetingRiskLayer(nn.Module):
     """ Wrapper around competing risk version of DeSurv 
     """
 
-    def __init__(self, in_dim, hidden_dim, num_risks, device="cpu", n=15):
+    def __init__(self, in_dim, hidden_dim, num_risks, n=15, concurrent_strategy=None, device="cpu"):
         
         super().__init__()
-        self.sr_ode = ODESurvMultiple(cov_dim=in_dim,
-                                      hidden_dim=hidden_dim,
-                                      num_risks=num_risks,        # do not include pad token as an event 
-                                      device=device,
-                                      n=n) 
-                                                                                                                   
+
+        self.concurrent_strategy = concurrent_strategy
+        match self.concurrent_strategy:
+            case "zero_time":
+                logging.info(f"Using DeSurv model with non-zero instant risk.")
+                self.sr_ode = ODESurvMultipleWithZeroTime(cov_dim=in_dim,
+                                                          hidden_dim=hidden_dim,
+                                                          num_risks=num_risks,        # do not include pad token as an event 
+                                                          device=device,
+                                                          n=n) 
+            case _: 
+                logging.info(f"Using normal DeSurv model.")
+                self.sr_ode = ODESurvMultiple(cov_dim=in_dim,
+                                              hidden_dim=hidden_dim,
+                                              num_risks=num_risks,        # do not include pad token as an event 
+                                              device=device,
+                                              n=n)                 
+                                                                                                                       
         # the time grid which we generate over - assuming time scales are standardised
         self.t_eval = np.linspace(0, 1, 1000)    
         self.device = device
 
         logging.info(f"Using Competing-Risk DeSurv head.")
-        logging.info(f"In generation forwarding DeSurv on the grid between [{self.t_eval.min()}, {self.t_eval.max()}] with {len(self.t_eval)} intervals")
+        logging.info(f"Evaluating DeSurv-CR on the grid between [{self.t_eval.min()}, {self.t_eval.max()}] with {len(self.t_eval)} intervals")
+            
 
     def predict(self,
                 hidden_states: torch.tensor,                    # shape: torch.Size([bsz, seq_len, n_embd])
@@ -73,6 +87,10 @@ class ODESurvCompetingRiskLayer(nn.Module):
             in_hidden_state = in_hidden_state[tte_obs_mask == 1]
             tte_deltas = tte_deltas[tte_obs_mask == 1]
             k = k.flatten()[tte_obs_mask == 1]
+
+            if self.concurrent_strategy == "add_noise":
+                exp_dist = torch.distributions.exponential.Exponential(1000)
+                tte_deltas[tte_deltas == 0] += exp_dist.sample(tte_deltas[tte_deltas == 0].shape).to(tte_deltas.device)
 
             if return_loss:
                 # Calculate losses, excluding masked values. Each sr_ode returns the sum over observed events
@@ -132,7 +150,7 @@ class ODESurvCompetingRiskLayer(nn.Module):
         assert hidden_states.dim() == 2, hidden_states.shape
         
         # The normalised grid over which to predict
-        t_test = torch.tensor(np.concatenate([self.t_eval] * hidden_states.shape[0], 0), dtype=torch.float32, device=self.device)
+        t_test = torch.tensor(np.concatenate([self.t_eval] * hidden_states.shape[0], 0), dtype=torch.float32, device=self.device) 
         H_test = hidden_states.repeat_interleave(self.t_eval.size, 0).to(self.device, torch.float32)
 
         # Batched predict: Cannot make all predictions at once due to memory constraints
@@ -170,8 +188,14 @@ class ODESurvCompetingRiskLayer(nn.Module):
         except:
             print(next_index)
             raise NotImplementedError
-        logging.debug(f"competing-risk generation inverse tranform random sample: {rsample}~U(0,{surv[next_index][0,-1]})")
+            
+        logging.debug(f"competing-risk generation inverse transform random sample: {rsample}~U(0,{surv[next_index][0,-1]})")
         time_index = np.sum(surv[next_index] <= rsample) - 1
+
+        # import matplotlib.pyplot as plt
+        # plt.plot(self.t_eval[:50], surv[next_index][0,:50]); 
+        # plt.savefig("/rds/homes/g/gaddcz/Projects/CPRD/examples/modelling/SurvivEHR/notebooks/CompetingRisk/0_pretraining/fig_test_generation_curves.png")
+        
         delta_age = self.t_eval[time_index]
 
         next_token_index = next_index.reshape(-1, 1).to(self.device) + 1   # add one as the survival curves do not include the PAD token, which has token index 0

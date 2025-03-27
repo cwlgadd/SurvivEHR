@@ -189,7 +189,7 @@ class FewShotExperiment(pl.LightningModule):
             "lr_scheduler": lr_scheduler_config
         }
 
-def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
+def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None, **kwargs):
 
     assert dm.is_supervised, "Datamodule for must be supervised for `setup_fewshot_experiment`."
     assert cfg.experiment.fine_tune_outcomes is not None, "Must provide outcome list for `setup_fewshot_experiment`."

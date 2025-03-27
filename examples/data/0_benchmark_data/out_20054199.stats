@@ -1,0 +1,17 @@
++--------------------------------------------------------------------------+
+| Job on the BlueBEAR cluster:
+| Starting at Tue Mar 25 18:38:25 2025 for gaddcz(836045)
+| Identity jobid 20054199 jobname make_benchmark.sh
+| Running against project gokhalkm-optimal and in partition icelake-shared
+| Requested cpu=36,mem=144G,node=1,billing=36 - 10:00:00 walltime
+| Allocated cpu=36,mem=144G,node=1,billing=36
+| Assigned to nodes bear-pg0207u15b
+| Command /rds/homes/g/gaddcz/Projects/CPRD/examples/data/0_benchmark_data/make_benchmark.sh
+| WorkDir /rds/homes/g/gaddcz/Projects/CPRD/examples/data/0_benchmark_data
++--------------------------------------------------------------------------+
++--------------------------------------------------------------------------+
+| Finished at Tue Mar 25 22:06:33 2025 for gaddcz(836045) on the BlueBEAR Cluster
+| Required (1-15:49:39 cputime, 14622542K memory used) - 03:28:08 walltime
+| JobState COMPLETING - Reason None
+| Exitcode 0:0
++--------------------------------------------------------------------------+

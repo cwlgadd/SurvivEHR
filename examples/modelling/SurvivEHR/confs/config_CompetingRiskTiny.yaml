@@ -5,16 +5,20 @@ data:
   unk_freq_threshold: 0.0           # Frequency required for token to be included. Tokens below threshold are transformed to <UNK>
   min_workers: 20                   # The number of workers to create for dataloader
   global_diagnoses: False           # Whether we enforce diagnoses which occurred before context block to prepend the block
+  repeating_events: True            # Whether we allow repeated events. For example, if two Body Mass Index records exist then True retains both, whilst False keeps only the latest record.
   path_to_db: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/cprd.db                         # Path to SQL database
   path_to_ds: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/                # Path to Polars dataset
   # Path to meta_information. This is created when building datasets. It can then be modified, for example here we updated the default outlier bounds to custom values
   meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle
-  
+  subsample_training: null
+
 experiment:
   type: 'pre-train'                  # Options: ['pre-train', 'zero-shot', 'fine-tune']
   project_name: SurvEHR_${head.SurvLayer}
   run_id: PreTrain_${head.SurvLayer}_Tiny_${experiment.seed}
   fine_tune_id: null
+  notes: null                        # A detailed description of the run. Use this argument to capture any context or details that may help you recall the purpose or setup of this run in the future.
+  tags: null                         # Tags to be applied to a run in Weights and Biases
   train: True
   test: True
   verbose: True
@@ -24,8 +28,15 @@ experiment:
   ckpt_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/       # Where to save checkpoints during training 
   # If we are evaluating the pre-trained model (with zero-shot, or fine-tuning), which outcomes do we consider
   fine_tune_outcomes: null           # For zero-shot, few-shot, and fine-tuning experiments 
-  fine_tune_collapse: null
-  
+
+fine_tuning:
+  custom_stratification_method:
+    _target_: null                    # Used to add custom functions which take as argument the batch and return stratification labels for metrics calculated during callbacks
+    tokens: null                      # Hydra will pass this kwarg into your callback's custom stratification function
+  head:
+    surv_weight: 1
+    value_weight: 0
+      
 optim: 
   num_epochs: 5                      # Number of epochs
   learning_rate: 3e-4                # AdamW learning rate (initial)

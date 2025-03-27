@@ -35,7 +35,7 @@ if __name__ == "__main__":
         cfg = compose(config_name="config_CompetingRisk11M", overrides=[])
         
     # Create new dataset 
-    cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_MultiMorbidity2/"
+    cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_MultiMorbidity50+/"
     print(OmegaConf.to_yaml(cfg))
 
     # Build 

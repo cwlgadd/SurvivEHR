@@ -18,6 +18,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                  cfg,
                  vocab_size,
                  use_adapter=False,
+                 concurrent_strategy=None,
                 ):
         super().__init__()
         
@@ -38,7 +39,12 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                 raise NotImplementedError    #  this has been replaced with a SingleRisk layer, which must now be wrapped with a new class for the causal case
                 # self.surv_layer = ODESurvSingleRiskLayer(self.n_embd - self.n_embd_private, [], num_risks=vocab_size - 1, device="cuda")
             case "competing-risk" | "cr":
-                self.surv_layer = ODESurvCompetingRiskLayer(self.n_embd - self.n_embd_private, [32, 32], num_risks=vocab_size - 1, device="cuda")    # 32
+
+                self.surv_layer = ODESurvCompetingRiskLayer(self.n_embd - self.n_embd_private, 
+                                                            hidden_dim=32,
+                                                            num_risks=vocab_size-1,
+                                                            concurrent_strategy=concurrent_strategy,
+                                                            device="cuda")
             case _:
                 raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
 
@@ -147,15 +153,17 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                  tokens: torch.tensor,
                  ages: torch.tensor,
                  values: torch.tensor,
-                 covariates: Optional[torch.tensor] = None,
+                 static_covariates: Optional[torch.tensor] = None,
                  eos_token: Optional[int] = None,               # add DEATH to determine EOS later?
                  max_new_tokens: int = 50,
+                 **kwargs
                  ):
         """ Generate future samples for the single-risk
         
         # TODO: havent tested for batched generation
         """
-        
+
+        survs = []
         for _ in range(max_new_tokens):
             # crop tokens to the last block_size tokens 
             if tokens.shape[1] > self.block_size:
@@ -169,7 +177,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
             outputs, _, _ = self(tokens=tokens_window, 
                                  ages=ages_window,
                                  values=values_window, 
-                                 covariates=covariates,
+                                 covariates=static_covariates,
                                  is_generation=True,
                                  return_generation=True,
                                  return_loss=False,
@@ -177,6 +185,9 @@ class SurvStreamGPTForCausalModelling(nn.Module):
 
             # sample survival 
             surv = outputs["surv"]["surv_CDF"]
+            survs.append(surv)
+
+            
             token_next, delta_age =  self.surv_layer.sample_surv(surv)
             ages_next = ages[:, [-1]] + delta_age
             
@@ -201,8 +212,8 @@ class SurvStreamGPTForCausalModelling(nn.Module):
             if token_next == eos_token:
                 break
 
-            if ages_next > 120*365:
+            if ages_next > 120*365 / 1825:
                 logging.warning("Breaking generation due to implausible age")
                 break
             
-        return tokens, ages, values
+        return tokens, ages, values, survs
