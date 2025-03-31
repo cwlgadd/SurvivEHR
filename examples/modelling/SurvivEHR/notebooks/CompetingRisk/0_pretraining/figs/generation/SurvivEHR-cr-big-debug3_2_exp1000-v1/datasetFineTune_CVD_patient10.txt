@@ -1,0 +1,98 @@
+STATIC INFORMATION
+========================================================================================================================
+	SEX:               M
+	IMD:               5.0
+	ETHNICITY:         WHITE
+	birth_year:        1949.0
+
+
+GIVEN PATIENT CONTEXT
+========================================================================================================================
+	---------------------------------------------------------------------------------------------------------------------
+	MINFARCTION                                                                | 312                           | nan
+	IHDINCLUDINGMI_OPTIMALV2                                                   | 312                           | nan
+	---------------------------------------------------------------------------------------------------------------------
+	DEPRESSION                                                                 | 371                           | nan
+	---------------------------------------------------------------------------------------------------------------------
+	ALLERGICRHINITISCONJ                                                       | 373                           | nan
+	---------------------------------------------------------------------------------------------------------------------
+	OSTEOARTHRITIS                                                             | 375                           | nan
+	---------------------------------------------------------------------------------------------------------------------
+	Body_mass_index_3                                                          | 413                           | -0.31
+	O_E___height_1                                                             | 413                           | 0.11
+	O_E___weight_2                                                             | 413                           | -0.37
+	Diastolic_blood_pressure_5                                                 | 413                           | -0.34
+	Ex_smoker_84                                                               | 413                           | nan
+	Systolic_blood_pressure_4                                                  | 413                           | -0.20
+	ACE_Inhibitors_D2T                                                         | 413                           | nan
+	Insulin_Aurum_v2                                                           | 413                           | nan
+	Lipid_lowering_drugs_Optimal                                               | 413                           | nan
+	Metformin_612_A10BD2                                                       | 413                           | nan
+	SNRIs_OPTIMAL                                                              | 413                           | nan
+	Statins                                                                    | 413                           | nan
+	Weak_Opioids_Final                                                         | 413                           | nan
+	TYPE2DIABETES                                                              | 413                           | nan
+
+========================================================================================================================
+DIAGNOSIS SUMMARY
+['MINFARCTION', 'IHDINCLUDINGMI_OPTIMALV2', 'DEPRESSION', 'ALLERGICRHINITISCONJ', 'OSTEOARTHRITIS', 'TYPE2DIABETES']
+========================================================================================================================
+
+
+PREDICTED FUTURE EVENTS
+========================================================================================================================
+	Urine_albumin_creatinine_ratio_35                                          | 413                           | -0.49
+	Urine_albumin_creatinine_ratio_35                                          | 413                           | -0.43
+	---------------------------------------------------------------------------------------------------------------------
+	GFR_calculated_abbreviated_MDRD_34                                         | 414                           | -0.29
+	Haemoglobin_A1c_level___IFCC_standardised_6                                | 414                           | -0.16
+	HbA1c_level__DCCT_aligned__7                                               | 414                           | -0.41
+	Serum_HDL_cholesterol_level_100                                            | 414                           | -0.24
+	Serum_LDL_cholesterol_level_102                                            | 414                           | -0.41
+	Serum_cholesterol_97                                                       | 414                           | -0.44
+	Serum_creatinine_31                                                        | 414                           | -0.50
+	Serum_potassium_26                                                         | 414                           | -0.02
+	Serum_sodium_24                                                            | 414                           | -0.07
+	Serum_urea_level_29                                                        | 414                           | 0.08
+	---------------------------------------------------------------------------------------------------------------------
+	ACE_Inhibitors_D2T                                                         | 415                           | nan
+	Metformin_612_A10BD2                                                       | 415                           | nan
+	Metformin_612_A10BD2                                                       | 415                           | nan
+	Weak_Opioids_Final                                                         | 415                           | nan
+	Lipid_lowering_drugs_Optimal                                               | 415                           | nan
+	Metformin_612_A10BD2                                                       | 415                           | nan
+	Statins                                                                    | 415                           | nan
+	Weak_Opioids_Final                                                         | 415                           | nan
+	Lipid_lowering_drugs_Optimal                                               | 415                           | nan
+	SNRIs_OPTIMAL                                                              | 415                           | nan
+	Statins                                                                    | 415                           | nan
+	Weak_Opioids_Final                                                         | 415                           | nan
+	---------------------------------------------------------------------------------------------------------------------
+	Diastolic_blood_pressure_5                                                 | 416                           | -0.36
+	Systolic_blood_pressure_4                                                  | 416                           | -0.22
+	Diastolic_blood_pressure_5                                                 | 416                           | -0.36
+	Systolic_blood_pressure_4                                                  | 416                           | -0.16
+	CalciumChannelBlck_D2T                                                     | 416                           | nan
+	Lipid_lowering_drugs_Optimal                                               | 416                           | nan
+	Metformin_612_A10BD2                                                       | 416                           | nan
+	SNRIs_OPTIMAL                                                              | 416                           | nan
+	Statins                                                                    | 416                           | nan
+	Weak_Opioids_Final                                                         | 416                           | nan
+	---------------------------------------------------------------------------------------------------------------------
+	Levothyroxine_                                                             | 417                           | nan
+	Lipid_lowering_drugs_Optimal                                               | 417                           | nan
+	Metformin_612_A10BD2                                                       | 417                           | nan
+	NSAIDS_oral_OPTIMAL_final                                                  | 417                           | nan
+	Statins                                                                    | 417                           | nan
+	ACE_Inhibitors_D2T                                                         | 417                           | nan
+	Levothyroxine_                                                             | 417                           | nan
+	Lipid_lowering_drugs_Optimal                                               | 417                           | nan
+	Metformin_612_A10BD2                                                       | 417                           | nan
+	---------------------------------------------------------------------------------------------------------------------
+	NSAIDS_oral_OPTIMAL_final                                                  | 418                           | nan
+	Statins                                                                    | 418                           | nan
+	Lipid_lowering_drugs_Optimal                                               | 418                           | nan
+	Metformin_612_A10BD2                                                       | 418                           | nan
+	NSAIDS_oral_OPTIMAL_final                                                  | 418                           | nan
+	Statins                                                                    | 418                           | nan
+	Basophil_count_22                                                          | 418                           | -0.48

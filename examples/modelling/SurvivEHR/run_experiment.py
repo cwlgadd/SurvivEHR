@@ -30,7 +30,7 @@ def run(cfg : DictConfig):
     os.environ["HYDRA_FULL_ERROR"] = "1"
 
     # make dataloader
-    supervised = True if cfg.experiment.fine_tune_outcomes is not None else False    
+    supervised = True if (cfg.fine_tuning.fine_tune_outcomes is not None) or (cfg.fine_tuning.custom_outcome_method._target_ is not None) else False    
     logging.info("="*100)
     logging.info(f"# Loading DataModule for dataset {cfg.data.path_to_ds}. This will be loaded in {'supervised' if supervised else 'causal'} form.")
     logging.info("="*100)

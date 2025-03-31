@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import logging
-from CPRD.src.modules.head_layers.survival.desurv import ODESurvMultiple, ODESurvMultipleWithZeroTime
+from CPRD.src.modules.head_layers.survival.desurv import ODESurvMultiple
 
 from typing import Optional
 
@@ -13,30 +13,22 @@ class ODESurvCompetingRiskLayer(nn.Module):
     def __init__(self, in_dim, hidden_dim, num_risks, n=15, concurrent_strategy=None, device="cpu"):
         
         super().__init__()
-
         self.concurrent_strategy = concurrent_strategy
-        match self.concurrent_strategy:
-            case "zero_time":
-                logging.info(f"Using DeSurv model with non-zero instant risk.")
-                self.sr_ode = ODESurvMultipleWithZeroTime(cov_dim=in_dim,
-                                                          hidden_dim=hidden_dim,
-                                                          num_risks=num_risks,        # do not include pad token as an event 
-                                                          device=device,
-                                                          n=n) 
-            case _: 
-                logging.info(f"Using normal DeSurv model.")
-                self.sr_ode = ODESurvMultiple(cov_dim=in_dim,
-                                              hidden_dim=hidden_dim,
-                                              num_risks=num_risks,        # do not include pad token as an event 
-                                              device=device,
-                                              n=n)                 
+
+        self.sr_ode = ODESurvMultiple(cov_dim=in_dim,
+                                      hidden_dim=hidden_dim,
+                                      num_risks=num_risks,        # do not include pad token as an event 
+                                      device=device,
+                                      n=n)                 
                                                                                                                        
         # the time grid which we generate over - assuming time scales are standardised
         self.t_eval = np.linspace(0, 1, 1000)    
         self.device = device
 
-        logging.info(f"Using Competing-Risk DeSurv head.")
-        logging.info(f"Evaluating DeSurv-CR on the grid between [{self.t_eval.min()}, {self.t_eval.max()}] with {len(self.t_eval)} intervals")
+        # log setup information
+        logging.info(f"Using a DeSurv Competing-Risk head.")
+        logging.info(f"\tWith concurrent strategy={self.concurrent_strategy} for handling simultaneous events.")
+        logging.info(f"\tEvaluating on a time grid between [{self.t_eval.min()}, {self.t_eval.max()}] with {len(self.t_eval)} intervals")
             
 
     def predict(self,
@@ -192,10 +184,6 @@ class ODESurvCompetingRiskLayer(nn.Module):
         logging.debug(f"competing-risk generation inverse transform random sample: {rsample}~U(0,{surv[next_index][0,-1]})")
         time_index = np.sum(surv[next_index] <= rsample) - 1
 
-        # import matplotlib.pyplot as plt
-        # plt.plot(self.t_eval[:50], surv[next_index][0,:50]); 
-        # plt.savefig("/rds/homes/g/gaddcz/Projects/CPRD/examples/modelling/SurvivEHR/notebooks/CompetingRisk/0_pretraining/fig_test_generation_curves.png")
-        
         delta_age = self.t_eval[time_index]
 
         next_token_index = next_index.reshape(-1, 1).to(self.device) + 1   # add one as the survival curves do not include the PAD token, which has token index 0

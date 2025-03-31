@@ -293,13 +293,25 @@ class FineTuneExperiment(pl.LightningModule):
 def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger=None, **kwargs):
 
     assert dm.is_supervised, "Datamodule for must be supervised for `setup_finetune_experiment` ."
-    assert cfg.experiment.fine_tune_outcomes is not None, "Must provide outcome list for `setup_finetune_experiment`."
 
     # Which tokens we want to predict as outcomes. 
     #    In the fine-tuning setting these are used to construct a new head which can be fine-tuned.
     #    TODO: a new clinical prediction model callback then needs to be made (or existing one editted) for this new case
-    outcome_tokens =  dm.encode(cfg.experiment.fine_tune_outcomes)
-    outcome_dict = {_key: _value for _key, _value in zip(cfg.experiment.fine_tune_outcomes, outcome_tokens)}
+    if cfg.fine_tuning.fine_tune_outcomes is not None:
+        # Use outcomes provided directly
+        outcomes = cfg.experiment.fine_tune_outcomes
+        logging.info("Setting outcome list based on cfg.fine_tuning.fine_tune_outcomes")
+    elif cfg.fine_tuning.custom_outcome_method._target_ is not None:
+        # Use outcomes decided by some custom criteria
+        module_name, function_name = cfg.fine_tuning.custom_outcome_method._target_.rsplit(".", 1)
+        outcome_method = getattr(importlib.import_module(module_name), function_name)
+        outcomes = outcome_method(dm)
+        logging.info("Setting outcome list based on cfg.fine_tuning.custom_outcome_method._target_")
+    else:
+        # As this is a supervised CPM experiment, we require there to be some outcomes.
+        raise NotImplementedError
+    outcome_tokens = dm.encode(outcomes)
+    outcome_dict = {_key: _value for _key, _value in zip(outcomes, outcome_tokens)}
     logging.info(f"Running {risk_model} fine-tuning experiment with outcomes {outcome_dict}")
     
     # Load pre-trained model, overriding config if necessary
@@ -320,8 +332,8 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
         case _:
             raise NotImplementedError
 
-    if torch.cuda.is_available():
-        finetune_experiment = torch.compile(finetune_experiment)
+    # if torch.cuda.is_available():
+    #     finetune_experiment = torch.compile(finetune_experiment)
             
     logging.debug(finetune_experiment)
 
@@ -342,14 +354,10 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
                  lr_monitor,
                  ]
 
-    # ... custom callbacks
-    val_batch = next(iter(dm.val_dataloader()))
-    test_batch = next(iter(dm.test_dataloader()))
-    
     # Hidden state embedding
     logging.debug("Creating hidden state embedding callback")
-    embedding_callback = Embedding(val_batch=val_batch,
-                                   test_batch=test_batch
+    embedding_callback = Embedding(val_batch=next(iter(dm.val_dataloader())),
+                                   test_batch=next(iter(dm.test_dataloader()))
                                   )
     callbacks.append(embedding_callback)
 
@@ -386,24 +394,16 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
     callbacks.append(metric_callback)
 
     # Construct callback
-    try:
-        # Extract the module and function names from the configuration string
+    if cfg.fine_tuning.custom_stratification_method._target_ is not None:
         module_name, function_name = cfg.fine_tuning.custom_stratification_method._target_.rsplit(".", 1)
-        # Dynamically import the module and retrieve the function reference
         stratification_method = getattr(importlib.import_module(module_name), function_name)
-        # Extract fixed keyword arguments from the configuration (excluding the function target path)
-        fixed_kwargs = {k: v for k, v in cfg.fine_tuning.custom_stratification_method.items() if k != "_target_"}
-        # Create a partially applied function with pre-defined keyword arguments
-        custom_stratification_method = functools.partial(stratification_method, **fixed_kwargs)
-        # Instantiate the metric callback, passing the partially applied function
+        custom_stratification_method = functools.partial(stratification_method, **{"tokens": outcome_tokens})
         metric_callback = RestrictedMeanSurvivalTime(outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
                                                      log_combined=True,
                                                      log_individual=False,
                                                      custom_stratification_method=custom_stratification_method
                                                     )
         callbacks.append(metric_callback)
-    except:        
-        print(cfg.fine_tuning.custom_stratification_method)
 
     _trainer = pl.Trainer(
         logger=logger,

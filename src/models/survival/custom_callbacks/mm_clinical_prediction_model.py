@@ -15,6 +15,7 @@ import pandas as pd
 import seaborn as sns
 import logging
 import copy
+import traceback
 
 
 class RestrictedMeanSurvivalTime(Callback):
@@ -78,11 +79,11 @@ class RestrictedMeanSurvivalTime(Callback):
 
     def get_rmst(self, cdf, lbls_outcome, target_ages, lbls_stratification, _trainer, _pl_module, log_name, suppress_warnings=False):
         """
-        Calculate and Restricted Mean Survival Time under the _pl_module.model
+        Calculate Restricted Mean Survival Time under the _pl_module.model
 
         Note: This method averages over the samples in the stratification and then logs the average. This is repeated across different batches, and the average of those is
                 reported. This introduces some extra variability. If one batch has only one sample with "stratification 1", and another has many - the average of each is weighted equally.
-                TODO: is there a get around with wandb logging? This should still lead to an unbiased estimator.
+                TODO: is there a get around this? This should still lead to an unbiased estimator - but with higher variance.
         """
         
         metric_dict = {}
@@ -92,6 +93,8 @@ class RestrictedMeanSurvivalTime(Callback):
     
             for strat_label in unique_labels:
                 is_label = [lbl == strat_label for lbl in lbls_stratification]
+                is_label_new = np.array(lbls_stratification) == strat_label
+                assert is_label == is_label_new
     
                 # Convert to the survival function
                 sub_surv = 1 - cdf[is_label, :]
@@ -100,7 +103,8 @@ class RestrictedMeanSurvivalTime(Callback):
                 # Get batch average RMST for the stratified subgroup. This introduces a batch effect.
                 rmst = 0
                 for sample in range(sub_surv.shape[0]):
-                    _rmst = np.min((1, trapz(sub_surv[sample, :], _pl_module.model.surv_layer.t_eval)))
+                    # _rmst = np.min((1, trapz(sub_surv[sample, :], _pl_module.model.surv_layer.t_eval)))
+                    _rmst = trapz(sub_surv[sample, :], _pl_module.model.surv_layer.t_eval)
                     rmst += _rmst / sub_surv.shape[0]
 
                 # Log the average of this stratified group within this batch.
@@ -109,18 +113,17 @@ class RestrictedMeanSurvivalTime(Callback):
             self.log_dict(metric_dict)
     
         except:
-            if suppress_warnings is False:
-                logging.warning("Unable to calculate RMST, this batch will be skipped - this will bias metrics.")
-            else:
-                pass
+            if not suppress_warnings:
+                logging.warning(f"Failed to calculate Restricted Mean Survival Time: {e}")
+                logging.debug(traceback.format_exc())
 
     def get_ost(self, cdf, lbls_outcome, target_ages, lbls_stratification, _trainer, _pl_module, log_name, suppress_warnings=False):
         """
-        Calculate and Restricted Mean Survival Time under the _pl_module.model
+        Calculate the Observed Survival Time (OST) based on actual event observations.
 
-        Note: This method averages over the samples in the stratification and then logs the average. This is repeated across different batches, and the average of those is
-                reported. This introduces some extra variability. If one batch has only one sample with "stratification 1", and another has many - the average of each is weighted equally.
-                TODO: is there a get around with wandb logging? This should still lead to an unbiased estimator.
+        Note: Averages over samples in each stratified group and logs the average per batch.
+        This introduces some batch-level variability — results may be biased if group sizes vary widely across batches.
+
         """
         
         metric_dict = {}
@@ -140,11 +143,13 @@ class RestrictedMeanSurvivalTime(Callback):
                 # Get the batch average observed restricted survival time within each stratification. This also introduces the same batch effect
                 ost = []
                 for sample in range(sub_surv.shape[0]):
-                    if sub_lbls_outcome[sample] > 0:
-                        # If outcome was observed
-                        _ost = np.min((1, sub_target_ages[sample])) 
-                    else:
-                        _ost = 1
+                    # if sub_lbls_outcome[sample] > 0:
+                    #     # If outcome was observed
+                    #     # _ost = np.min((1, sub_target_ages[sample])) 
+                    #     _ost = sub_target_ages[sample]
+                    # else:
+                    #     _ost = 1
+                    _ost = sub_target_ages[sample]
                     ost.append(_ost / sub_surv.shape[0])
                     
                 ost = np.sum(ost)
@@ -156,10 +161,9 @@ class RestrictedMeanSurvivalTime(Callback):
             self.log_dict(metric_dict)
     
         except:
-            if suppress_warnings is False:
-                logging.warning("Unable to calculate Observed Survival Time, this batch will be skipped - this will bias metrics.")
-            else:
-                pass
+            if not suppress_warnings:
+                logging.warning(f"Failed to calculate Observed Survival Time: {e}")
+                logging.debug(traceback.format_exc())
 
     def run_callback(self,
                      _trainer,

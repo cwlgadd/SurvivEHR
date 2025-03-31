@@ -11,17 +11,53 @@ from CPRD.src.models.survival.custom_callbacks.causal_eval import PerformanceMet
 
 class CausalExperiment(pl.LightningModule):
     r"""
+    PyTorch Lightning module for causal survival modeling using SurvStreamGPT.
+
+    This experiment class wraps the SurvStreamGPTForCausalModelling model and integrates
+    training, validation, and test steps with support for various learning rate schedulers,
+    including warm-up and cosine annealing with or without decay.
+
+    Parameters
+    ----------
+    cfg : omegaconf.DictConfig
+        Configuration object containing optimizer, scheduler, and experiment parameters.
+    vocab_size : int
+        The vocabulary size used by the token embedding layer in the model.
+    concurrent_strategy : str, optional
+        Strategy for handling concurrent events (e.g., "add_noise"), by default "add_noise".
+
+    Attributes
+    ----------
+    cfg : omegaconf.DictConfig
+        The configuration object.
+    model : SurvStreamGPTForCausalModelling
+        The wrapped survival model.
+
+    Methods
+    -------
+    forward(batch, is_generation=False, return_loss=True, return_generation=False)
+        Forward pass of the model.
+    training_step(batch, batch_idx)
+        Executes a training step and logs loss metrics.
+    validation_step(batch, batch_idx)
+        Executes a validation step and logs loss metrics.
+    test_step(batch, batch_idx)
+        Executes a test step and logs loss metrics.
+    configure_optimizers()
+        Configures the optimizer and learning rate scheduler(s).
     """
 
     def __init__(self,
                  cfg,
                  vocab_size,
+                 concurrent_strategy="add_noise"
                 ):
         
         super().__init__()
         self.save_hyperparameters()
         self.cfg = cfg
-        self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size)
+        self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size,
+                                                     concurrent_strategy=concurrent_strategy)
 
     def forward(self, batch, is_generation=False, return_loss=True, return_generation=False):
         # Because of how DeSurv is coded we have the loss returned in the forward, so we have some redundancy
@@ -148,10 +184,33 @@ class CausalExperiment(pl.LightningModule):
             "lr_scheduler": lr_scheduler_config
         }
 
-    def on_train_epoch_end(self):
-        current_batchch = self.trainer.current_epoch
 
 def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
+    """
+    Set up the causal experiment module, trainer, and callbacks for training or evaluation.
+
+    Parameters
+    ----------
+    cfg : omegaconf.DictConfig
+        Hydra configuration object with optimizer, trainer, and logging parameters.
+    dm : LightningDataModule
+        A PyTorch Lightning data module that provides train/val/test dataloaders. For formatting see https://github.com/cwlgadd/FastEHR
+    vocab_size : int
+        Size of the input vocabulary used in the model.
+    checkpoint : str or None, optional
+        Path to a checkpoint file to resume from. If None, initializes a new model.
+    logger : pl.loggers.Logger or None, optional
+        Logger instance (e.g., WandB or TensorBoard). If None or logging is disabled, no logger is used.
+
+    Returns
+    -------
+    causal_experiment : CausalExperiment
+        The initialized CausalExperiment module.
+    CausalExperiment : type
+        The class reference for CausalExperiment.
+    _trainer : pl.Trainer
+        The configured PyTorch Lightning trainer with callbacks.
+    """
 
     if checkpoint is None:
         causal_experiment = CausalExperiment(cfg=cfg, vocab_size=vocab_size)
@@ -159,6 +218,7 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
         causal_experiment = CausalExperiment.load_from_checkpoint(checkpoint,
                                                                   cfg=cfg, 
                                                                   )
+    # causal_experiment = torch.compile(causal_experiment)
     logging.debug(causal_experiment)
 
     # Initialize wandb logger
@@ -209,7 +269,8 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
 
     _trainer = pl.Trainer(
         logger=logger,
-        precision="bf16-mixed" if torch.cuda.is_bf16_supported() else "16-mixed",
+        # precision="bf16-mixed" if torch.cuda.is_bf16_supported() else "16-mixed",
+        strategy="ddp",
         callbacks=callbacks,
         max_epochs=cfg.optim.num_epochs,
         log_every_n_steps=cfg.optim.log_every_n_steps,
@@ -224,6 +285,31 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
 
 
 class CosineAnnealingWarmRestartsDecay(CosineAnnealingWarmRestarts):
+    """
+    Modified CosineAnnealingWarmRestarts scheduler with multiplicative decay of base learning rate at each restart.
+
+    Parameters
+    ----------
+    optimizer : torch.optim.Optimizer
+        Wrapped optimizer.
+    T_0 : int
+        Number of iterations for the first restart.
+    T_mult : int, optional
+        Multiplicative factor of T_0 after each restart, by default 1.
+    eta_min : float, optional
+        Minimum learning rate value, by default 0.
+    last_epoch : int, optional
+        The index of last epoch, by default -1.
+    verbose : bool, optional
+        If True, prints learning rate updates, by default False.
+    decay : float, optional
+        Multiplicative factor by which base_lrs are decayed at each restart, by default 1 (no decay).
+
+    Notes
+    -----
+    - At the end of each restart cycle, the base learning rates are multiplied by `decay`.
+    - This allows cosine annealing with a decaying amplitude over time.
+    """
     def __init__(self, 
                  optimizer,
                  T_0, 

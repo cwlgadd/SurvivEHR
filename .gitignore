@@ -160,5 +160,5 @@ cython_debug/
 #.idea/
 
 
-examples/modelling/SurvStreamGPT/outputs/
 data/database/output/
+examples/modelling/SurvivEHR/outputs/

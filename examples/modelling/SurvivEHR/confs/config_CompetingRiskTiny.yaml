@@ -26,13 +26,16 @@ experiment:
   log: True
   log_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/                    # Where to place any log files
   ckpt_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/       # Where to save checkpoints during training 
-  # If we are evaluating the pre-trained model (with zero-shot, or fine-tuning), which outcomes do we consider
-  fine_tune_outcomes: null           # For zero-shot, few-shot, and fine-tuning experiments 
 
 fine_tuning:
+  # Fine-tuning outcomes
+  # If we are evaluating the pre-trained model (with zero-shot, or fine-tuning), which outcomes do we consider
+  fine_tune_outcomes: null           # For zero-shot, few-shot, and fine-tuning experiments 
+  custom_outcome_method:
+    _target_: null
+  # Custom Stratification method for callbacks (splitting logs by stratification labels determined by custom method)
   custom_stratification_method:
     _target_: null                    # Used to add custom functions which take as argument the batch and return stratification labels for metrics calculated during callbacks
-    tokens: null                      # Hydra will pass this kwarg into your callback's custom stratification function
   head:
     surv_weight: 1
     value_weight: 0
