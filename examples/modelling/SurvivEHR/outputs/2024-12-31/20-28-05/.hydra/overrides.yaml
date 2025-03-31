@@ -1,6 +1,0 @@
-- experiment.run_id=SurvivEHR-cr-v1
-- transformer.n_embd=1024
-- optim.scheduler=cosineannealinglr
-- optim.scheduler_periods=100000
-- optim.scheduler_warmup=False
-- optim.learning_rate=1e-3

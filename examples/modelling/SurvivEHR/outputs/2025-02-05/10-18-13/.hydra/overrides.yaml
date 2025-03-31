@@ -1,9 +1,0 @@
-- experiment.project_name=SurvivEHR-Study1-CVD
-- experiment.type=fine-tune-cr
-- experiment.run_id=SurvivEHR-cr-small-v1
-- experiment.fine_tune_id=cvd-fine-tune-cr-A8-Ns6000000-512-SBATCH
-- experiment.fine_tune_outcomes=["IHDINCLUDINGMI_OPTIMALV2", "ISCHAEMICSTROKE_V2",
-  "MINFARCTION", "STROKEUNSPECIFIED_V2", "STROKE_HAEMRGIC"]
-- experiment.train=True
-- experiment.test=True
-- experiment.notes=Ablation on increasing cohort study size result

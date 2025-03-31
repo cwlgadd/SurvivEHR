@@ -1,4 +1,0 @@
-- experiment.type=clinicalpredictionmodel
-- experiment.run_id=CR_11M_new
-- experiment.fine_tune_outcomes=["IHDINCLUDINGMI_OPTIMALV2", "ISCHAEMICSTROKE_V2",
-  "MINFARCTION", "STROKEUNSPECIFIED_V2", "STROKE_HAEMRGIC"]

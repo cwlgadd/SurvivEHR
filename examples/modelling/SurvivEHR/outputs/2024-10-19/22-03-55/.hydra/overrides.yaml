@@ -1,9 +1,0 @@
-- experiment.run_id=SR_11M_low_value_weighting
-- data.meta_information_path=/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle
-- data.batch_size=32
-- optim.scheduler=decaycawarmrestarts
-- optim.learning_rate=1e-4
-- transformer.private_heads=2
-- head.SurvLayer=sr
-- head.surv_weight=1.0
-- head.value_weight=0.02
