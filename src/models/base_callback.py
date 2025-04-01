@@ -17,6 +17,9 @@ import wandb
 from typing import Optional
 
 class BaseCallback(object):
+    """
+    A base class to hold samples in memory for compute intensive callbacks which cant be ran on the entire dataset.
+    """
 
     def __init__(self, val_batch=None, test_batch=None):
 
@@ -35,32 +38,6 @@ class BaseCallback(object):
             self.test_batch = test_batch
         else:
             self.do_test = False
-
-    def embedding(self, ax, z, labels, label_dict=None):
-        """
-        Plot a 2 or 3d latent embedding on axis `ax`.
-            Optionally include labels, or a metric tied to each sample
-        """
-
-        # col_iterator = iter(get_cmap("tab10").colors)
-        # col_iterator = iter(sns.color_palette("deep", n_colors=np.unique(labels), as_cmap=True))
-        col_iterator = iter(sns.color_palette("Set2"))   # , n_colors=np.unique(labels)
-        for lbl in np.unique(labels):
-            mask = np.ma.getmask(np.ma.masked_equal(labels, lbl))
-            color = next(col_iterator)
-            c = label_dict[lbl] if label_dict is not None else lbl
-            if z.shape[1] == 3:
-                ax.scatter(z[mask, 0], z[mask, 1], z[mask,2], c=np.array([color]), label=c, alpha=0.25, edgecolors='none')
-            else:
-                ax.scatter(z[mask, 0], z[mask, 1], c=np.array([color]), label=c, alpha=0.25, edgecolors='none')
-
-        ax.legend()
-        ax.set_xlabel("Embed dim $1$")
-        ax.set_ylabel("Embed dim $2$")
-        if z.shape[1] == 3:
-            ax.set_zlabel("Embed dim $3$")
-
-        return ax
 
     # def histogram(self, ax, z, labels, xlabel, kde_only=True):
     #     """
@@ -94,11 +71,56 @@ class Embedding(Callback, BaseCallback):
     """
     Callback to view latent embedding  of labelled data at each recurrent step,
      plotting the first two principal components of each latent embedding, and the free-energy of each component
+
+    
     """
-    def __init__(self, val_batch=None, test_batch=None):
+    def __init__(self, 
+                 val_batch=None,
+                 test_batch=None,
+                 custom_stratification_method=None,):
+        """
+
+        KWARGS:
+            val_batch:
+                            A validation batch to be used for the embedding callback.
+            test_batch:
+                            A test batch to be used for the embedding callback.
+            custom_stratification_method:
+                             A function which takes as an argument the batch, and returns a stratification label
+                             For example, if we want to stratify by gender then the batch dictionary will be inputted, and the return will be a list 
+                             of length equal to the number of samples, of the form ["male", "female", "male",...] etc. and the unique strings will be used
+                             to stratify the RMST logging.
+        """
         Callback.__init__(self)
         BaseCallback.__init__(self, val_batch=val_batch, test_batch=test_batch)
+        self.custom_stratification_method = custom_stratification_method
 
+    def embedding(self, ax, z, labels, label_dict=None):
+        """
+        Plot a 2 or 3d latent embedding on axis `ax`.
+            Optionally include labels, or a metric tied to each sample
+        """
+
+        # col_iterator = iter(get_cmap("tab10").colors)
+        # col_iterator = iter(sns.color_palette("deep", n_colors=np.unique(labels), as_cmap=True))
+        col_iterator = iter(sns.color_palette("Set2"))   # , n_colors=np.unique(labels)
+        for lbl in np.unique(labels):
+            mask = np.ma.getmask(np.ma.masked_equal(labels, lbl))
+            color = next(col_iterator)
+            c = label_dict[lbl] if label_dict is not None else lbl
+            if z.shape[1] == 3:
+                ax.scatter(z[mask, 0], z[mask, 1], z[mask,2], c=np.array([color]), label=c, alpha=0.25, edgecolors='none')
+            else:
+                ax.scatter(z[mask, 0], z[mask, 1], c=np.array([color]), label=c, alpha=0.25, edgecolors='none')
+
+        ax.legend()
+        ax.set_xlabel("Embed dim $1$")
+        ax.set_ylabel("Embed dim $2$")
+        if z.shape[1] == 3:
+            ax.set_zlabel("Embed dim $3$")
+
+        return ax
+    
     def run_callback(self, 
                      _trainer,
                      _pl_module,
@@ -106,20 +128,23 @@ class Embedding(Callback, BaseCallback):
                      log_name:               str='Embedding',
                      proj:                   str="umap", 
                      proj_3d:                bool=False,
-                     labels:                 Optional[np.array] = None, 
                      **kwargs):
 
         # Push features through the model to get the hidden dimension from the Transformer output:
         #      hidden_states: torch.Size([bsz, seq_len, hid_dim])
         _, _, hidden_states = _pl_module(batch)
 
+        # Optionally process the batch using a custom method to label each patient into a different stratification group.
+        if self.custom_stratification_method is not None and callable(self.custom_stratification_method):
+            labels = self.custom_stratification_method(batch)
+            assert len(labels) == batch['target_token'].cpu().numpy().shape[0]
+        else:
+            labels = ["no_stratification" for _ in range(batch['target_token'].cpu().numpy().shape[0])]
+
         # Plot each resolution-embedding vectors
         wandb_images = []
 
         hidden_states = np.asarray(hidden_states.detach().cpu()).reshape(-1,hidden_states.shape[-1])
-
-        if labels is None:
-            labels = -np.ones(hidden_states.shape[0],)
 
         # Plot depends on shape of latent dimension
         if hidden_states.shape[1] == 1:
@@ -167,7 +192,6 @@ class Embedding(Callback, BaseCallback):
 
     def on_validation_epoch_end(self, trainer, pl_module):
         if self.do_validation is True:
-            # Run callback
             self.run_callback(_trainer=trainer, 
                               _pl_module = pl_module,
                               batch=self.val_batch,
@@ -176,7 +200,6 @@ class Embedding(Callback, BaseCallback):
 
     def on_test_epoch_end(self, trainer, pl_module):
         if self.do_test is True:
-            # Run callback
             self.run_callback(_trainer=trainer, 
                               _pl_module = pl_module,
                               batch=self.test_batch,

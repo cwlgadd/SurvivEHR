@@ -313,8 +313,11 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
     outcome_tokens = dm.encode(outcomes)
     outcome_dict = {_key: _value for _key, _value in zip(outcomes, outcome_tokens)}
     logging.info(f"Running {risk_model} fine-tuning experiment with outcomes {outcome_dict}")
-    
-    # Load pre-trained model, overriding config if necessary
+
+    #########################################################
+    # Load pre-trained model,                               #
+    #     overriding config where necessary                 #
+    #########################################################
     match mode:
         case "load_from_finetune":
             assert checkpoint is not None
@@ -337,10 +340,14 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
             
     logging.debug(finetune_experiment)
 
-    # Initialize wandb logger
+    ####################
+    # Use given logger #
+    ####################
     logger = logger if cfg.experiment.log == True else None
 
-    # Make all callbacks
+    #############################
+    # Make experiment callbacks #
+    #############################
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         dirpath=cfg.experiment.ckpt_dir,
         filename=cfg.experiment.run_id + "_" + cfg.experiment.fine_tune_id, 
@@ -354,13 +361,7 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
                  lr_monitor,
                  ]
 
-    # Hidden state embedding
-    logging.debug("Creating hidden state embedding callback")
-    embedding_callback = Embedding(val_batch=next(iter(dm.val_dataloader())),
-                                   test_batch=next(iter(dm.test_dataloader()))
-                                  )
-    callbacks.append(embedding_callback)
-
+    # Early stopping
     if cfg.optim.early_stop:
         logging.debug("Creating early stopping callback")
         early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
@@ -370,34 +371,53 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
             verbose=cfg.experiment.verbose,
         )
         callbacks.append(early_stop_callback)
+    else:
+        logging.warning(f"Early stopping is not being used: {cfg.optim.early_stop}")
 
-    # Add callbacks which apply to outcome prediction tasks
-    ###########
-    # Create a hash map which maps the tokens of interset to their corresponding desurv output index
-    #    For fine-tuning, where the token is condensed into a subset, this is a map from this new token value
-    #    and the corresponding DeSurv output index
-    # TODO:
-    #    SingleRisk and Competing Risk models have a slightly different structure now, and so they are treated 
-    #    a bit differently here also. TODO: update CompetingRisk to follow the same structure of taking in the
-    #    target tokens
-    if risk_model == "single-risk":
-        outcome_token_to_desurv_output_index = {token: 0 for token_idx, token in enumerate(outcome_tokens)}
-    if risk_model == "competing-risk":
-        outcome_token_to_desurv_output_index = {token: token_idx for token_idx, token in enumerate(outcome_tokens)}
-    # Construct callback
-    metric_callback = PerformanceMetrics(outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
-                                         log_combined=True,
-                                         log_individual=False if risk_model == "single-risk" else False,
-                                         log_ctd=True, 
-                                         log_ibs=True,
-                                         log_inbll=True)
-    callbacks.append(metric_callback)
-
-    # Construct callback
+    ########################
+    # Validation callbacks #
+    ########################
+    
+    # Get method for patient stratification to be used in some of the callbacks 
     if cfg.fine_tuning.custom_stratification_method._target_ is not None:
         module_name, function_name = cfg.fine_tuning.custom_stratification_method._target_.rsplit(".", 1)
         stratification_method = getattr(importlib.import_module(module_name), function_name)
         custom_stratification_method = functools.partial(stratification_method, **{"tokens": outcome_tokens})
+    else:
+        custom_stratification_method = None
+        
+    # Hidden state embedding
+    if cfg.fine_tuning.use_callbacks.hidden_embedding:
+        logging.debug("Creating hidden state embedding callback")
+        embedding_callback = Embedding(val_batch=next(iter(dm.val_dataloader())),
+                                       test_batch=next(iter(dm.test_dataloader()))
+                                      )
+        callbacks.append(embedding_callback)
+
+    # Add callbacks which apply to outcome prediction tasks
+    if cfg.fine_tuning.use_callbacks.performance_metrics:
+        # Create a hash map which maps the tokens of interset to their corresponding desurv output index
+        #    For fine-tuning, where the token is condensed into a subset, this is a map from this new token value
+        #    and the corresponding DeSurv output index
+        # TODO:
+        #    SingleRisk and Competing Risk models have a slightly different structure now, and so they are treated 
+        #    a bit differently here also. TODO: update CompetingRisk to follow the same structure of taking in the
+        #    target tokens
+        if risk_model == "single-risk":
+            outcome_token_to_desurv_output_index = {token: 0 for token_idx, token in enumerate(outcome_tokens)}
+        if risk_model == "competing-risk":
+            outcome_token_to_desurv_output_index = {token: token_idx for token_idx, token in enumerate(outcome_tokens)}
+        # Construct callback
+        metric_callback = PerformanceMetrics(outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
+                                             log_combined=True,
+                                             log_individual=False if risk_model == "single-risk" else False,
+                                             log_ctd=True, 
+                                             log_ibs=True,
+                                             log_inbll=True)
+        callbacks.append(metric_callback)
+
+
+    if cfg.fine_tuning.use_callbacks.rmst:
         metric_callback = RestrictedMeanSurvivalTime(outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
                                                      log_combined=True,
                                                      log_individual=False,
@@ -405,6 +425,9 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
                                                     )
         callbacks.append(metric_callback)
 
+    ######################
+    # Set up the Trainer #
+    ######################
     _trainer = pl.Trainer(
         logger=logger,
         # precision="bf16-mixed" if torch.cuda.is_bf16_supported() else "16-mixed",

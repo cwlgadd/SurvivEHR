@@ -5,6 +5,7 @@ from typing import Dict, List
 
 def count_prior_tokens(batch: Dict[str, torch.Tensor],
                        tokens: List[int],
+                       unique_only: bool = True,
                        **kwargs
                       ) -> List[str]:
     """
@@ -14,6 +15,8 @@ def count_prior_tokens(batch: Dict[str, torch.Tensor],
     :type batch: dict
     :param tokens: A list of tokens representing specific conditions of interest.
     :type tokens: list[int]
+    :param unique_only: Whether to count only unique matching tokens per patient. Defaults to True.
+    :type unique_only: bool
 
     :return: A list of stratification labels indicating the count of matching records per patient.
     :rtype: list[str]
@@ -28,7 +31,7 @@ def count_prior_tokens(batch: Dict[str, torch.Tensor],
         }
         token_list = [1, 4, 5]
         labels = get_existing_counts_stratification_labels(batch, token_list)
-        print(labels)  # Output: ['2 current diagnoses', '3 current diagnoses']
+        print(labels)  # Output: ['1 current diagnosis', '3 current diagnoses']
     """
     
     if "tokens" not in batch:
@@ -40,12 +43,13 @@ def count_prior_tokens(batch: Dict[str, torch.Tensor],
     # Convert tokens to a tensor (ensure it matches dtype and device of input)
     tokens = torch.tensor(tokens, dtype=batch["tokens"].dtype, device=batch["tokens"].device)
 
-    # Create a boolean mask where tokens match any target condition
-    mask = torch.isin(batch["tokens"], tokens)
-
-    # Count occurrences per patient
-    counts = mask.sum(dim=1)
-
-    # Format output with correct singular/plural handling
-    return [f"{i} current diagnosis" if i == 1 else f"{i} current diagnoses" for i in counts.tolist()]
+    labels = []
+    for patient_tokens in batch["tokens"]:
+        tokens_to_check = torch.unique(patient_tokens) if unique_only else patient_tokens
+        match_mask = torch.isin(tokens_to_check, tokens)    # Create a boolean mask where tokens match any target condition
+        count = match_mask.sum().item()                     # Count occurrences per patient
+        label = f"{count} current diagnosis" if count == 1 else f"{count} current diagnoses"  # Format with singular/plural handling
+        labels.append(label)
+        
+    return labels
     

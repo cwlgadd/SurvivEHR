@@ -35,4 +35,4 @@ source ${VENV_PATH}/bin/activate
 echo "Making cross-sectional dataset"
 
 # Competing-Risk
-python make_xsectional_datasets.py  --experiment=mm
+python make_xsectional_datasets.py  --experiment=mm --seed=5 --n_sample=20000

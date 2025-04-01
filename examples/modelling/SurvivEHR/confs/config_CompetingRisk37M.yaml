@@ -36,6 +36,10 @@ fine_tuning:
   # Custom Stratification method for callbacks (splitting logs by stratification labels determined by custom method)
   custom_stratification_method:
     _target_: null                    # Used to add custom functions which take as argument the batch and return stratification labels for metrics calculated during callbacks
+  use_callbacks:
+    hidden_embedding: True
+    performance_metrics: True
+    rmst: False
   head:
     surv_weight: 1
     value_weight: 0

@@ -144,10 +144,10 @@ def run(experiment, sample_size, seed):
     match experiment.lower():
         case "cvd":
             conditions = ["IHDINCLUDINGMI_OPTIMALV2", "ISCHAEMICSTROKE_V2", "MINFARCTION", "STROKEUNSPECIFIED_V2", "STROKE_HAEMRGIC"]
-            cfg.experiment.fine_tune_outcomes=conditions
+            cfg.fine_tuning.fine_tune_outcomes=conditions
         case "hypertension":
             conditions = ["HYPERTENSION"]
-            cfg.experiment.fine_tune_outcomes=conditions
+            cfg.fine_tuning.fine_tune_outcomes=conditions
         case "mm":
             conditions = (
                 dm.tokenizer._event_counts.filter((pl.col("COUNT") > 0) &
@@ -156,7 +156,7 @@ def run(experiment, sample_size, seed):
                   .to_series()
                   .to_list()
             )
-            cfg.experiment.fine_tune_outcomes=conditions
+            cfg.fine_tuning.fine_tune_outcomes=conditions
     
     target_tokens = dm.encode(conditions)
 
