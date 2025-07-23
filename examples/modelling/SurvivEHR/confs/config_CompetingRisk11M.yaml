@@ -37,12 +37,16 @@ fine_tuning:
   custom_stratification_method:
     _target_: null                    # Used to add custom functions which take as argument the batch and return stratification labels for metrics calculated during callbacks
   use_callbacks:
-    hidden_embedding: True
+    hidden_embedding: 
+      num_batches: 1
+      mask_static: False
+      mask_value: False
     performance_metrics: True
     rmst: False
   head:
     surv_weight: 1
     value_weight: 0
+    learning_rate: 5e-4
     
 optim: 
   num_epochs: 1                      # Number of epochs

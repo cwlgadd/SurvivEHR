@@ -1,0 +1,1932 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "4921342e-8ff8-45d4-b1f6-9fe480c2ee1d",
+   "metadata": {},
+   "source": [
+    "# Evaluation of a pre-trained SurvivEHR model\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "3859d915-f1aa-4e57-a744-1fa9534583e8",
+   "metadata": {},
+   "source": [
+    "Environment setup for BlueBear (Birmingham HPC)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "e02b927b-cbbd-416a-87c5-b8e59681d81c",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Added path '/rds/homes/g/gaddcz/Projects/CPRD/virtual-envTorch2.0-icelake/lib/python3.10/site-packages' at start of search paths.\n"
+     ]
+    }
+   ],
+   "source": [
+    "import os\n",
+    "from pathlib import Path\n",
+    "import sys\n",
+    "node_type = os.getenv('BB_CPU')\n",
+    "venv_dir = f'/rds/homes/g/gaddcz/Projects/CPRD/virtual-envTorch2.0-{node_type}'\n",
+    "venv_site_pkgs = Path(venv_dir) / 'lib' / f'python{sys.version_info.major}.{sys.version_info.minor}' / 'site-packages'\n",
+    "if venv_site_pkgs.exists():\n",
+    "    sys.path.insert(0, str(venv_site_pkgs))\n",
+    "    print(f\"Added path '{venv_site_pkgs}' at start of search paths.\")\n",
+    "else:\n",
+    "    print(f\"Path '{venv_site_pkgs}' not found. Check that it exists and/or that it exists for node-type '{node_type}'.\")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "a671c59b-4428-4e63-a138-7244418a87c5",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The autoreload extension is already loaded. To reload it, use:\n",
+      "  %reload_ext autoreload\n"
+     ]
+    }
+   ],
+   "source": [
+    "%load_ext autoreload\n",
+    "%autoreload 2"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "d866c7f0-eaa8-4129-b3b1-d4d6b504d0a7",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Using device: cuda.\n",
+      "env: SLURM_NTASKS_PER_NODE=28\n"
+     ]
+    }
+   ],
+   "source": [
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "import wandb\n",
+    "from hydra import compose, initialize\n",
+    "import polars as pl\n",
+    "pl.Config.set_tbl_rows(10000)\n",
+    "# import pandas as pd\n",
+    "# pd.options.display.max_rows = 10000\n",
+    "import logging\n",
+    "logging.basicConfig(level=logging.INFO)\n",
+    "import torch\n",
+    "torch.manual_seed(1337)\n",
+    "torch.set_float32_matmul_precision('medium')\n",
+    "\n",
+    "from FastEHR.dataloader.foundational_loader import FoundationalDataModule\n",
+    "from CPRD.examples.modelling.SurvivEHR.run_experiment import run\n",
+    "from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling\n",
+    "\n",
+    "device = 'cuda' if torch.cuda.is_available() else 'cpu'\n",
+    "print(f\"Using device: {device}.\")\n",
+    "\n",
+    " # TODO: define an env variable to fix for a local hpc environment issue, this shouldn't be needed\n",
+    "%env SLURM_NTASKS_PER_NODE=28   "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d870f65b-d6e5-4716-a5f2-61a2131dad43",
+   "metadata": {},
+   "source": [
+    "## Choosing configurations\n",
+    "The default configuration is for pre-training. Here we modify as necesssary\n",
+    "\n",
+    "Here we choose to load in the configuration for a small **pre-trained** 11.4M parameter model, named \"CR_11M\". We specfiy the `zero-shot` experiment type, which will lead to running a ```CausalExperiment```. \n",
+    "\n",
+    "We tell this experiment that no further training is needed. Additionally, we do choose to perform testing (true by default). As this is a supervised model, this tests the ability to predict the outcomes of interest. In this notebook, this is chosen to be those of the cohort study for predicting Cardiovascular Disease in a Type 2 Diabetes Mellitus population, and we add the folder containing this dataset to the configuration. \n",
+    "\n",
+    "```Note: As this is a supervised dataset, we need to tell the DataModule that the last event observed is a target and must be stripped. This is done by passing a list of targets to the configuration, overriding the null default. This lets the DataModule know that it should process batches as supervised.```\n",
+    "\n",
+    "We set the number of workers to be appropriate for the number of CPUs available to reduce bottlenecking, and tell the experiment that we do not want to limit the number of testing batches. In addition, we specify where we want any checkpoints to be saved to avoid bloating the repository."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "00071773-72ba-418f-bfcf-b27eece1421f",
+   "metadata": {},
+   "source": [
+    "# Run small (11M) Competing-Risk model experiment\n",
+    "\n",
+    "```\n",
+    "\n",
+    "```"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "7d912879-831d-422a-8684-81824695d2e1",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "SurvivEHR-cr-small-debug7_exp1000-v1-v4\n"
+     ]
+    }
+   ],
+   "source": [
+    "# pre_trained_model_ids = ['SurvivEHR-cr-small', 'SurvivEHR-cr-small-v1', 'SurvivEHR-cr', 'SurvivEHR-cr-v1', 'SurvivEHR-cr-v1-v1', 'SurvivEHR-cr-384', 'SurvivEHR-cr-384-v1', 'crPreTrain_small_1337',\n",
+    "                        # 'SurvivEHR-cr-small-192', \"SurvivEHR-cr-small-192-v1\"]\n",
+    "\n",
+    "\n",
+    "pre_trained_model, config_name = \"SurvivEHR-cr-small-debug7_exp1000-v1-v4\", \"config_CompetingRisk11M\"\n",
+    "# pre_trained_model, config_name = \"SurvivEHR-cr-big-debug3_2_exp1000-v1\", \"config_CompetingRiskMOTOR\"\n",
+    "\n",
+    "print(pre_trained_model)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "63e00688-1426-4046-910c-45bde94db899",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "INFO:root:Running cr on 72 CPUs and 1 GPUs\n",
+      "INFO:root:====================================================================================================\n",
+      "INFO:root:# Loading DataModule for dataset /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/. This will be loaded in causal form.\n",
+      "INFO:root:====================================================================================================\n",
+      "INFO:root:Creating unsupervised collator for DataModule\n",
+      "INFO:root:Using meta information from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle\n",
+      "INFO:root:Using train file-row count dictionary from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/file_row_count_dict_train.pickle\n",
+      "INFO:root:Using test file-row count dictionary from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/file_row_count_dict_test.pickle\n",
+      "INFO:root:Using val file-row count dictionary from /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/file_row_count_dict_val.pickle\n",
+      "INFO:root:Tokenzier created based on 7,555,415,275 tokens\n",
+      "INFO:root:Using tabular tokenizer, created from meta information and containing 265 tokens\n",
+      "INFO:root:Set seed to 1337\n",
+      "INFO:root:Loaded /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/split=train/ dataset, with 23,613,894 samples\n",
+      "INFO:root:Set seed to 42\n",
+      "INFO:root:Loaded /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/split=test/ dataset, with 1,508,320 samples\n",
+      "INFO:root:Set seed to 42\n",
+      "INFO:root:Loaded /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/split=val/ dataset, with 1,426,714 samples\n",
+      "INFO:root:is_decoder: true\n",
+      "data:\n",
+      "  batch_size: 128\n",
+      "  unk_freq_threshold: 0.0\n",
+      "  min_workers: 12\n",
+      "  global_diagnoses: false\n",
+      "  repeating_events: true\n",
+      "  path_to_db: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/cprd.db\n",
+      "  path_to_ds: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/\n",
+      "  meta_information_path: /rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle\n",
+      "  subsample_training: null\n",
+      "experiment:\n",
+      "  type: pre-train\n",
+      "  project_name: Evaluating pre-trained models\n",
+      "  run_id: SurvivEHR-cr-small-debug7_exp1000-v1-v4\n",
+      "  fine_tune_id: null\n",
+      "  notes: null\n",
+      "  tags: null\n",
+      "  train: false\n",
+      "  test: true\n",
+      "  verbose: true\n",
+      "  seed: 1337\n",
+      "  log: true\n",
+      "  log_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/\n",
+      "  ckpt_dir: /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/\n",
+      "fine_tuning:\n",
+      "  fine_tune_outcomes: null\n",
+      "  custom_outcome_method:\n",
+      "    _target_: null\n",
+      "  custom_stratification_method:\n",
+      "    _target_: CPRD.examples.modelling.SurvivEHR.helpers.count_prior_tokens\n",
+      "  use_callbacks:\n",
+      "    hidden_embedding: 50\n",
+      "    performance_metrics: false\n",
+      "    rmst: false\n",
+      "  head:\n",
+      "    surv_weight: 1\n",
+      "    value_weight: 0\n",
+      "optim:\n",
+      "  num_epochs: 1\n",
+      "  learning_rate: 0.0003\n",
+      "  scheduler_warmup: true\n",
+      "  scheduler: decaycawarmrestarts\n",
+      "  scheduler_periods: 10000\n",
+      "  learning_rate_decay: 0.8\n",
+      "  val_check_interval: 2500\n",
+      "  early_stop: true\n",
+      "  early_stop_patience: 30\n",
+      "  log_every_n_steps: 20\n",
+      "  limit_val_batches: 0.025\n",
+      "  limit_test_batches: 0.0035\n",
+      "  accumulate_grad_batches: 1\n",
+      "transformer:\n",
+      "  block_type: Neo\n",
+      "  block_size: 256\n",
+      "  n_layer: 6\n",
+      "  n_head: 6\n",
+      "  n_embd: 384\n",
+      "  layer_norm_bias: false\n",
+      "  attention_type: global\n",
+      "  bias: true\n",
+      "  dropout: 0.0\n",
+      "  attention_dropout: 0.0\n",
+      "  resid_dropout: 0.0\n",
+      "  private_heads: 0\n",
+      "  use_fine_tune_adapter: false\n",
+      "  adapter_dim: 8\n",
+      "head:\n",
+      "  SurvLayer: cr\n",
+      "  surv_weight: 1\n",
+      "  tokens_for_univariate_regression:\n",
+      "  - 84\n",
+      "  - 86\n",
+      "  - 107\n",
+      "  - 154\n",
+      "  - 42\n",
+      "  - 231\n",
+      "  - 63\n",
+      "  - 85\n",
+      "  - 247\n",
+      "  - 51\n",
+      "  - 103\n",
+      "  - 146\n",
+      "  - 66\n",
+      "  - 172\n",
+      "  - 152\n",
+      "  - 261\n",
+      "  - 235\n",
+      "  - 193\n",
+      "  - 184\n",
+      "  - 101\n",
+      "  - 223\n",
+      "  - 135\n",
+      "  - 226\n",
+      "  - 202\n",
+      "  - 145\n",
+      "  - 244\n",
+      "  - 165\n",
+      "  - 64\n",
+      "  - 185\n",
+      "  - 238\n",
+      "  - 220\n",
+      "  - 232\n",
+      "  - 240\n",
+      "  - 237\n",
+      "  - 17\n",
+      "  - 239\n",
+      "  - 217\n",
+      "  - 118\n",
+      "  - 219\n",
+      "  - 251\n",
+      "  - 25\n",
+      "  - 150\n",
+      "  - 111\n",
+      "  - 102\n",
+      "  - 15\n",
+      "  - 110\n",
+      "  - 130\n",
+      "  - 128\n",
+      "  - 122\n",
+      "  - 99\n",
+      "  - 77\n",
+      "  - 96\n",
+      "  - 140\n",
+      "  - 50\n",
+      "  - 80\n",
+      "  - 108\n",
+      "  - 138\n",
+      "  - 27\n",
+      "  - 139\n",
+      "  - 125\n",
+      "  - 117\n",
+      "  - 105\n",
+      "  - 109\n",
+      "  - 243\n",
+      "  - 236\n",
+      "  - 208\n",
+      "  - 98\n",
+      "  - 176\n",
+      "  - 209\n",
+      "  - 194\n",
+      "  - 61\n",
+      "  - 73\n",
+      "  - 214\n",
+      "  - 206\n",
+      "  - 229\n",
+      "  - 225\n",
+      "  - 183\n",
+      "  - 186\n",
+      "  - 215\n",
+      "  - 187\n",
+      "  - 248\n",
+      "  - 179\n",
+      "  - 163\n",
+      "  - 180\n",
+      "  - 181\n",
+      "  - 153\n",
+      "  - 245\n",
+      "  - 54\n",
+      "  - 246\n",
+      "  - 112\n",
+      "  - 212\n",
+      "  - 141\n",
+      "  - 204\n",
+      "  - 227\n",
+      "  - 173\n",
+      "  - 55\n",
+      "  - 119\n",
+      "  - 262\n",
+      "  - 127\n",
+      "  - 71\n",
+      "  - 59\n",
+      "  - 144\n",
+      "  - 113\n",
+      "  - 170\n",
+      "  - 241\n",
+      "  - 168\n",
+      "  - 47\n",
+      "  - 159\n",
+      "  value_weight: 0.1\n",
+      "\n",
+      "INFO:root:====================================================================================================\n",
+      "INFO:root:# Pre-training experiment\n",
+      "INFO:root:====================================================================================================\n",
+      "INFO:root:Loading a pre-trained model with the checkpoint path /rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/SurvivEHR-cr-small-debug7_exp1000-v1-v4.ckpt.\n",
+      "INFO:root:Using Temporal Positional Encoding. This module uses the patient's age at an event within their time series.\n",
+      "INFO:root:Using a DeSurv Competing-Risk head.\n",
+      "INFO:root:\tWith concurrent strategy=add_noise for handling simultaneous events.\n",
+      "INFO:root:\tEvaluating on a time grid between [0.0, 1.0] with 1000 intervals\n",
+      "INFO:root:Created hidden state embedding callback\n",
+      "INFO:root:Interactive job = True\n",
+      "INFO:pytorch_lightning.utilities.rank_zero:GPU available: True (cuda), used: True\n",
+      "INFO:pytorch_lightning.utilities.rank_zero:TPU available: False, using: 0 TPU cores\n",
+      "INFO:pytorch_lightning.utilities.rank_zero:IPU available: False, using: 0 IPUs\n",
+      "INFO:pytorch_lightning.utilities.rank_zero:HPU available: False, using: 0 HPUs\n",
+      "INFO:root:Testing model.\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "wandb version 0.19.9 is available!  To upgrade, please run:\n",
+       " $ pip install wandb --upgrade"
+      ],
+      "text/plain": [
+       "<IPython.core.display.HTML object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "Tracking run with wandb version 0.13.6"
+      ],
+      "text/plain": [
+       "<IPython.core.display.HTML object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "Run data is saved locally in <code>/rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/wandb/run-20250408_115050-1keyv0b1</code>"
+      ],
+      "text/plain": [
+       "<IPython.core.display.HTML object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "Syncing run <strong><a href=\"https://wandb.ai/cwlgadd/Evaluating%20pre-trained%20models/runs/1keyv0b1\" target=\"_blank\">SurvivEHR-cr-small-debug7_exp1000-v1-v4</a></strong> to <a href=\"https://wandb.ai/cwlgadd/Evaluating%20pre-trained%20models\" target=\"_blank\">Weights & Biases</a> (<a href=\"https://wandb.me/run\" target=\"_blank\">docs</a>)<br/>"
+      ],
+      "text/plain": [
+       "<IPython.core.display.HTML object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "INFO:pytorch_lightning.accelerators.cuda:LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]\n",
+      "INFO:pytorch_lightning.trainer.connectors.signal_connector:SLURM auto-requeueing enabled. Setting signal handlers.\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "d5a9cb311a1e417e87e4d2c3afd17c2d",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "Testing: |          | 0/? [00:00<?, ?it/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "WARNING:root:\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃<span style=\"font-weight: bold\">        Test metric        </span>┃<span style=\"font-weight: bold\">       DataLoader 0        </span>┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│<span style=\"color: #008080; text-decoration-color: #008080\">         test_loss         </span>│<span style=\"color: #800080; text-decoration-color: #800080\">    -9.211944580078125     </span>│\n",
+       "│<span style=\"color: #008080; text-decoration-color: #008080\">     test_loss_desurv      </span>│<span style=\"color: #800080; text-decoration-color: #800080\">     -3.97152042388916     </span>│\n",
+       "│<span style=\"color: #008080; text-decoration-color: #008080\">     test_loss_values      </span>│<span style=\"color: #800080; text-decoration-color: #800080\">    -61.616188049316406    </span>│\n",
+       "└───────────────────────────┴───────────────────────────┘\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n",
+       "┃\u001b[1m \u001b[0m\u001b[1m       Test metric       \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1m      DataLoader 0       \u001b[0m\u001b[1m \u001b[0m┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩\n",
+       "│\u001b[36m \u001b[0m\u001b[36m        test_loss        \u001b[0m\u001b[36m \u001b[0m│\u001b[35m \u001b[0m\u001b[35m   -9.211944580078125    \u001b[0m\u001b[35m \u001b[0m│\n",
+       "│\u001b[36m \u001b[0m\u001b[36m    test_loss_desurv     \u001b[0m\u001b[36m \u001b[0m│\u001b[35m \u001b[0m\u001b[35m    -3.97152042388916    \u001b[0m\u001b[35m \u001b[0m│\n",
+       "│\u001b[36m \u001b[0m\u001b[36m    test_loss_values     \u001b[0m\u001b[36m \u001b[0m│\u001b[35m \u001b[0m\u001b[35m   -61.616188049316406   \u001b[0m\u001b[35m \u001b[0m│\n",
+       "└───────────────────────────┴───────────────────────────┘\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Loaded model with 11.20919 M parameters\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "Waiting for W&B process to finish... <strong style=\"color:green\">(success).</strong>"
+      ],
+      "text/plain": [
+       "<IPython.core.display.HTML object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<style>\n",
+       "    table.wandb td:nth-child(1) { padding: 0 10px; text-align: left ; width: auto;} td:nth-child(2) {text-align: left ; width: 100%}\n",
+       "    .wandb-row { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; width: 100% }\n",
+       "    .wandb-col { display: flex; flex-direction: column; flex-basis: 100%; flex: 1; padding: 10px; }\n",
+       "    </style>\n",
+       "<div class=\"wandb-row\"><div class=\"wandb-col\"><h3>Run history:</h3><br/><table class=\"wandb\"><tr><td>epoch</td><td>▁</td></tr><tr><td>test_loss</td><td>▁</td></tr><tr><td>test_loss_desurv</td><td>▁</td></tr><tr><td>test_loss_values</td><td>▁</td></tr><tr><td>trainer/global_step</td><td>▁</td></tr></table><br/></div><div class=\"wandb-col\"><h3>Run summary:</h3><br/><table class=\"wandb\"><tr><td>epoch</td><td>0</td></tr><tr><td>test_loss</td><td>-9.21194</td></tr><tr><td>test_loss_desurv</td><td>-3.97152</td></tr><tr><td>test_loss_values</td><td>-61.61619</td></tr><tr><td>trainer/global_step</td><td>0</td></tr></table><br/></div></div>"
+      ],
+      "text/plain": [
+       "<IPython.core.display.HTML object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "Synced <strong style=\"color:#cdcd00\">SurvivEHR-cr-small-debug7_exp1000-v1-v4</strong>: <a href=\"https://wandb.ai/cwlgadd/Evaluating%20pre-trained%20models/runs/1keyv0b1\" target=\"_blank\">https://wandb.ai/cwlgadd/Evaluating%20pre-trained%20models/runs/1keyv0b1</a><br/>Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)"
+      ],
+      "text/plain": [
+       "<IPython.core.display.HTML object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "Find logs at: <code>/rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/wandb/run-20250408_115050-1keyv0b1/logs</code>"
+      ],
+      "text/plain": [
+       "<IPython.core.display.HTML object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "wandb.finish()\n",
+    "\n",
+    "# load the configuration file, override any settings \n",
+    "with initialize(version_base=None, config_path=\"../../../confs\", job_name=\"causal_metric_testing_notebook\"):\n",
+    "    cfg = compose(config_name=config_name, \n",
+    "                  overrides=[# Experiment setup\n",
+    "                             \"experiment.project_name='Evaluating pre-trained models'\",\n",
+    "                             f\"experiment.run_id='{pre_trained_model}'\",\n",
+    "                             \"experiment.train=False\",\n",
+    "                             \"experiment.test=True\",\n",
+    "                             \"data.batch_size=128\",\n",
+    "                             \"data.meta_information_path=/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/meta_information_QuantJenny.pickle\",\n",
+    "                             \"data.min_workers=12\",\n",
+    "                             \"optim.limit_test_batches=0.0035\",\n",
+    "                             \"fine_tuning.custom_stratification_method._target_='CPRD.examples.modelling.SurvivEHR.helpers.count_prior_tokens'\",\n",
+    "                             \"fine_tuning.use_callbacks.performance_metrics=False\",\n",
+    "                             \"fine_tuning.use_callbacks.hidden_embedding=50\",\n",
+    "                            ]\n",
+    "                 )     \n",
+    "\n",
+    "model, dm = run(cfg)\n",
+    "print(f\"Loaded model with {sum(p.numel() for p in model.parameters())/1e6} M parameters\")\n",
+    "\n",
+    "wandb.finish()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "dbe5a8c6-7533-4a9a-a6d8-4bb71b9545ec",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "SurvivEHR-cr-small-debug7_exp1000-v1-v4\n"
+     ]
+    }
+   ],
+   "source": [
+    "wandb.finish()\n",
+    "print(pre_trained_model)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "d078715e-c1dc-4726-bf06-0d6cba9261fb",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[95, 41, 67, 65, 28]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/plain": [
+       "[129]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "display(dm.encode(['IHDINCLUDINGMI_OPTIMALV2', 'ISCHAEMICSTROKE_V2', 'MINFARCTION', 'STROKEUNSPECIFIED_V2', 'STROKE_HAEMRGIC']))\n",
+    "display(dm.encode(['HYPERTENSION']))\n",
+    "# display(dm.decode([95, 175, 263,249]).split(\" \"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "9aa0352a-f7cc-40ea-b456-97f1e59adcf3",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['NSAIDS_oral_OPTIMAL_final',\n",
+       " 'Diastolic_blood_pressure_5',\n",
+       " 'Systolic_blood_pressure_4',\n",
+       " 'Statins',\n",
+       " 'Lipid_lowering_drugs_Optimal']"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "dm.tokenizer._event_counts[\"EVENT\"][-5:].to_list()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "eb5c6a2c-91b7-43c3-8164-1150608858d1",
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "NotImplementedError",
+     "evalue": "",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mNotImplementedError\u001b[0m                       Traceback (most recent call last)",
+      "Cell \u001b[0;32mIn [10], line 1\u001b[0m\n\u001b[0;32m----> 1\u001b[0m \u001b[38;5;28;01mraise\u001b[39;00m \u001b[38;5;167;01mNotImplementedError\u001b[39;00m\n",
+      "\u001b[0;31mNotImplementedError\u001b[0m: "
+     ]
+    }
+   ],
+   "source": [
+    "raise NotImplementedError"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8a0b622b-ab48-428a-becb-3cc57cff8b69",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e4e60f13-a1db-4750-b1a8-c4c2d4848352",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# all_nondiagnosis = [cn for cn in dm.tokenizer._event_counts[\"EVENT\"] if cn.upper() != cn]\n",
+    "# display([cn for cn in all_nondiagnosis if \"Warf\" in cn])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "79d96b8d-59a6-44eb-90e1-d1c31854b2a2",
+   "metadata": {},
+   "source": [
+    "# Get the data from the callback"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 45,
+   "id": "0ab21c0d-e582-4710-acb2-8b26117b9f51",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "SurvivEHR-cr-big-debug3_2_exp1000-v1\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(pre_trained_model)\n",
+    "os.makedirs(f\"figs/metrics/{pre_trained_model}/\", exist_ok=True) "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 46,
+   "id": "8a9d7a7c-242a-4ba1-ae98-2a5ac7ed8d22",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "api = wandb.Api()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 47,
+   "id": "42a8bb11-e10a-4319-8050-2703af0e4d33",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# run = api.run(\"SurvivEHR/test_causal_eval\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 48,
+   "id": "41fce410-de87-41a1-a76c-fbb981dff07d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "raw_data_from_wandb = {\n",
+    "  \"Test:Cinter\": 0.9918051290807444,\n",
+    "  \"Test:Cinter+0\": 0.980682882091063,\n",
+    "  \"Test:Cinter+1\": 0.9222060874715772,\n",
+    "  \"Test:Cinter+10\": 0.8281024363747177,\n",
+    "  \"Test:Cinter+13\": 0.7846062710089827,\n",
+    "  \"Test:Cinter+16\": 0.7782526658852459,\n",
+    "  \"Test:Cinter+19\": 0.7707180292731624,\n",
+    "  \"Test:Cinter+2\": 0.9003684987342017,\n",
+    "  \"Test:Cinter+3\": 0.8690526485203292,\n",
+    "  \"Test:Cinter+4\": 0.8529891043870028,\n",
+    "  \"Test:Cinter+7\": 0.8133623030961437,\n",
+    "  \"Test:Cintra100\": 0.7748204478242501,\n",
+    "  \"Test:Cintra101\": 0.8022813688212928,\n",
+    "  \"Test:Cintra104\": 0.8098859315589354,\n",
+    "  \"Test:Cintra106\": 0.885424588086185,\n",
+    "  \"Test:Cintra107\": 0.7227259432582627,\n",
+    "  \"Test:Cintra11\": 0.33079847908745247,\n",
+    "  \"Test:Cintra110\": 0.7709125475285171,\n",
+    "  \"Test:Cintra112\": 0.9225285171102664,\n",
+    "  \"Test:Cintra113\": 0.9730383684756309,\n",
+    "  \"Test:Cintra114\": 0.8665399239543726,\n",
+    "  \"Test:Cintra115\": 0.9901486346353268,\n",
+    "  \"Test:Cintra116\": 0.9873764258555132,\n",
+    "  \"Test:Cintra118\": 0.985095057034221,\n",
+    "  \"Test:Cintra119\": 0.9636908905906926,\n",
+    "  \"Test:Cintra120\": 0.8534393363290703,\n",
+    "  \"Test:Cintra121\": 0.9780312632023656,\n",
+    "  \"Test:Cintra123\": 0.9702946768060838,\n",
+    "  \"Test:Cintra124\": 0.9671102661596958,\n",
+    "  \"Test:Cintra126\": 0.8952788339670469,\n",
+    "  \"Test:Cintra127\": 0.9680938998181516,\n",
+    "  \"Test:Cintra129\": 0.9142374313476976,\n",
+    "  \"Test:Cintra130\": 0.9815889533720232,\n",
+    "  \"Test:Cintra131\": 0.9802204555056266,\n",
+    "  \"Test:Cintra133\": 0.8974695161924743,\n",
+    "  \"Test:Cintra134\": 0.8937983479743018,\n",
+    "  \"Test:Cintra135\": 0.9092884302009776,\n",
+    "  \"Test:Cintra136\": 0.9256299542437326,\n",
+    "  \"Test:Cintra141\": 0.8307984790874524,\n",
+    "  \"Test:Cintra142\": 0.9758900795022468,\n",
+    "  \"Test:Cintra143\": 0.9815615396635242,\n",
+    "  \"Test:Cintra144\": 0.9817128372261452,\n",
+    "  \"Test:Cintra145\": 0.884302009777295,\n",
+    "  \"Test:Cintra146\": 0.9201520912547532,\n",
+    "  \"Test:Cintra148\": 0.987349418997193,\n",
+    "  \"Test:Cintra149\": 0.9903631834272976,\n",
+    "  \"Test:Cintra150\": 0.9687500000000004,\n",
+    "  \"Test:Cintra151\": 0.9923403317352734,\n",
+    "  \"Test:Cintra152\": 0.9658912994855736,\n",
+    "  \"Test:Cintra153\": 0.9976979384909864,\n",
+    "  \"Test:Cintra154\": 0.940274934191284,\n",
+    "  \"Test:Cintra155\": 0.9863298931739996,\n",
+    "  \"Test:Cintra156\": 0.9925965194501318,\n",
+    "  \"Test:Cintra157\": 0.97641177298972,\n",
+    "  \"Test:Cintra158\": 0.9927874250323396,\n",
+    "  \"Test:Cintra159\": 0.9866920152091256,\n",
+    "  \"Test:Cintra160\": 0.950051849291393,\n",
+    "  \"Test:Cintra161\": 0.995585270625463,\n",
+    "  \"Test:Cintra162\": 0.9873062298917812,\n",
+    "  \"Test:Cintra163\": 0.980266992312176,\n",
+    "  \"Test:Cintra164\": 0.9970751681778298,\n",
+    "  \"Test:Cintra165\": 0.9891184710826506,\n",
+    "  \"Test:Cintra166\": 0.990874524714829,\n",
+    "  \"Test:Cintra167\": 0.9784187754031728,\n",
+    "  \"Test:Cintra168\": 0.978572190042998,\n",
+    "  \"Test:Cintra169\": 0.9860054921841996,\n",
+    "  \"Test:Cintra170\": 0.9959680506290358,\n",
+    "  \"Test:Cintra171\": 0.97175234274423,\n",
+    "  \"Test:Cintra172\": 0.9640155227156916,\n",
+    "  \"Test:Cintra173\": 0.997113082664414,\n",
+    "  \"Test:Cintra174\": 0.9976164803359628,\n",
+    "  \"Test:Cintra175\": 0.9976297466791764,\n",
+    "  \"Test:Cintra176\": 0.96491709458665,\n",
+    "  \"Test:Cintra177\": 0.991335785077604,\n",
+    "  \"Test:Cintra178\": 0.9968715406459072,\n",
+    "  \"Test:Cintra179\": 0.9824255018127144,\n",
+    "  \"Test:Cintra180\": 0.9945731075008652,\n",
+    "  \"Test:Cintra181\": 0.962675564522387,\n",
+    "  \"Test:Cintra182\": 0.9863264112313548,\n",
+    "  \"Test:Cintra183\": 0.9936916695471834,\n",
+    "  \"Test:Cintra184\": 0.971689944659866,\n",
+    "  \"Test:Cintra185\": 0.9136338946224876,\n",
+    "  \"Test:Cintra186\": 0.997798679207525,\n",
+    "  \"Test:Cintra187\": 0.9993751495652632,\n",
+    "  \"Test:Cintra188\": 0.9923954372623582,\n",
+    "  \"Test:Cintra189\": 0.97579817731909,\n",
+    "  \"Test:Cintra190\": 0.9957224334600764,\n",
+    "  \"Test:Cintra191\": 0.971000510754214,\n",
+    "  \"Test:Cintra192\": 0.9783374611923124,\n",
+    "  \"Test:Cintra193\": 0.9831523223326274,\n",
+    "  \"Test:Cintra194\": 0.9971630036845636,\n",
+    "  \"Test:Cintra195\": 0.9707660661970958,\n",
+    "  \"Test:Cintra196\": 0.9906143686211712,\n",
+    "  \"Test:Cintra197\": 0.9814555399906614,\n",
+    "  \"Test:Cintra198\": 0.9499049429657797,\n",
+    "  \"Test:Cintra199\": 0.9813634659669042,\n",
+    "  \"Test:Cintra200\": 0.996314412688534,\n",
+    "  \"Test:Cintra201\": 0.994653644978866,\n",
+    "  \"Test:Cintra202\": 0.9816630039185578,\n",
+    "  \"Test:Cintra203\": 0.9908463596676526,\n",
+    "  \"Test:Cintra204\": 0.9995385995642324,\n",
+    "  \"Test:Cintra205\": 0.9673592888127244,\n",
+    "  \"Test:Cintra206\": 0.9921065101066704,\n",
+    "  \"Test:Cintra207\": 0.9837385826329716,\n",
+    "  \"Test:Cintra208\": 0.9994451355913396,\n",
+    "  \"Test:Cintra209\": 0.9897282837343304,\n",
+    "  \"Test:Cintra210\": 0.9931379703242824,\n",
+    "  \"Test:Cintra211\": 0.9957210793712687,\n",
+    "  \"Test:Cintra212\": 0.9956600222759912,\n",
+    "  \"Test:Cintra213\": 0.9845907544526716,\n",
+    "  \"Test:Cintra214\": 0.991363927267249,\n",
+    "  \"Test:Cintra215\": 0.996557605345098,\n",
+    "  \"Test:Cintra216\": 0.988044504555082,\n",
+    "  \"Test:Cintra217\": 0.9876364528394398,\n",
+    "  \"Test:Cintra218\": 0.993396037622574,\n",
+    "  \"Test:Cintra219\": 0.992628480313992,\n",
+    "  \"Test:Cintra220\": 0.9998533070459552,\n",
+    "  \"Test:Cintra221\": 0.9915233543796004,\n",
+    "  \"Test:Cintra222\": 0.9897289922222902,\n",
+    "  \"Test:Cintra223\": 0.986194022838741,\n",
+    "  \"Test:Cintra224\": 0.9960170986879568,\n",
+    "  \"Test:Cintra225\": 0.999726079215282,\n",
+    "  \"Test:Cintra226\": 0.9972433460076016,\n",
+    "  \"Test:Cintra227\": 0.9988506740407872,\n",
+    "  \"Test:Cintra228\": 0.9828796748948844,\n",
+    "  \"Test:Cintra229\": 0.9927066994610844,\n",
+    "  \"Test:Cintra230\": 0.99333413688943,\n",
+    "  \"Test:Cintra231\": 0.9885992008559612,\n",
+    "  \"Test:Cintra232\": 0.9996925378947032,\n",
+    "  \"Test:Cintra233\": 0.9946186720296618,\n",
+    "  \"Test:Cintra234\": 0.9922966767073178,\n",
+    "  \"Test:Cintra235\": 0.9912161483259913,\n",
+    "  \"Test:Cintra236\": 0.9992964486174696,\n",
+    "  \"Test:Cintra237\": 0.9999793634661124,\n",
+    "  \"Test:Cintra238\": 0.999692537894704,\n",
+    "  \"Test:Cintra239\": 0.9997390089504578,\n",
+    "  \"Test:Cintra240\": 0.994398203459233,\n",
+    "  \"Test:Cintra241\": 0.995924069593268,\n",
+    "  \"Test:Cintra242\": 0.9917898193760224,\n",
+    "  \"Test:Cintra243\": 0.9987050904011792,\n",
+    "  \"Test:Cintra244\": 0.988007071758977,\n",
+    "  \"Test:Cintra245\": 0.9982344651546158,\n",
+    "  \"Test:Cintra246\": 0.9980909707650316,\n",
+    "  \"Test:Cintra247\": 0.988975733189242,\n",
+    "  \"Test:Cintra248\": 0.9967773671195704,\n",
+    "  \"Test:Cintra249\": 0.996243900186266,\n",
+    "  \"Test:Cintra25\": 0.935361216730038,\n",
+    "  \"Test:Cintra250\": 0.9930600377032924,\n",
+    "  \"Test:Cintra251\": 0.9930475574417946,\n",
+    "  \"Test:Cintra252\": 0.9973153589123162,\n",
+    "  \"Test:Cintra253\": 0.9978782849820363,\n",
+    "  \"Test:Cintra254\": 0.9941532132394164,\n",
+    "  \"Test:Cintra255\": 0.986975309063351,\n",
+    "  \"Test:Cintra256\": 0.9943374368489606,\n",
+    "  \"Test:Cintra257\": 0.995304020018847,\n",
+    "  \"Test:Cintra258\": 0.9996831432192644,\n",
+    "  \"Test:Cintra259\": 0.9975054191393316,\n",
+    "  \"Test:Cintra260\": 0.9938225230220058,\n",
+    "  \"Test:Cintra261\": 0.9958365115077116,\n",
+    "  \"Test:Cintra262\": 0.9991813088847844,\n",
+    "  \"Test:Cintra263\": 0.999470779646472,\n",
+    "  \"Test:Cintra264\": 0.9974296668531212,\n",
+    "  \"Test:Cintra27\": 0.8479087452471483,\n",
+    "  \"Test:Cintra29\": 0.33840304182509506,\n",
+    "  \"Test:Cintra30\": 0.3688212927756654,\n",
+    "  \"Test:Cintra31\": 0.8669201520912547,\n",
+    "  \"Test:Cintra34\": 0.5636882129277566,\n",
+    "  \"Test:Cintra38\": 0.4657794676806083,\n",
+    "  \"Test:Cintra39\": 0.9049429657794676,\n",
+    "  \"Test:Cintra40\": 0.5804816223067173,\n",
+    "  \"Test:Cintra41\": 0.532319391634981,\n",
+    "  \"Test:Cintra44\": 0.8060836501901141,\n",
+    "  \"Test:Cintra47\": 0.6438529784537389,\n",
+    "  \"Test:Cintra48\": 0.6254752851711027,\n",
+    "  \"Test:Cintra49\": 0.3574144486692015,\n",
+    "  \"Test:Cintra51\": 0.7726235741444867,\n",
+    "  \"Test:Cintra55\": 0.7908745247148289,\n",
+    "  \"Test:Cintra57\": 0.6140684410646388,\n",
+    "  \"Test:Cintra58\": 0.7404942965779467,\n",
+    "  \"Test:Cintra60\": 0.6615969581749049,\n",
+    "  \"Test:Cintra63\": 0.973384030418251,\n",
+    "  \"Test:Cintra65\": 0.752851711026616,\n",
+    "  \"Test:Cintra67\": 0.4562737642585551,\n",
+    "  \"Test:Cintra70\": 0.7997465145754119,\n",
+    "  \"Test:Cintra71\": 0.1596958174904943,\n",
+    "  \"Test:Cintra74\": 0.6349809885931559,\n",
+    "  \"Test:Cintra75\": 0.75,\n",
+    "  \"Test:Cintra78\": 0.7024714828897338,\n",
+    "  \"Test:Cintra79\": 0.7896070975918885,\n",
+    "  \"Test:Cintra80\": 0.9771863117870724,\n",
+    "  \"Test:Cintra81\": 0.6711026615969582,\n",
+    "  \"Test:Cintra82\": 0.7927756653992395,\n",
+    "  \"Test:Cintra83\": 0.7116603295310518,\n",
+    "  \"Test:Cintra84\": 0.8222433460076045,\n",
+    "  \"Test:Cintra85\": 0.712690114068441,\n",
+    "  \"Test:Cintra89\": 0.723384030418251,\n",
+    "  \"Test:Cintra90\": 0.946768060836502,\n",
+    "  \"Test:Cintra91\": 0.7908745247148288,\n",
+    "  \"Test:Cintra93\": 0.7401774397972116,\n",
+    "  \"Test:Cintra94\": 0.8168821292775664,\n",
+    "  \"Test:Cintra95\": 0.9638783269961976,\n",
+    "  \"Test:Cintra97\": 0.8183354457118717,\n",
+    "  \"Test:Cintra98\": 0.9163498098859316,\n",
+    "  \"Test:Cintra99\": 0.17490494296577946,\n",
+    "  \"Test:base_Cinter\": 0.8650078735166735,\n",
+    "  \"Test:base_Cinter+0\": 0.8549209927966827,\n",
+    "  \"Test:base_Cinter+1\": 0.8549209927966827,\n",
+    "  \"Test:base_Cinter+10\": 0.8498032617479898,\n",
+    "  \"Test:base_Cinter+13\": 0.848335813082052,\n",
+    "  \"Test:base_Cinter+16\": 0.8504674233111297,\n",
+    "  \"Test:base_Cinter+19\": 0.8518284716003348,\n",
+    "  \"Test:base_Cinter+2\": 0.8554057884602225,\n",
+    "  \"Test:base_Cinter+3\": 0.8562878467821434,\n",
+    "  \"Test:base_Cinter+4\": 0.8553855002076877,\n",
+    "  \"Test:base_Cinter+7\": 0.8501297603959204,\n",
+    "  \"Test:base_Cintra100\": 0.376425855513308,\n",
+    "  \"Test:base_Cintra101\": 0.38022813688212925,\n",
+    "  \"Test:base_Cintra104\": 0.3916349809885931,\n",
+    "  \"Test:base_Cintra106\": 0.3992395437262359,\n",
+    "  \"Test:base_Cintra107\": 0.4030418250950571,\n",
+    "  \"Test:base_Cintra11\": 0.03802281368821293,\n",
+    "  \"Test:base_Cintra110\": 0.41444866920152096,\n",
+    "  \"Test:base_Cintra112\": 0.4220532319391635,\n",
+    "  \"Test:base_Cintra113\": 0.4258555133079848,\n",
+    "  \"Test:base_Cintra114\": 0.429657794676806,\n",
+    "  \"Test:base_Cintra115\": 0.4334600760456271,\n",
+    "  \"Test:base_Cintra116\": 0.4372623574144487,\n",
+    "  \"Test:base_Cintra118\": 0.444866920152091,\n",
+    "  \"Test:base_Cintra119\": 0.44866920152091166,\n",
+    "  \"Test:base_Cintra120\": 0.45247148288973366,\n",
+    "  \"Test:base_Cintra121\": 0.45627376425855526,\n",
+    "  \"Test:base_Cintra123\": 0.4638783269961979,\n",
+    "  \"Test:base_Cintra124\": 0.467680608365019,\n",
+    "  \"Test:base_Cintra126\": 0.4752851711026617,\n",
+    "  \"Test:base_Cintra127\": 0.4790874524714828,\n",
+    "  \"Test:base_Cintra129\": 0.4866920152091256,\n",
+    "  \"Test:base_Cintra130\": 0.49049429657794674,\n",
+    "  \"Test:base_Cintra131\": 0.4942965779467693,\n",
+    "  \"Test:base_Cintra133\": 0.5019011406844104,\n",
+    "  \"Test:base_Cintra134\": 0.5057034220532319,\n",
+    "  \"Test:base_Cintra135\": 0.5095057034220531,\n",
+    "  \"Test:base_Cintra136\": 0.5133079847908741,\n",
+    "  \"Test:base_Cintra141\": 0.532319391634981,\n",
+    "  \"Test:base_Cintra142\": 0.536121673003802,\n",
+    "  \"Test:base_Cintra143\": 0.5399239543726245,\n",
+    "  \"Test:base_Cintra144\": 0.5437262357414449,\n",
+    "  \"Test:base_Cintra145\": 0.5475285171102663,\n",
+    "  \"Test:base_Cintra146\": 0.551330798479087,\n",
+    "  \"Test:base_Cintra148\": 0.5589353612167312,\n",
+    "  \"Test:base_Cintra149\": 0.5627376425855521,\n",
+    "  \"Test:base_Cintra150\": 0.5665399239543728,\n",
+    "  \"Test:base_Cintra151\": 0.5703422053231935,\n",
+    "  \"Test:base_Cintra152\": 0.5741444866920156,\n",
+    "  \"Test:base_Cintra153\": 0.5779467680608364,\n",
+    "  \"Test:base_Cintra154\": 0.5817490494296578,\n",
+    "  \"Test:base_Cintra155\": 0.5855513307984797,\n",
+    "  \"Test:base_Cintra156\": 0.5893536121673008,\n",
+    "  \"Test:base_Cintra157\": 0.5931558935361212,\n",
+    "  \"Test:base_Cintra158\": 0.5969581749049419,\n",
+    "  \"Test:base_Cintra159\": 0.6007604562737643,\n",
+    "  \"Test:base_Cintra160\": 0.6045627376425853,\n",
+    "  \"Test:base_Cintra161\": 0.608365019011406,\n",
+    "  \"Test:base_Cintra162\": 0.6121673003802285,\n",
+    "  \"Test:base_Cintra163\": 0.6159695817490505,\n",
+    "  \"Test:base_Cintra164\": 0.6197718631178712,\n",
+    "  \"Test:base_Cintra165\": 0.6235741444866923,\n",
+    "  \"Test:base_Cintra166\": 0.6273764258555133,\n",
+    "  \"Test:base_Cintra167\": 0.6311787072243359,\n",
+    "  \"Test:base_Cintra168\": 0.6349809885931562,\n",
+    "  \"Test:base_Cintra169\": 0.6387832699619767,\n",
+    "  \"Test:base_Cintra170\": 0.6425855513307975,\n",
+    "  \"Test:base_Cintra171\": 0.6463878326996173,\n",
+    "  \"Test:base_Cintra172\": 0.6501901140684422,\n",
+    "  \"Test:base_Cintra173\": 0.6539923954372608,\n",
+    "  \"Test:base_Cintra174\": 0.6577946768060839,\n",
+    "  \"Test:base_Cintra175\": 0.6615969581749044,\n",
+    "  \"Test:base_Cintra176\": 0.6653992395437257,\n",
+    "  \"Test:base_Cintra177\": 0.6692015209125473,\n",
+    "  \"Test:base_Cintra178\": 0.6730038022813681,\n",
+    "  \"Test:base_Cintra179\": 0.6768060836501851,\n",
+    "  \"Test:base_Cintra180\": 0.6806083650190097,\n",
+    "  \"Test:base_Cintra181\": 0.6844106463878322,\n",
+    "  \"Test:base_Cintra182\": 0.6882129277566528,\n",
+    "  \"Test:base_Cintra183\": 0.6920152091254731,\n",
+    "  \"Test:base_Cintra184\": 0.6958174904942971,\n",
+    "  \"Test:base_Cintra185\": 0.6996197718631177,\n",
+    "  \"Test:base_Cintra186\": 0.7034220532319366,\n",
+    "  \"Test:base_Cintra187\": 0.7072243346007645,\n",
+    "  \"Test:base_Cintra188\": 0.7110266159695844,\n",
+    "  \"Test:base_Cintra189\": 0.714828897338403,\n",
+    "  \"Test:base_Cintra190\": 0.7186311787072254,\n",
+    "  \"Test:base_Cintra191\": 0.7224334600760468,\n",
+    "  \"Test:base_Cintra192\": 0.7262357414448671,\n",
+    "  \"Test:base_Cintra193\": 0.7300380228136875,\n",
+    "  \"Test:base_Cintra194\": 0.7338403041825079,\n",
+    "  \"Test:base_Cintra195\": 0.73764258555133,\n",
+    "  \"Test:base_Cintra196\": 0.7414448669201515,\n",
+    "  \"Test:base_Cintra197\": 0.7452471482889742,\n",
+    "  \"Test:base_Cintra198\": 0.7490494296577949,\n",
+    "  \"Test:base_Cintra199\": 0.752851711026618,\n",
+    "  \"Test:base_Cintra200\": 0.7566539923954368,\n",
+    "  \"Test:base_Cintra201\": 0.760456273764258,\n",
+    "  \"Test:base_Cintra202\": 0.7642585551330752,\n",
+    "  \"Test:base_Cintra203\": 0.7680608365019022,\n",
+    "  \"Test:base_Cintra204\": 0.7718631178707209,\n",
+    "  \"Test:base_Cintra205\": 0.7756653992395429,\n",
+    "  \"Test:base_Cintra206\": 0.7794676806083704,\n",
+    "  \"Test:base_Cintra207\": 0.7832699619771819,\n",
+    "  \"Test:base_Cintra208\": 0.7870722433460144,\n",
+    "  \"Test:base_Cintra209\": 0.7908745247148246,\n",
+    "  \"Test:base_Cintra210\": 0.7946768060836517,\n",
+    "  \"Test:base_Cintra211\": 0.7984790874524736,\n",
+    "  \"Test:base_Cintra212\": 0.8022813688212966,\n",
+    "  \"Test:base_Cintra213\": 0.8060836501901134,\n",
+    "  \"Test:base_Cintra214\": 0.8098859315589377,\n",
+    "  \"Test:base_Cintra215\": 0.8136882129277478,\n",
+    "  \"Test:base_Cintra216\": 0.817490494296578,\n",
+    "  \"Test:base_Cintra217\": 0.8212927756654042,\n",
+    "  \"Test:base_Cintra218\": 0.8250950570342189,\n",
+    "  \"Test:base_Cintra219\": 0.8288973384030529,\n",
+    "  \"Test:base_Cintra220\": 0.8326996197718622,\n",
+    "  \"Test:base_Cintra221\": 0.836501901140681,\n",
+    "  \"Test:base_Cintra222\": 0.8403041825094998,\n",
+    "  \"Test:base_Cintra223\": 0.8441064638783357,\n",
+    "  \"Test:base_Cintra224\": 0.8479087452471561,\n",
+    "  \"Test:base_Cintra225\": 0.8517110266159759,\n",
+    "  \"Test:base_Cintra226\": 0.8555133079847826,\n",
+    "  \"Test:base_Cintra227\": 0.8593155893536133,\n",
+    "  \"Test:base_Cintra228\": 0.8631178707224305,\n",
+    "  \"Test:base_Cintra229\": 0.8669201520912616,\n",
+    "  \"Test:base_Cintra230\": 0.8707224334600657,\n",
+    "  \"Test:base_Cintra231\": 0.8745247148289049,\n",
+    "  \"Test:base_Cintra232\": 0.8783269961977209,\n",
+    "  \"Test:base_Cintra233\": 0.882129277566545,\n",
+    "  \"Test:base_Cintra234\": 0.8859315589353497,\n",
+    "  \"Test:base_Cintra235\": 0.8897338403041878,\n",
+    "  \"Test:base_Cintra236\": 0.8935361216730032,\n",
+    "  \"Test:base_Cintra237\": 0.8973384030418154,\n",
+    "  \"Test:base_Cintra238\": 0.9011406844106312,\n",
+    "  \"Test:base_Cintra239\": 0.9049429657794688,\n",
+    "  \"Test:base_Cintra240\": 0.908745247148286,\n",
+    "  \"Test:base_Cintra241\": 0.9125475285171258,\n",
+    "  \"Test:base_Cintra242\": 0.91634980988594,\n",
+    "  \"Test:base_Cintra243\": 0.9201520912547496,\n",
+    "  \"Test:base_Cintra244\": 0.9239543726235884,\n",
+    "  \"Test:base_Cintra245\": 0.9277566539924031,\n",
+    "  \"Test:base_Cintra246\": 0.9315589353612144,\n",
+    "  \"Test:base_Cintra247\": 0.9353612167300348,\n",
+    "  \"Test:base_Cintra248\": 0.9391634980988696,\n",
+    "  \"Test:base_Cintra249\": 0.9429657794676763,\n",
+    "  \"Test:base_Cintra25\": 0.09125475285171104,\n",
+    "  \"Test:base_Cintra250\": 0.9467680608365036,\n",
+    "  \"Test:base_Cintra251\": 0.9505703422053116,\n",
+    "  \"Test:base_Cintra252\": 0.954372623574156,\n",
+    "  \"Test:base_Cintra253\": 0.958174904942962,\n",
+    "  \"Test:base_Cintra254\": 0.9619771863117887,\n",
+    "  \"Test:base_Cintra255\": 0.9657794676806012,\n",
+    "  \"Test:base_Cintra256\": 0.9695817490494372,\n",
+    "  \"Test:base_Cintra257\": 0.9733840304182436,\n",
+    "  \"Test:base_Cintra258\": 0.9771863117870784,\n",
+    "  \"Test:base_Cintra259\": 0.9809885931558776,\n",
+    "  \"Test:base_Cintra260\": 0.9847908745247076,\n",
+    "  \"Test:base_Cintra261\": 0.9885931558935568,\n",
+    "  \"Test:base_Cintra262\": 0.9923954372623176,\n",
+    "  \"Test:base_Cintra263\": 0.9961977186311964,\n",
+    "  \"Test:base_Cintra264\": 1,\n",
+    "  \"Test:base_Cintra27\": 0.0988593155893536,\n",
+    "  \"Test:base_Cintra29\": 0.1064638783269962,\n",
+    "  \"Test:base_Cintra30\": 0.11026615969581748,\n",
+    "  \"Test:base_Cintra31\": 0.1140684410646388,\n",
+    "  \"Test:base_Cintra34\": 0.12547528517110265,\n",
+    "  \"Test:base_Cintra38\": 0.14068441064638784,\n",
+    "  \"Test:base_Cintra39\": 0.1444866920152091,\n",
+    "  \"Test:base_Cintra40\": 0.1482889733840304,\n",
+    "  \"Test:base_Cintra41\": 0.1520912547528517,\n",
+    "  \"Test:base_Cintra44\": 0.1634980988593156,\n",
+    "  \"Test:base_Cintra47\": 0.1749049429657795,\n",
+    "  \"Test:base_Cintra48\": 0.17870722433460076,\n",
+    "  \"Test:base_Cintra49\": 0.1825095057034221,\n",
+    "  \"Test:base_Cintra51\": 0.19011406844106463,\n",
+    "  \"Test:base_Cintra55\": 0.20532319391634984,\n",
+    "  \"Test:base_Cintra57\": 0.2129277566539924,\n",
+    "  \"Test:base_Cintra58\": 0.21673003802281368,\n",
+    "  \"Test:base_Cintra60\": 0.22433460076045628,\n",
+    "  \"Test:base_Cintra63\": 0.23574144486692017,\n",
+    "  \"Test:base_Cintra65\": 0.2433460076045627,\n",
+    "  \"Test:base_Cintra67\": 0.2509505703422053,\n",
+    "  \"Test:base_Cintra70\": 0.2623574144486692,\n",
+    "  \"Test:base_Cintra71\": 0.2661596958174905,\n",
+    "  \"Test:base_Cintra74\": 0.27756653992395436,\n",
+    "  \"Test:base_Cintra75\": 0.2813688212927757,\n",
+    "  \"Test:base_Cintra78\": 0.29277566539923955,\n",
+    "  \"Test:base_Cintra79\": 0.2965779467680608,\n",
+    "  \"Test:base_Cintra80\": 0.3003802281368821,\n",
+    "  \"Test:base_Cintra81\": 0.3041825095057034,\n",
+    "  \"Test:base_Cintra82\": 0.30798479087452474,\n",
+    "  \"Test:base_Cintra83\": 0.311787072243346,\n",
+    "  \"Test:base_Cintra84\": 0.3155893536121673,\n",
+    "  \"Test:base_Cintra85\": 0.31939163498098855,\n",
+    "  \"Test:base_Cintra89\": 0.33460076045627374,\n",
+    "  \"Test:base_Cintra90\": 0.33840304182509506,\n",
+    "  \"Test:base_Cintra91\": 0.34220532319391633,\n",
+    "  \"Test:base_Cintra93\": 0.3498098859315589,\n",
+    "  \"Test:base_Cintra94\": 0.35361216730038003,\n",
+    "  \"Test:base_Cintra95\": 0.3574144486692015,\n",
+    "  \"Test:base_Cintra97\": 0.3650190114068441,\n",
+    "  \"Test:base_Cintra98\": 0.3688212927756655,\n",
+    "  \"Test:base_Cintra99\": 0.3726235741444867,\n",
+    "  \"_runtime\": 2151.609110355377,\n",
+    "  \"_step\": 0,\n",
+    "  \"_timestamp\": 1744020174.1713293,\n",
+    "  \"_wandb.runtime\": 2155,\n",
+    "  \"epoch\": 0,\n",
+    "  \"test_loss\": -8.739651679992676,\n",
+    "  \"test_loss_desurv\": -3.9591262340545654,\n",
+    "  \"test_loss_values\": -56.544864654541016,\n",
+    "  \"trainer/global_step\": 0\n",
+    "}"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f06f4754-a482-483f-b4c0-ba4824bf79af",
+   "metadata": {},
+   "source": [
+    "# Next event concordance"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 49,
+   "id": "ba935a0f-f700-4bf0-974f-b3804415b1bc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "Cinter_keys = [_key for _key in raw_data_from_wandb.keys() if \"Test:Cintra\" in _key ]\n",
+    "\n",
+    "decoded_cintra_diagnoses = {}\n",
+    "decoded_cintra_other = {}\n",
+    "\n",
+    "for _key in Cinter_keys:\n",
+    "    _event = int(_key[len(\"Test:Cintra\"):])                 # token\n",
+    "    _event_name = dm.decode([_event]).split(\" \")[0]         # string\n",
+    "    _event_cintra = raw_data_from_wandb[_key]               # concordance\n",
+    "\n",
+    "    if _event_name.upper() == _event_name:\n",
+    "        decoded_cintra_diagnoses = {**decoded_cintra_diagnoses, _event_name: _event_cintra}\n",
+    "    else:\n",
+    "        decoded_cintra_other = {**decoded_cintra_other, _event_name: _event_cintra}\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 50,
+   "id": "fc76e749-8d83-42ce-8d19-1af25d11bc7c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# display(decoded_cintra_diagnoses)\n",
+    "# display(decoded_cintra_other)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 51,
+   "id": "b196c186-8b32-440b-9b11-143910078375",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "BaseCinter_keys = [_key for _key in raw_data_from_wandb.keys() if \"Test:base_Cintra\" in _key ]\n",
+    "\n",
+    "base_decoded_cintra_diagnoses = {}\n",
+    "base_decoded_cintra_other = {}\n",
+    "base_prevalence_diagnoses = {}\n",
+    "base_prevalence_other = {}\n",
+    "\n",
+    "for _key in BaseCinter_keys:\n",
+    "    _event = int(_key[len(\"Test:base_Cintra\"):])                 # token\n",
+    "    _event_name = dm.decode([_event]).split(\" \")[0]         # string\n",
+    "    _event_cintra = raw_data_from_wandb[_key]               # concordance\n",
+    "\n",
+    "    prevalence = dm.tokenizer._event_counts\n",
+    "    prevalence = prevalence.filter(pl.col(\"EVENT\") ==_event_name)[\"COUNT\"][0]\n",
+    "\n",
+    "    if _event_name.upper() == _event_name:\n",
+    "        base_decoded_cintra_diagnoses = {**base_decoded_cintra_diagnoses, _event_name: _event_cintra}\n",
+    "        base_prevalence_diagnoses = {**base_prevalence_diagnoses, _event_name: prevalence}\n",
+    "    else:\n",
+    "        base_decoded_cintra_other = {**base_decoded_cintra_other, _event_name: _event_cintra}\n",
+    "        base_prevalence_other = {**base_prevalence_other, _event_name: prevalence}\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 52,
+   "id": "a0258566-9f3c-440f-8e26-a628af9ca03c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# display(base_decoded_cintra_diagnoses)\n",
+    "# display(base_decoded_cintra_other)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 53,
+   "id": "c52e4962-be5c-451a-84fe-0bfd016f5d8d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "keys_included_diagnoses = list(set(base_decoded_cintra_diagnoses.keys()) & set(decoded_cintra_diagnoses.keys()))\n",
+    "keys_included_other = list(set(base_decoded_cintra_other.keys()) & set(decoded_cintra_other.keys()))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 54,
+   "id": "25187e0e-ecd7-49e9-b715-99cf1248bbdd",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "for dict_name, result_dict, result_dict_base, result_dict_prev, keys_to_include in zip([\"diagnoses\", \"other\"],\n",
+    "                                                                     [decoded_cintra_diagnoses, decoded_cintra_other], \n",
+    "                                                                     [base_decoded_cintra_diagnoses, base_decoded_cintra_other], \n",
+    "                                                                     [base_prevalence_diagnoses, base_prevalence_other],\n",
+    "                                                                     [keys_included_diagnoses, keys_included_other]\n",
+    "                                                                     ):\n",
+    "    plt.close()\n",
+    "    # plt.figure(figsize=(len(keys_to_include)/5,5))\n",
+    "    fig, ax1 = plt.subplots(figsize=(len(keys_to_include)/4,8))\n",
+    "    ax2 = ax1.twinx()  \n",
+    "\n",
+    "    X_axis = np.arange(len(keys_to_include)) \n",
+    "\n",
+    "    Y_base = [result_dict_base[_key] for _key in keys_to_include]\n",
+    "    Y_survivEHR = [result_dict[_key] for _key in keys_to_include]\n",
+    "    Y_log_prevalence = [np.log(result_dict_prev[_key]) for _key in keys_to_include]\n",
+    "\n",
+    "    # Sort by prevalence\n",
+    "    arg_sort = np.argsort(Y_log_prevalence)\n",
+    "    Y_base = [Y_base[_i] for _i in arg_sort]\n",
+    "    Y_survivEHR = [Y_survivEHR[_i] for _i in arg_sort]\n",
+    "    Y_log_prevalence = [Y_log_prevalence[_i] for _i in arg_sort]\n",
+    "    keys_to_include = [keys_to_include[_i] for _i in arg_sort]\n",
+    "\n",
+    "    width = 0.25\n",
+    "    ax1.bar(X_axis - width, Y_base, width, label = f'Concordance by prevalence (Average over events: {raw_data_from_wandb[\"Test:base_Cinter\"]:.3f})', color=\"mediumblue\") \n",
+    "    ax1.bar(X_axis, Y_survivEHR, width, label = f'Concordance by SurvivEHR (Average over events: {raw_data_from_wandb[\"Test:Cinter\"]:.3f})', color=\"firebrick\") \n",
+    "    ax2.plot(X_axis, Y_log_prevalence, width, label='Log-prevalence', color=\"darkseagreen\", marker=\".\")  #  + width\n",
+    "\n",
+    "    ax1.set_xticks(X_axis, keys_to_include, rotation=90) \n",
+    "    # ax1.xticks(X_axis, keys_to_include) \n",
+    "    ax1.set_xlabel(\"Events\") \n",
+    "    ax1.set_ylabel(\"Self-supervised Concordance\") \n",
+    "    ax2.set_ylabel(\"Log Prevalence\") \n",
+    "    ax1.legend(loc=\"upper left\")\n",
+    "    ax2.legend(loc=\"upper right\")\n",
+    "    ax1.set_ylim(0, 1.2)\n",
+    "    ax2.set_ylim(np.min(Y_log_prevalence)*0.95, np.max(Y_log_prevalence)*1.1)\n",
+    "    \n",
+    "\n",
+    "    # plt.bar(result_dict.keys(), result_dict.values(), 0.5, color='g')\n",
+    "    # ax1.xticks()\n",
+    "\n",
+    "    # ybar = raw_data_from_wandb[\"Test:Cinter\"]\n",
+    "    # ax1.plot([0, len(result_dict)-1], \n",
+    "    #          [ybar, ybar],\n",
+    "    #          label=f\"SurvivEHR marginalised over events\",\n",
+    "    #          color=\"firebrick\")\n",
+    "\n",
+    "    # ybar = raw_data_from_wandb[\"Test:base_Cinter\"]\n",
+    "    # ax1.plot([0, len(result_dict)-1], \n",
+    "    #          [ybar, ybar],\n",
+    "    #          label=f\"Prevalence marginalised over events\",\n",
+    "    #          color=\"mediumblue\")\n",
+    "    \n",
+    "    plt.tight_layout()\n",
+    "    plt.savefig(f\"figs/metrics/{pre_trained_model}/inter_causal_eval_{dict_name}.png\", bbox_inches=\"tight\")\n",
+    "    plt.close()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8a725dee-47bd-4b49-848a-9454c7a5b73c",
+   "metadata": {},
+   "source": [
+    "# Future events"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6aee3da8-7cad-4ca9-9014-aefe689bc1e9",
+   "metadata": {},
+   "source": [
+    "## SurvivEHR"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 55,
+   "id": "6cb31808-b4f2-475f-b0c4-2a41dd451561",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "['Test:Cinter+0', 'Test:Cinter+1', 'Test:Cinter+10', 'Test:Cinter+13', 'Test:Cinter+16', 'Test:Cinter+19', 'Test:Cinter+2', 'Test:Cinter+3', 'Test:Cinter+4', 'Test:Cinter+7']\n",
+      "[1, 2, 3, 4, 5, 8, 11, 14, 17, 20]\n",
+      "[0.980682882091063, 0.9222060874715772, 0.9003684987342017, 0.8690526485203292, 0.8529891043870028, 0.8133623030961437, 0.8281024363747177, 0.7846062710089827, 0.7782526658852459, 0.7707180292731624]\n"
+     ]
+    }
+   ],
+   "source": [
+    "Cinter_keys = [_key for _key in raw_data_from_wandb.keys() if \"+\" in _key and \"base\" not in _key ]\n",
+    "print(Cinter_keys)\n",
+    "\n",
+    "x_survivEHR, y_survivEHR = [], []\n",
+    "for _key in Cinter_keys:\n",
+    "    x_survivEHR.append(int(_key[len(\"Test:Cinter+\"):]) + 1 )                # steps ahead\n",
+    "    y_survivEHR.append(raw_data_from_wandb[_key] )                   # concordance\n",
+    "\n",
+    "\n",
+    "arg_sort = np.argsort(x_survivEHR)\n",
+    "x_survivEHR = [x_survivEHR[_i] for _i in arg_sort]\n",
+    "y_survivEHR = [y_survivEHR[_i] for _i in arg_sort]\n",
+    "\n",
+    "print(x_survivEHR)\n",
+    "print(y_survivEHR)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 56,
+   "id": "f726c877-af90-43e9-a6ef-eb213bd0530e",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "['Test:base_Cinter+0', 'Test:base_Cinter+1', 'Test:base_Cinter+10', 'Test:base_Cinter+13', 'Test:base_Cinter+16', 'Test:base_Cinter+19', 'Test:base_Cinter+2', 'Test:base_Cinter+3', 'Test:base_Cinter+4', 'Test:base_Cinter+7']\n"
+     ]
+    }
+   ],
+   "source": [
+    "Cinter_keys = [_key for _key in raw_data_from_wandb.keys() if \"+\" in _key and \"base\" in _key ]\n",
+    "print(Cinter_keys)\n",
+    "\n",
+    "x_base, y_base = [], []\n",
+    "for _key in Cinter_keys:\n",
+    "    x_base.append(int(_key[len(\"Test:base_Cinter+\"):]) + 1 )                # steps ahead\n",
+    "    y_base.append(raw_data_from_wandb[_key] )                   # concordance\n",
+    "\n",
+    "arg_sort = np.argsort(x_base)\n",
+    "x_base = [x_base[_i] for _i in arg_sort]\n",
+    "y_base = [y_base[_i] for _i in arg_sort]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 57,
+   "id": "b858192c-6bc3-4382-8a5e-750c2caf19ff",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.close()\n",
+    "\n",
+    "plt.plot(x_survivEHR, y_survivEHR,\n",
+    "         label=f\"SurvivEHR decay\",\n",
+    "         color=\"firebrick\")\n",
+    "\n",
+    "plt.plot(x_base, y_base,\n",
+    "         label=f\"Prevalence prognosis decay\",\n",
+    "         color=\"mediumblue\")\n",
+    "\n",
+    "plt.legend()\n",
+    "plt.tight_layout()\n",
+    "plt.savefig(f\"figs/metrics/{pre_trained_model}/inter_decay.png\", bbox_inches=\"tight\")\n",
+    "    "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2c945366-4990-454a-9bfe-c9c2232d3911",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "155f21c8-d018-4be8-aaad-1584c2e2e178",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "00e7c630-36e1-4300-8afa-034e53b559b3",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "003f27ad-ebf0-47c4-b72d-a91f84b504b9",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "eccde1a2-e6d6-4560-9142-48dd30f673c5",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b0be7370-9cf6-4dc5-9fb2-6e36eb6df3ee",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "bf1baa48-6b58-454d-8f41-27d743c680e8",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f1b1f27a-4235-4c9c-88c2-c309e282529f",
+   "metadata": {},
+   "source": [
+    "# Deprecated"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d891765b-f534-41cc-8969-791d413f6871",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dm.tokenizer._event_counts"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7644335f-9a9e-49be-963a-6ed1ca22adf5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "save_path = f\"/rds/projects/s/subramaa-mum-predict/CharlesGadd_Oxford/FoundationModelOutput/checkpoints/{cfg.experiment.run_id}/\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2db2b285-c23f-4fd2-8e66-e20159e8e271",
+   "metadata": {},
+   "source": [
+    "# Load Pre-Trained model"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b6f37089-e294-46c0-bc4a-ce3ae00300b5",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "ckpt_path = cfg.experiment.log_dir + f'checkpoints/{cfg.experiment.run_id}.ckpt'\n",
+    "model = SurvivalExperiment.load_from_checkpoint(ckpt_path)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "53ae57fb-6ca7-4e7f-9b79-b99bb5a10b52",
+   "metadata": {},
+   "source": [
+    "# Initialise fine-tuning data module"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a8e90c2f-04c5-4f31-86f0-4f3800fa9325",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Update dataset path to point to the new dataset \n",
+    "cfg.data.path_to_ds = \"/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/\"\n",
+    "\n",
+    "# Build \n",
+    "dm = FoundationalDataModule(path_to_db=cfg.data.path_to_db,\n",
+    "                            path_to_ds=cfg.data.path_to_ds,\n",
+    "                            load=True,\n",
+    "                            tokenizer=\"tabular\",\n",
+    "                            batch_size=cfg.data.batch_size,\n",
+    "                            max_seq_length=cfg.transformer.block_size,\n",
+    "                            freq_threshold=cfg.data.unk_freq_threshold,\n",
+    "                            min_workers=cfg.data.min_workers,\n",
+    "                            overwrite_meta_information=cfg.data.meta_information_path,\n",
+    "                           )\n",
+    "\n",
+    "vocab_size = dm.train_set.tokenizer.vocab_size\n",
+    "print(f\"{vocab_size} vocab elements\")\n",
+    "\n",
+    "# list of univariate measurements to model with Normal distribution\n",
+    "# Extract the measurements, using the fact that the diagnoses are all up upper case.\n",
+    "measurements_for_univariate_regression = [record for record in dm.tokenizer._event_counts[\"EVENT\"] if record.upper() != record]\n",
+    "cfg.head.tokens_for_univariate_regression = dm.encode(measurements_for_univariate_regression) \n",
+    "# display(measurements_for_univariate_regression)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1f982ce1-7d8d-4eca-960d-8866ac757c8a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "num_diagnoses = len(dm.train_set.meta_information[\"diagnosis_table\"][\"count\"])\n",
+    "num_diagnosis_events = sum(dm.train_set.meta_information[\"diagnosis_table\"][\"count\"])\n",
+    "\n",
+    "is_medication = dm.train_set.meta_information[\"measurement_tables\"][\"count_obs\"] == 0\n",
+    "\n",
+    "num_medications = sum(is_medication)\n",
+    "num_medication_events = sum(dm.train_set.meta_information[\"measurement_tables\"][is_medication][\"count\"])\n",
+    "num_measurement_test = sum(~is_medication)\n",
+    "num_measurement_test_events = sum(dm.train_set.meta_information[\"measurement_tables\"][~is_medication][\"count\"])\n",
+    "\n",
+    "num_measurement_test_events = sum(dm.train_set.meta_information[\"measurement_tables\"][~is_medication][\"count_obs\"])\n",
+    "\n",
+    "print(f'{num_diagnosis_events:,} diagnoses of {num_diagnoses} types')\n",
+    "print(f'{num_medication_events:,} medications of {num_medications} types')\n",
+    "print(f'{num_measurement_test_events:,} measurements and tests of {num_measurement_test} types')\n",
+    "print(f'{num_diagnoses+num_medication_events+num_measurement_test_events:,}')\n",
+    "\n",
+    "print(f'{num_measurement_test_events:,}')\n",
+    "dm.train_set.meta_information.keys()\n",
+    "\n",
+    "print(dm.train_set.tokenizer._event_counts)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "13a7a64a-4a5b-4811-847a-5ad8abe04c61",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# # import pickle as pkl\n",
+    "# # import pathlib\n",
+    "\n",
+    "# pkl_file_to_amend = \"/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/file_row_count_dict_test.pickle\"\n",
+    "\n",
+    "# with open(pkl_file_to_amend, 'rb') as pickle_file:\n",
+    "#     content = pickle.load(pickle_file)\n",
+    "# display(content)\n",
+    "\n",
+    "# # new_dictionary = {}\n",
+    "# # for key in content.keys():\n",
+    "# #     str_to_remove = \"/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/split=val/\"\n",
+    "# #     new_key = str(key)[len(str_to_remove):]\n",
+    "# #     new_dictionary[new_key] = content[key]\n",
+    "# # display(new_dictionary)\n",
+    "\n",
+    "\n",
+    "# # with open(pkl_file_to_amend, 'wb') as handle:\n",
+    "# #     pickle.dump(new_dictionary, handle, protocol=pickle.HIGHEST_PROTOCOL)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "39e3bd66-0f95-4d0f-9e85-b05bf609037e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# new_dictionary"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "3a3a45cf-dcbe-4d66-a8fa-34fcc1e4a4de",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "import copy\n",
+    "start = time.time()   # starting time\n",
+    "for batch in dm.train_dataloader():\n",
+    "    # print(batch[\"tokens\"][1,:])\n",
+    "    \n",
+    "    c_batch = convert_batch_to_none_causal(batch)\n",
+    "    # print(c_batch[\"tokens\"][1,:])\n",
+    "    # print(c_batch[\"target_token\"][1])\n",
+    "\n",
+    "    # print(batch[\"tokens\"][1,:])\n",
+    "    \n",
+    "    break\n",
+    "    \n",
+    "print(f\"batch loaded in {time.time()-start} seconds\")    \n",
+    "    \n",
+    "# for key in batch.keys():\n",
+    "#     print(f\"{key}\".ljust(20) + f\"{batch[key].shape}\")\n",
+    "\n",
+    "# tokens = batch[\"tokens\"][0].tolist()    \n",
+    "# sentence = dm.decode(tokens).split(\" \")\n",
+    "# for token, value in zip(sentence, batch[\"values\"][0].tolist()):\n",
+    "#     print(f\"{token}:\".ljust(40) + f\"{value}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "85a4c5b5-2121-4d10-8f8e-11a88ed16cc3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "display(batch.keys())\n",
+    "display(c_batch.keys())\n",
+    "\n",
+    "print(batch[\"static_covariates\"].shape)\n",
+    "\n",
+    "# print(dm.train_set.static_1hot)\n",
+    "# print(dm.train_set.static_1hot[\"SEX\"].categories_)\n",
+    "# print(dm.train_set.static_1hot[\"IMD\"].categories_)\n",
+    "# print(dm.train_set.static_1hot[\"ETHNICITY\"].categories_)\n",
+    "\n",
+    "print(batch[\"tokens\"][1,:])\n",
+    "print(c_batch[\"tokens\"][1,:])\n",
+    "print(c_batch[\"target_token\"][1])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "60e3e15f-1b7c-466b-825e-a84100d224a0",
+   "metadata": {},
+   "source": [
+    "## View an example sample"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "16aa22fa-ef08-485f-a948-c4ff8b3aade5",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "dm.test_set.view_sample(11003, max_dynamic_events=None, report_time=True)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d1943eec-f491-4a94-92d9-65b9cedbd433",
+   "metadata": {},
+   "source": [
+    "# Custom wrapper prediction last token\n",
+    "\n",
+    "To begin with, I will just loop over samples individually to test the zero-shot capacity of SurvivEHR. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "439343da-a813-4ffa-b0a6-26074e80d11e",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "\n",
+    "\n",
+    "# Verifying on datamodule \n",
+    "for _idx, batch in enumerate(dm.test_dataloader()):\n",
+    "    if _idx > 10:\n",
+    "        break\n",
+    "    print(_idx)\n",
+    "    print(torch.stack([batch[\"tokens\"][10,:5], \n",
+    "                       batch[\"values\"][10,:5],  \n",
+    "                       batch[\"ages\"][10,:5],\n",
+    "                       batch[\"attention_mask\"][10,:5]]))\n",
+    "    batch = replace_last_non_pad_with_pad(batch)\n",
+    "    print(torch.stack([batch[\"tokens\"][10,:5], \n",
+    "                       batch[\"values\"][10,:5],  \n",
+    "                       batch[\"ages\"][10,:5],\n",
+    "                       batch[\"attention_mask\"][10,:5]]))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f2c069ad-f41d-420e-819e-cf2c5a390baf",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "outcome_of_interest = [\"COPD\", \"SUBSTANCEMISUSE\"]\n",
+    "outcome_token = dm.encode(outcome_of_interest)[0]\n",
+    "print(outcome_token)\n",
+    "# print(model(batch))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e17f35b1-02d3-4db9-b376-ca44d9c1f770",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "Hs, labels = [], []\n",
+    "mins,maxes=[],[]\n",
+    "for _idx, batch in enumerate(dm.test_dataloader()):\n",
+    "\n",
+    "    batch = replace_last_non_pad_with_pad(batch)\n",
+    "    print(batch[\"tokens\".shape)\n",
+    "    outputs, _, hidden_states = model(batch, is_generation=True)\n",
+    "    print(outputs)\n",
+    "    \n",
+    "    hidden_states = hidden_states.cpu().detach().numpy()                           # (64, 128, 384) \n",
+    "    Hs.append( hidden_states.reshape(hidden_states.shape[0], -1) )\n",
+    "    labels.append((batch[\"target_token\"] == outcome_token).long().numpy())\n",
+    "\n",
+    "    if _idx == 9:\n",
+    "        break\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "fc2bf156-cc66-4276-8c8d-23caec948e2d",
+   "metadata": {},
+   "source": [
+    "# Visualise hidden dimension labelled by target"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5a2d857d-dbb0-487b-8278-42c04bcbea15",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import umap\n",
+    "from sklearn.preprocessing import StandardScaler\n",
+    "\n",
+    "H = np.concatenate(Hs, 0)\n",
+    "lbl = np.concatenate(labels, 0)\n",
+    "\n",
+    "H = StandardScaler().fit_transform(H)\n",
+    "reducer = umap.UMAP()\n",
+    "H_proj = reducer.fit_transform(H)\n",
+    "\n",
+    "plt.close()\n",
+    "plt.scatter(H_proj[:,0], H_proj[:,1], c=lbl)\n",
+    "plt.savefig(save_path + f\"zero_shot/hidden_umap.png\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ea5e686a-ebe9-43d4-8a14-b88df279ca9d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(outputs[\"surv\"][\"surv_CDF\"][outcome_token].shape)\n",
+    "\n",
+    "# The first two tokens in the vocab correspond to the PAD and UNK tokens. There is no CDF corresponding to the PAD token, so the indexing for surv_CDF begins as [\"UNK\", \"ADDISONS_DISEASE\", ...]\n",
+    "# print(dm.decode([0,1,2]))\n",
+    "\n",
+    "outcomes = [\"COPD\", \"SUBSTANCEMISUSE\"]\n",
+    "outcome_tokens = dm.encode(outcomes)\n",
+    "\n",
+    "# for outcome in outcomes:\n",
+    "    # observed_outcome_token = dm.encode([outcome])[0]\n",
+    "cdf = np.zeros_like(outputs[\"surv\"][\"surv_CDF\"][0])\n",
+    "lbls = np.zeros_like(batch[\"target_token\"])\n",
+    "\n",
+    "for _outcome_token in outcome_tokens:\n",
+    "    cdf += outputs[\"surv\"][\"surv_CDF\"][_outcome_token - 1] \n",
+    "    lbls += (batch[\"target_token\"] == _outcome_token).long().numpy()\n",
+    "\n",
+    "plt.close()\n",
+    "cdf_true = cdf[lbls==1,:]\n",
+    "cdf_false = cdf[lbls==0,:]\n",
+    "for i in range(cdf_true.shape[0]):\n",
+    "    plt.plot(np.linspace(1,1826,1826), cdf_true[i,:], c=\"r\", label=\"outcome occurred next\" if i == 0 else None, alpha=1)\n",
+    "for i in range(cdf_false.shape[0]):\n",
+    "    plt.plot(np.linspace(1,1826,1826), cdf_false[i,:], c=\"k\", label=\"outcome did not occur next\" if i == 0 else None, alpha=0.3)\n",
+    "\n",
+    "plt.legend(loc=2)\n",
+    "plt.xlabel(\"days\")\n",
+    "plt.ylabel(f\"P(t>T) - outcomes={','.join(outcomes)}\")\n",
+    "plt.savefig(save_path + f\"zero_shot/cdf_outcomes.png\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "619c2049-56bc-47ff-bcea-ce2e529266e2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(batch[\"target_token\"].unique())\n",
+    "print(len(outputs[\"surv\"][\"surv_CDF\"]))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ecb3417a-d3c7-42f9-b288-82ab49ddb69b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dm.decode([2])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "90115137-0805-4f93-877b-2d98e51439d0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "outputs[\"surv\"][\"surv_CDF\"][observed_outcome_token - 1]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9bacadcc-f857-45e2-94e8-0ca43ccbd196",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python",
+   "language": "python",
+   "name": "sys_python"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.4"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

@@ -44,7 +44,7 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                                                             hidden_dim=32,
                                                             num_risks=vocab_size-1,
                                                             concurrent_strategy=concurrent_strategy,
-                                                            device="cuda")
+                                                            device='cuda' if torch.cuda.is_available() else 'cpu')
             case _:
                 raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
 
@@ -65,8 +65,8 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                 tokens:                 torch.tensor,
                 ages:                   torch.tensor,
                 values:                 torch.tensor,
-                covariates:             Optional[torch.tensor] = None,
-                attention_mask:         Optional[torch.tensor] = None,
+                covariates:             torch.tensor,
+                attention_mask:         torch.tensor,
                 is_generation:          bool = False,
                 return_generation:      bool = False,
                 return_loss:            bool = True,
@@ -153,67 +153,97 @@ class SurvStreamGPTForCausalModelling(nn.Module):
                  tokens: torch.tensor,
                  ages: torch.tensor,
                  values: torch.tensor,
-                 static_covariates: Optional[torch.tensor] = None,
-                 eos_token: Optional[int] = None,               # add DEATH to determine EOS later?
+                 static_covariates: torch.tensor,
+                 attention_mask: torch.tensor,
                  max_new_tokens: int = 50,
+                 exceed_block_size: bool = False,
                  **kwargs
                  ):
-        """ Generate future samples for the single-risk
+        """ Generate future samples for the single-risk."""
+
+        device = tokens.device
+        batch_size, context_length = tokens.shape
+        B = self.block_size
         
-        # TODO: havent tested for batched generation
-        """
-
-        survs = []
+        # If we don't want to exceed block size then there is no point generating more new tokens than block_size
+        # num_to_fill_lowest_record = self.block_size - torch.sum()
+        max_new_tokens = max_new_tokens if exceed_block_size else np.min((self.block_size, max_new_tokens))
+        
         for _ in range(max_new_tokens):
-            # crop tokens to the last block_size tokens 
-            if tokens.shape[1] > self.block_size:
-                logging.debug(r"Context window is greater than block size." + \
-                              " This is not compatible with the `sparse` setting of `FoundationalDataset()` which enforces earlier diagnoses are prepended to batch windows.")
-            tokens_window = tokens[:, -self.block_size:]
-            ages_window = ages[:, -self.block_size:] 
-            values_window = values[:, -self.block_size:] 
+                    
+            # for each example, grab the last B attended positions
+            # build empty (pad-filled) windows:
+            windowed_tokens = torch.full((batch_size, B), 0,    device=device, dtype=tokens.dtype)
+            windowed_ages   = torch.full((batch_size, B), 0,    device=device, dtype=ages.dtype)
+            windowed_values = torch.full((batch_size, B), torch.nan,    device=device, dtype=values.dtype)
+            windowed_attention_mask = torch.full((batch_size, B), 0,    device=device, dtype=values.dtype)
+            for i in range(batch_size):
+                att_pos = attention_mask[i].nonzero(as_tuple=True)[0]   # all indices where mask==1
+                if att_pos.numel() == 0:
+                    continue
+                sel = att_pos[-B:]                                      # at most B positions
+                L   = sel.size(0)
+                # copy into the *leftmost* L slots of our window
+                windowed_tokens[i, :L] = tokens[i, sel]
+                windowed_ages  [i, :L] = ages  [i, sel]
+                windowed_values[i, :L] = values[i, sel]
+                windowed_attention_mask[i, :L] = 1
 
-            # get the predictions
-            outputs, _, _ = self(tokens=tokens_window, 
-                                 ages=ages_window,
-                                 values=values_window, 
-                                 covariates=static_covariates,
-                                 is_generation=True,
-                                 return_generation=True,
-                                 return_loss=False,
-                                )
+            # Get the generation predictions
+            outputs, _, hidden_states = self(tokens=windowed_tokens, 
+                                             ages=windowed_ages,
+                                             values=windowed_values, 
+                                             covariates=static_covariates,
+                                             attention_mask=windowed_attention_mask,
+                                             is_generation=True,
+                                             return_generation=True,
+                                             return_loss=False,
+                                             )
+            pred_surv = outputs["surv"]["surv_CDF"]
+            pred_values = outputs["values_dist"]
 
-            # sample survival 
-            surv = outputs["surv"]["surv_CDF"]
-            survs.append(surv)
-
-            
-            token_next, delta_age =  self.surv_layer.sample_surv(surv)
-            ages_next = ages[:, [-1]] + delta_age
-            
-            # values
-            values_next = []
-            for i in range(token_next.shape[0]):
-                if token_next[i, 0].item() in self.value_layer.measurement_tokens:
-                    values_next.append(outputs["values_dist"][self.value_layer.token_key(token_next[i, 0])].sample()[0])
+            # sample next event tokens and age-deltas
+            next_tokens, next_delta_ages =  self.surv_layer.sample_surv(pred_surv)
+            # build a tensor of next_values
+            next_vals = []
+            for sample_idx, tok in enumerate(next_tokens):
+                if tok in self.value_layer.measurement_tokens:
+                    dist = pred_values[self.value_layer.token_key(tok)]
+                    next_vals.append(dist.sample()[sample_idx].item())
                 else:
-                    values_next.append(torch.tensor([torch.nan], device=tokens.device))
-
-            # print(values_next)
-            values_next = torch.stack(values_next)    # (B, 1)
-            # print(values_next.shape)
+                    next_vals.append(torch.nan)
+            next_values = torch.tensor(next_vals, device=device, dtype=values.dtype)
             
-            # append generated samples to the running sequence
-            tokens = torch.cat((tokens, token_next), dim=1) # (B, T+1)
-            ages = torch.cat((ages, ages_next), dim=1) 
-            values = torch.cat((values, values_next), dim=1) 
-
-            # TODO: add death token as EOS token
-            if token_next == eos_token:
-                break
-
-            if ages_next > 120*365 / 1825:
-                logging.warning("Breaking generation due to implausible age")
-                break
+            # compute current lengths
+            lengths = attention_mask.sum(dim=1).long()              # (bsz,)
             
-        return tokens, ages, values, survs
+            # Extend with space for new value
+            tokens = torch.cat(
+                [tokens, torch.full((batch_size, 1), 0, device=device, dtype=tokens.dtype)], dim=1
+            )
+            ages = torch.cat(
+                [ages, torch.full((batch_size, 1), 0, device=device, dtype=ages.dtype)], dim=1
+            )
+            values = torch.cat(
+                [values, torch.full((batch_size, 1), torch.nan, device=device, dtype=values.dtype)], dim=1
+            )
+            if attention_mask is not None:
+                attention_mask = torch.cat(
+                    [attention_mask, torch.zeros((batch_size, 1), device=device, dtype=attention_mask.dtype)],
+                    dim=1
+                )
+                
+            # Add new generated event
+            for idx in range(batch_size):
+                tokens[idx, lengths[idx]] = next_tokens[idx]
+                ages[idx, lengths[idx]] = ages[idx, lengths[idx]-1] + next_delta_ages[idx]
+                values[idx, lengths[idx]] = next_values[idx]
+                attention_mask[idx, lengths[idx]] = 1
+
+        if not exceed_block_size:
+            tokens = tokens[:, :self.block_size]
+            ages = ages[:, :self.block_size]
+            values = values[:, :self.block_size]
+            attention_mask[:, :self.block_size]
+
+        return tokens, ages, values, attention_mask

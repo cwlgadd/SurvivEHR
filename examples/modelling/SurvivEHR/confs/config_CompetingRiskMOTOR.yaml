@@ -43,7 +43,8 @@ fine_tuning:
   head:
     surv_weight: 1
     value_weight: 0
-    
+    learning_rate: 5e-4
+
 optim: 
   num_epochs: 1                      # Number of epochs
   learning_rate: 1e-5                # AdamW learning rate (initial)

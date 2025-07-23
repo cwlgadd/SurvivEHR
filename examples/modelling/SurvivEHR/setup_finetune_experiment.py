@@ -1,18 +1,19 @@
 import logging
-from hydra.utils import instantiate
-import functools
 import pytorch_lightning as pl
 import torch
+from omegaconf import OmegaConf
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlateau, CosineAnnealingLR, LambdaLR, SequentialLR, ChainedScheduler
 from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
 from CPRD.src.modules.head_layers.survival.competing_risk import ODESurvCompetingRiskLayer
 from CPRD.src.modules.head_layers.survival.single_risk import ODESurvSingleRiskLayer
 from CPRD.src.modules.head_layers.value_layers import GaussianRegressionLayer
 
+import importlib
+import functools
+from itertools import islice
 from CPRD.src.models.base_callback import Embedding
 from CPRD.src.models.survival.custom_callbacks.clinical_prediction_model import PerformanceMetrics
 from CPRD.src.models.survival.custom_callbacks.mm_clinical_prediction_model import RestrictedMeanSurvivalTime
-import importlib
 
 
 class FineTuneExperiment(pl.LightningModule):
@@ -35,6 +36,7 @@ class FineTuneExperiment(pl.LightningModule):
         ###################################
         adapter_dim = cfg.transformer.adapter_dim if use_adapter is True else False
         self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size, use_adapter=adapter_dim)
+        # logging.info(self.model)
 
         # Approaches for freezing the pre-trained model body whilst fine-tuning the new head
         if self.use_adapter is True:
@@ -52,7 +54,7 @@ class FineTuneExperiment(pl.LightningModule):
                     param.requires_grad = True
                 else:
                     param.requires_grad = False
-                
+
         else:
             logging.info(f"Training all Transformer parameters")
             for name, param in self.model.named_parameters():
@@ -224,28 +226,59 @@ class FineTuneExperiment(pl.LightningModule):
         head_params = list(self.surv_layer.parameters())
         if self.value_weight > 0:
             head_params += list(self.value_layer.parameters())
-        body_params = [p for n, p in self.model.named_parameters() if p.requires_grad and not any(h is p for h in head_params)]
+        
+        # Set head learning rate to 
+        backbone_lr = self.cfg.optim.learning_rate
+        head_lr = self.cfg.fine_tuning.head.learning_rate
         
         match self.use_adapter:
             case "fix":
-                optimizer = torch.optim.AdamW(head_params, lr=self.cfg.optim.learning_rate)
-                logging.info(f"Fixing backbone, and using head learning rate {self.cfg.optim.learning_rate}")
+                optimizer = torch.optim.AdamW(head_params, lr=head_lr)
+                logging.info(f"Fixing backbone, and using head learning rate {head_lr}")
                 
             case True:
-                body_lr = self.cfg.optim.learning_rate # * 0.1
+                body_params = [p for n, p in self.model.named_parameters() if p.requires_grad and not any(h is p for h in head_params)]
+                
                 optimizer = torch.optim.AdamW([
-                    {'params': body_params, 'lr': body_lr}, 
-                    {'params': head_params, 'lr': self.cfg.optim.learning_rate}
+                    {'params': body_params, 'lr': backbone_lr}, 
+                    {'params': head_params, 'lr': head_lr}
                     ])
-                logging.info(f"Using adpater on backbone with learning rate {body_lr}, and using head learning rate {self.cfg.optim.learning_rate}")
+                logging.info(f"Using adpater on backbone with learning rate {backbone_lr}, and using head learning rate {head_lr}")
+
+            case "llrd":
+                
+                # Apply LLRD from top (closer to output) to bottom layers
+                lr = backbone_lr
+                decay = 0.9         # With 6 layer model the earliest layers have 0.7**6 (10\%) of the top layer's LR
+                backbone_params = []
+                for i, block in enumerate(reversed(self.model.transformer.blocks)):
+                    backbone_params.append({'params': block.parameters(), 'lr': lr})
+                    lr *= decay
+                
+                # Add non-block components (e.g., embeddings, final LN) at base LR
+                backbone_params += [
+                    {'params': self.model.transformer.wte.parameters(), 'lr': lr},
+                    {'params': self.model.transformer.wpe.parameters(), 'lr': lr},
+                    {'params': self.model.transformer.ln_f.parameters(), 'lr': backbone_lr},
+                ]
+
+                optimizer = torch.optim.AdamW(
+                    backbone_params + [{'params': head_params, 'lr': head_lr}]
+                )
+                logging.info(f"Using layer-wise learning rate decay (LLRD) on backbone with learning rate {lr}->{backbone_lr}, and using head learning rate {head_lr}")
+                
                 
             case _:
-                body_lr = self.cfg.optim.learning_rate # * 0.01
+                body_params = [p for n, p in self.model.named_parameters() if p.requires_grad and not any(h is p for h in head_params)]
+                
                 optimizer = torch.optim.AdamW([
-                    {'params': body_params, 'lr': body_lr}, 
-                    {'params': head_params, 'lr': self.cfg.optim.learning_rate}
+                    {'params': body_params, 'lr': backbone_lr}, 
+                    {'params': head_params, 'lr': head_lr}
                     ])
-                logging.info(f"Full training backbone with learning rate {body_lr}, and using head learning rate {self.cfg.optim.learning_rate}")
+                logging.info(f"Full training backbone with learning rate {backbone_lr}, and using head learning rate {head_lr}")
+
+        for i, g in enumerate(optimizer.param_groups):
+            logging.info(f"Group {i} LR: {g['lr']}")
         
         freq = 1
         match self.cfg.optim.scheduler.lower():
@@ -262,7 +295,8 @@ class FineTuneExperiment(pl.LightningModule):
                                               eta_min=self.cfg.optim.learning_rate / 5)
             case 'reduceonplateau':
                 logging.info("Using ReduceLROnPlateau scheduler")
-                scheduler = ReduceLROnPlateau(optimizer, factor=0.9, min_lr=self.cfg.optim.learning_rate/10, patience=20)
+                # scheduler = ReduceLROnPlateau(optimizer, factor=0.9, min_lr=self.cfg.optim.learning_rate/10, patience=20)
+                scheduler = ReduceLROnPlateau(optimizer, factor=0.9, min_lr=1e-6, patience=3)
                 freq = self.cfg.optim.val_check_interval
             case _:
                 raise ValueError(f"Invalid scheduler {self.cfg.optim.scheduler}.")
@@ -272,6 +306,7 @@ class FineTuneExperiment(pl.LightningModule):
             # Create scheduler with linear warmup followed by Cosine Annealing with warm restarts.
             warmup = int(self.cfg.optim.scheduler_periods)
             lambda1 = lambda step: float(step) / warmup if step < warmup else 1
+            # lambdas = [lambda step: (step / warmup if step < warmup else 1.0) for _ in optimizer.param_groups]
             scheduler_warm = LambdaLR(optimizer, lr_lambda=lambda1)
             scheduler = SequentialLR(optimizer, schedulers=[scheduler_warm, scheduler], milestones=[warmup])     
         else:
@@ -291,15 +326,46 @@ class FineTuneExperiment(pl.LightningModule):
         }
 
 def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger=None, **kwargs):
+    """
+    Set up the fine-tuning experiment module, trainer, and callbacks for training or evaluation.
+
+    Parameters
+    ----------
+    cfg : omegaconf.DictConfig
+        Hydra configuration object with optimizer, trainer, and logging parameters.
+    dm : LightningDataModule
+        A PyTorch Lightning data module that provides train/val/test dataloaders. For formatting see https://github.com/cwlgadd/FastEHR
+    risk_model : 
+        Whether to use single-risk ("single-risk") or competing risk ("competing-risk") survival head for fine-tuning.
+    mode:
+        Whether we want to train a new fine-tune model from scratch ("no_load"), from a pre-trained causal model ("load_from_pretrain"), 
+        or load an already fine-tuned model ("load_from_finetune").
+    checkpoint : str or None, optional
+        Path to a checkpoint file to resume from. If None, initializes a new model.
+    logger : pl.loggers.Logger or None, optional
+        Logger instance (e.g., WandB or TensorBoard). If None or logging is disabled, no logger is used.
+
+    Returns
+    -------
+    finetune_experiment : FineTuneExperiment
+        The initialized CausalExperiment module.
+    FineTuneExperiment : type
+        The class reference for FineTuneExperiment.
+    _trainer : pl.Trainer
+        The configured PyTorch Lightning trainer with callbacks.
+    """
 
     assert dm.is_supervised, "Datamodule for must be supervised for `setup_finetune_experiment` ."
 
+    #########################################################
+    # Get outcomes of interest                              #
+    #########################################################
     # Which tokens we want to predict as outcomes. 
     #    In the fine-tuning setting these are used to construct a new head which can be fine-tuned.
     #    TODO: a new clinical prediction model callback then needs to be made (or existing one editted) for this new case
     if cfg.fine_tuning.fine_tune_outcomes is not None:
         # Use outcomes provided directly
-        outcomes = cfg.experiment.fine_tune_outcomes
+        outcomes = cfg.fine_tuning.fine_tune_outcomes
         logging.info("Setting outcome list based on cfg.fine_tuning.fine_tune_outcomes")
     elif cfg.fine_tuning.custom_outcome_method._target_ is not None:
         # Use outcomes decided by some custom criteria
@@ -380,21 +446,47 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
     
     # Get method for patient stratification to be used in some of the callbacks 
     if cfg.fine_tuning.custom_stratification_method._target_ is not None:
-        module_name, function_name = cfg.fine_tuning.custom_stratification_method._target_.rsplit(".", 1)
-        stratification_method = getattr(importlib.import_module(module_name), function_name)
-        custom_stratification_method = functools.partial(stratification_method, **{"tokens": outcome_tokens})
+        logging.info(f"custom_stratification_method._target_ {cfg.fine_tuning.custom_stratification_method._target_}")
+        # Extract the list of targets
+        custom_strat_targets = OmegaConf.to_container(cfg.fine_tuning.custom_stratification_method._target_, resolve=True)
+
+        # For each target, create a partially initialised stratification strategy and label for the plot.
+        custom_stratification_methods, stratification_method_labels = [], []
+        for custom_strat_target in custom_strat_targets:
+            # partially initialise stratification method
+            module_name, function_name = custom_strat_target.rsplit(".", 1)
+            stratification_method = getattr(importlib.import_module(module_name), function_name)
+            # Add plotting strategy
+            custom_stratification_methods.append(functools.partial(stratification_method, dm=dm))
+            stratification_method_labels.append(function_name.replace("_", " "))
     else:
-        custom_stratification_method = None
+        custom_stratification_methods = [None]
+        stratification_method_labels = [" "]
         
     # Hidden state embedding
-    if cfg.fine_tuning.use_callbacks.hidden_embedding:
-        logging.debug("Creating hidden state embedding callback")
-        embedding_callback = Embedding(val_batch=next(iter(dm.val_dataloader())),
-                                       test_batch=next(iter(dm.test_dataloader()))
-                                      )
-        callbacks.append(embedding_callback)
+    ########################
+    config_embed = cfg.fine_tuning.use_callbacks.hidden_embedding
+    if config_embed.num_batches > 0:
+        # Collect data to be used for hidden embedding
+        num_batches = int(config_embed.num_batches)
+        val_batches = list(islice(iter(dm.val_dataloader()), num_batches))
+        test_batches = list(islice(iter(dm.test_dataloader()), num_batches))
 
-    # Add callbacks which apply to outcome prediction tasks
+        # Create each callback, built on each different stratification strategy
+        for custom_stratification_method, stratification_method_label in zip(custom_stratification_methods, stratification_method_labels):
+            embedding_callback = Embedding(val_batch                    = val_batches,
+                                           test_batch                   = test_batches,
+                                           custom_stratification_method = custom_stratification_method,
+                                           stratification_title         = stratification_method_label,
+                                           mask_static                  = config_embed.mask_static,
+                                           mask_value                   = config_embed.mask_value,
+                                          )
+            callbacks.append(embedding_callback)
+            logging.info(f"Created hidden state embedding callback {stratification_method_label}")
+    
+        
+    # CPM erformance metrics
+    ########################
     if cfg.fine_tuning.use_callbacks.performance_metrics:
         # Create a hash map which maps the tokens of interset to their corresponding desurv output index
         #    For fine-tuning, where the token is condensed into a subset, this is a map from this new token value
@@ -416,14 +508,17 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
                                              log_inbll=True)
         callbacks.append(metric_callback)
 
-
+    # Restricted Mean Survival Time callbacks
+    ########################
     if cfg.fine_tuning.use_callbacks.rmst:
-        metric_callback = RestrictedMeanSurvivalTime(outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
-                                                     log_combined=True,
-                                                     log_individual=False,
-                                                     custom_stratification_method=custom_stratification_method
-                                                    )
-        callbacks.append(metric_callback)
+        # Create each callback, built on each different stratification strategy
+        for custom_stratification_method, stratification_method_label in zip(custom_stratification_methods, stratification_method_labels):
+            metric_callback = RestrictedMeanSurvivalTime(outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
+                                                         log_combined=True,
+                                                         log_individual=False,
+                                                         custom_stratification_method=custom_stratification_method
+                                                        )
+            callbacks.append(metric_callback)
 
     ######################
     # Set up the Trainer #
@@ -432,14 +527,13 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
         logger=logger,
         # precision="bf16-mixed" if torch.cuda.is_bf16_supported() else "16-mixed",
         callbacks=callbacks,
-        min_epochs=30,
         max_epochs=cfg.optim.num_epochs,
         log_every_n_steps=cfg.optim.log_every_n_steps,
         val_check_interval=cfg.optim.val_check_interval,
         limit_val_batches=cfg.optim.limit_val_batches,
         limit_test_batches=cfg.optim.limit_test_batches,
         accumulate_grad_batches=cfg.optim.accumulate_grad_batches,
-        # gradient_clip_val=1.0,
+        gradient_clip_val=1.0,
     )
 
     return finetune_experiment, FineTuneExperiment, _trainer

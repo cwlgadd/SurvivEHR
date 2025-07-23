@@ -3,8 +3,14 @@ import math
 import numpy as np
 import pytorch_lightning as pl
 import torch
+from omegaconf import OmegaConf
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlateau, CosineAnnealingLR, LambdaLR, SequentialLR, ConstantLR, ChainedScheduler, ExponentialLR
 from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
+from CPRD.examples.modelling.SurvivEHR.helpers import is_interactive
+
+import importlib
+import functools
+from itertools import islice
 from CPRD.src.models.base_callback import Embedding
 from CPRD.src.models.survival.custom_callbacks.causal_eval import PerformanceMetrics
 
@@ -66,7 +72,7 @@ class CausalExperiment(pl.LightningModule):
         ages = batch['ages'].to(self.device)
         values = batch['values'].to(self.device)
         covariates = batch["static_covariates"].to(self.device)
-        attention_mask = batch['attention_mask'].to(self.device)   
+        attention_mask = batch['attention_mask'].to(self.device) if is_generation is False else None  # None for hidden callback
 
         return self.model(tokens,
                           ages,
@@ -136,8 +142,6 @@ class CausalExperiment(pl.LightningModule):
                 num_restarts = 5
                 anneal_period = (a * (1- r**(num_restarts+1) )) / (1-r)
                 
-                schedulers.append(scheduler)
-                
             case 'cawarmrestarts':
                 logging.info(f"Using Cosine Annealing with Warm Restarts in scheduler")
                 
@@ -153,20 +157,18 @@ class CausalExperiment(pl.LightningModule):
                 num_restarts = 2
                 anneal_period = (a * (1- r**(num_restarts+1) )) / (1-r)
                 
-                schedulers.append(scheduler)
-                
             case 'cosineannealinglr':
                 logging.info(f"Using Cosine Annealing in scheduler")
                 
-                period = self.cfg.optim.scheduler_periods
+                period = self.cfg.optim.scheduler_periods * 10
                 scheduler = CosineAnnealingLR(optimizer,
                                               T_max=int(period),
                                               eta_min=self.cfg.optim.learning_rate / 5)
 
-                schedulers.append(scheduler)
-                
             case _:
-                pass
+                raise NotImplementedError
+
+        schedulers.append(scheduler)
         
         # Combine
         scheduler = SequentialLR(optimizer, schedulers=schedulers, milestones=milestones)
@@ -212,19 +214,29 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
         The configured PyTorch Lightning trainer with callbacks.
     """
 
+    #########################################################
+    # Load existing pre-trained model,                      #
+    #     overriding config where necessary                 #
+    #########################################################
     if checkpoint is None:
         causal_experiment = CausalExperiment(cfg=cfg, vocab_size=vocab_size)
     else:
         causal_experiment = CausalExperiment.load_from_checkpoint(checkpoint,
                                                                   cfg=cfg, 
                                                                   )
-    # causal_experiment = torch.compile(causal_experiment)
+    # if torch.cuda.is_available():
+    #     causal_experiment = torch.compile(causal_experiment)
+    
     logging.debug(causal_experiment)
 
-    # Initialize wandb logger
+    ####################
+    # Use given logger #
+    ####################
     logger = logger if cfg.experiment.log == True else None
 
-    # Make all callbacks
+    #############################
+    # Make experiment callbacks #
+    #############################
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         dirpath=cfg.experiment.ckpt_dir,
         filename=cfg.experiment.run_id,
@@ -238,15 +250,7 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
                  lr_monitor,
                  ]
 
-    # ... custom callbacks
-    # Hidden state embedding
-    logging.info("Creating hidden state embedding callback")
-    embedding_callback = Embedding(val_batch=next(iter(dm.val_dataloader())),
-                                   test_batch=next(iter(dm.test_dataloader()))
-                                  )
-    # callbacks.append(embedding_callback)
-
-    # ... optional callbacks
+    # Early stopping
     if cfg.optim.early_stop:
         early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
             monitor="val_loss_desurv", mode="min",
@@ -255,22 +259,75 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
             verbose=cfg.experiment.verbose,
         )
         callbacks.append(early_stop_callback)
+    else:
+        logging.warning(f"Early stopping is not being used: {cfg.optim.early_stop}")
+            
+    ########################
+    # Validation callbacks #
+    ########################
+    
+    # Get method for patient stratification to be used in some of the callbacks 
+    if cfg.fine_tuning.custom_stratification_method._target_ is not None:
+        
+        # Extract the list of targets
+        custom_strat_targets = OmegaConf.to_container(cfg.fine_tuning.custom_stratification_method._target_, resolve=True)
 
-    # Add callbacks which apply to outcome prediction tasks- should already be sorted, but sort again 
-    #   NOTE: by default the tokenizer already orders them by frequency, and so prevelance_based_risk_score
-    #         will just be an ordered list
-    event_counts = dm.tokenizer._event_counts.sort("FREQUENCY", descending=False)
-    prevelance_based_risk_score = []
-    for row in event_counts.rows(named=True):
-        next_most_prevalent_k = dm.encode([row["EVENT"]])[0]
-        prevelance_based_risk_score.append(next_most_prevalent_k)
-    metric_callback = PerformanceMetrics(prevelance_based_risk_score, log_concordance=True)
-    callbacks.append(metric_callback)
+        # For each target, create a partially initialised stratification strategy and label for the plot.
+        custom_stratification_methods, stratification_method_labels = [], []
+        for custom_strat_target in custom_strat_targets:
+            # partially initialise stratification method
+            module_name, function_name = custom_strat_target.rsplit(".", 1)
+            stratification_method = getattr(importlib.import_module(module_name), function_name)
+            # Add plotting strategy
+            custom_stratification_methods.append(functools.partial(stratification_method, dm=dm))
+            stratification_method_labels.append(function_name.replace("_", " "))
+    else:
+        custom_stratification_methods = [None]
+        stratification_method_labels = [" "]
 
+    # Hidden state embedding
+    ########################
+    config_embed = cfg.fine_tuning.use_callbacks.hidden_embedding
+    if config_embed.num_batches > 0:
+        # Collect data to be used for hidden embedding
+        num_batches = int(config_embed.num_batches)
+        val_batches = list(islice(iter(dm.val_dataloader()), num_batches))
+        test_batches = list(islice(iter(dm.test_dataloader()), num_batches))
+
+        # Create each callback, built on each different stratification strategy
+        for custom_stratification_method, stratification_method_label in zip(custom_stratification_methods, stratification_method_labels):
+            embedding_callback = Embedding(val_batch                    = val_batches,
+                                           test_batch                   = test_batches,
+                                           custom_stratification_method = custom_stratification_method,
+                                           stratification_title         = stratification_method_label,
+                                           mask_static                  = config_embed.mask_static,
+                                           mask_value                   = config_embed.mask_value,
+                                          )
+            callbacks.append(embedding_callback)
+            logging.info(f"Created hidden state embedding callback {stratification_method_label}")
+        
+    # Performance metric
+    ########################
+    if cfg.fine_tuning.use_callbacks.performance_metrics:
+        # Add callbacks which apply to outcome prediction tasks- should already be sorted, but sort again 
+        #   NOTE: by default the tokenizer already orders them by frequency, and so prevelance_based_risk_score
+        #         will just be an ordered list
+        event_counts = dm.tokenizer._event_counts.sort("FREQUENCY", descending=False)
+        prevelance_based_risk_score = []
+        for row in event_counts.rows(named=True):
+            next_most_prevalent_k = dm.encode([row["EVENT"]])[0]
+            prevelance_based_risk_score.append(next_most_prevalent_k)
+        metric_callback = PerformanceMetrics(prevelance_based_risk_score, log_concordance=True)
+        callbacks.append(metric_callback)
+
+    ######################
+    # Set up the Trainer #
+    ######################
+    logging.info(f"Interactive job = {is_interactive()}")
     _trainer = pl.Trainer(
         logger=logger,
         # precision="bf16-mixed" if torch.cuda.is_bf16_supported() else "16-mixed",
-        strategy="ddp",
+        strategy="auto" if is_interactive() else "ddp",
         callbacks=callbacks,
         max_epochs=cfg.optim.num_epochs,
         log_every_n_steps=cfg.optim.log_every_n_steps,

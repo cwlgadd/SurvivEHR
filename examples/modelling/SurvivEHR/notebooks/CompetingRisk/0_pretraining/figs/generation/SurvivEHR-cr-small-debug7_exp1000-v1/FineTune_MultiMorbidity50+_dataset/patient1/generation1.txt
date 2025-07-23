@@ -1,0 +1,506 @@
+STATIC INFORMATION
+========================================================================================================================
+	SEX:               M
+	IMD:               5.0
+	ETHNICITY:         ASIAN
+	birth_year:        1958.0
+
+
+GIVEN PATIENT CONTEXT
+========================================================================================================================
+	EVENT                                                                     | AGE IN WEEKS (days, years)   | VALUE
+	............................................................new week............................................................
+	TYPE2DIABETES                                                              | 1850	 (12954, 35)             | nan       (nan)
+	............................................................new week............................................................
+	HYPERTENSION                                                               | 2424	 (16972, 46)             | nan       (nan)
+	............................................................new week............................................................
+	Body_mass_index_3                                                          | 2493	 (17452, 47)             | 25.60     (-0.34)
+	Diastolic_blood_pressure_5                                                 | 2493	 (17452, 47)             | 89.00     (-0.32)
+	Never_smoked_tobacco_85                                                    | 2493	 (17452, 47)             | nan       (nan)
+	O_E___weight_2                                                             | 2493	 (17452, 47)             | 74.20     (-0.39)
+	Systolic_blood_pressure_4                                                  | 2493	 (17452, 47)             | 125.00    (-0.24)
+	AST_serum_level_47                                                         | 2493	 (17453, 47)             | 13.00     (-0.50)
+	GFR_calculated_abbreviated_MDRD_34                                         | 2493	 (17453, 47)             | 60.00     (-0.30)
+	Haemoglobin_A1c_level_8                                                    | 2493	 (17453, 47)             | 14.40     (-0.46)
+	Serum_HDL_cholesterol_level_100                                            | 2493	 (17453, 47)             | 0.90      (-0.27)
+	Serum_LDL_cholesterol_level_102                                            | 2493	 (17453, 47)             | 2.10      (-0.43)
+	Serum_albumin_51                                                           | 2493	 (17453, 47)             | 46.00     (-0.25)
+	Serum_alkaline_phosphatase_50                                              | 2493	 (17453, 47)             | 66.00     (-0.50)
+	Serum_cholesterol_97                                                       | 2493	 (17453, 47)             | 4.00      (-0.45)
+	Serum_creatinine_31                                                        | 2493	 (17453, 47)             | 93.00     (-0.49)
+	Serum_potassium_26                                                         | 2493	 (17453, 47)             | 4.60      (-0.05)
+	Serum_sodium_24                                                            | 2493	 (17453, 47)             | 135.00    (-0.09)
+	Serum_total_bilirubin_level_56                                             | 2493	 (17453, 47)             | 7.00      (-0.49)
+	Serum_triglycerides_105                                                    | 2493	 (17453, 47)             | 2.20      (-0.48)
+	Serum_urea_level_29                                                        | 2493	 (17453, 47)             | 7.10      (0.19)
+	Total_cholesterol_HDL_ratio_95                                             | 2493	 (17453, 47)             | 4.40      (-0.49)
+	............................................................new week............................................................
+	Diastolic_blood_pressure_5                                                 | 2500	 (17500, 47)             | 70.00     (-0.37)
+	Systolic_blood_pressure_4                                                  | 2500	 (17500, 47)             | 110.00    (-0.28)
+	All_Antiplatelets                                                          | 2500	 (17500, 47)             | nan       (nan)
+	Aspirin_OPTIMAL                                                            | 2500	 (17500, 47)             | nan       (nan)
+	BetaBlockers_OPTIMAL                                                       | 2500	 (17500, 47)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2500	 (17500, 47)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2500	 (17500, 47)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2500	 (17500, 47)             | nan       (nan)
+	NSAIDS_oral_OPTIMAL_final                                                  | 2500	 (17500, 47)             | nan       (nan)
+	Statins                                                                    | 2500	 (17500, 47)             | nan       (nan)
+	Sulphonylureas_Aurum                                                       | 2500	 (17500, 47)             | nan       (nan)
+	............................................................new week............................................................
+	All_Antiplatelets                                                          | 2507	 (17549, 48)             | nan       (nan)
+	Aspirin_OPTIMAL                                                            | 2507	 (17549, 48)             | nan       (nan)
+	BetaBlockers_OPTIMAL                                                       | 2507	 (17549, 48)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2507	 (17549, 48)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2507	 (17549, 48)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2507	 (17549, 48)             | nan       (nan)
+	NSAIDS_oral_OPTIMAL_final                                                  | 2507	 (17549, 48)             | nan       (nan)
+	Statins                                                                    | 2507	 (17549, 48)             | nan       (nan)
+	Sulphonylureas_Aurum                                                       | 2507	 (17549, 48)             | nan       (nan)
+	............................................................new week............................................................
+	Haemoglobin_A1c_level_8                                                    | 2512	 (17590, 48)             | 11.60     (-0.47)
+	Serum_urea_level_29                                                        | 2512	 (17590, 48)             | 7.60      (0.24)
+	............................................................new week............................................................
+	All_Antiplatelets                                                          | 2516	 (17613, 48)             | nan       (nan)
+	Aspirin_OPTIMAL                                                            | 2516	 (17613, 48)             | nan       (nan)
+	BetaBlockers_OPTIMAL                                                       | 2516	 (17613, 48)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2516	 (17613, 48)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2516	 (17613, 48)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2516	 (17613, 48)             | nan       (nan)
+	NSAIDS_oral_OPTIMAL_final                                                  | 2516	 (17613, 48)             | nan       (nan)
+	Statins                                                                    | 2516	 (17613, 48)             | nan       (nan)
+	Sulphonylureas_Aurum                                                       | 2516	 (17613, 48)             | nan       (nan)
+	............................................................new week............................................................
+	Diastolic_blood_pressure_5                                                 | 2527	 (17690, 48)             | 100.00    (-0.29)
+	Never_smoked_tobacco_85                                                    | 2527	 (17690, 48)             | nan       (nan)
+	O_E___weight_2                                                             | 2527	 (17690, 48)             | 74.00     (-0.39)
+	Systolic_blood_pressure_4                                                  | 2527	 (17690, 48)             | 150.00    (-0.18)
+	BetaBlockers_OPTIMAL                                                       | 2527	 (17690, 48)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2527	 (17690, 48)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2527	 (17690, 48)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2527	 (17690, 48)             | nan       (nan)
+	Statins                                                                    | 2527	 (17690, 48)             | nan       (nan)
+	Sulphonylureas_Aurum                                                       | 2527	 (17690, 48)             | nan       (nan)
+	............................................................new week............................................................
+	BetaBlockers_OPTIMAL                                                       | 2534	 (17740, 48)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2534	 (17740, 48)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2534	 (17740, 48)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2534	 (17740, 48)             | nan       (nan)
+	Statins                                                                    | 2534	 (17740, 48)             | nan       (nan)
+	Sulphonylureas_Aurum                                                       | 2534	 (17740, 48)             | nan       (nan)
+	............................................................new week............................................................
+	BetaBlockers_OPTIMAL                                                       | 2543	 (17801, 48)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2543	 (17801, 48)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2543	 (17801, 48)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2543	 (17801, 48)             | nan       (nan)
+	Statins                                                                    | 2543	 (17801, 48)             | nan       (nan)
+	Sulphonylureas_Aurum                                                       | 2543	 (17801, 48)             | nan       (nan)
+	............................................................new week............................................................
+	Never_smoked_tobacco_85                                                    | 2550	 (17856, 48)             | nan       (nan)
+	O_E___weight_2                                                             | 2550	 (17856, 48)             | 76.00     (-0.38)
+	All_Antiplatelets                                                          | 2550	 (17856, 48)             | nan       (nan)
+	Aspirin_OPTIMAL                                                            | 2550	 (17856, 48)             | nan       (nan)
+	BetaBlockers_OPTIMAL                                                       | 2550	 (17856, 48)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2550	 (17856, 48)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2550	 (17856, 48)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2550	 (17856, 48)             | nan       (nan)
+	NSAIDS_oral_OPTIMAL_final                                                  | 2550	 (17856, 48)             | nan       (nan)
+	Statins                                                                    | 2550	 (17856, 48)             | nan       (nan)
+	Sulphonylureas_Aurum                                                       | 2550	 (17856, 48)             | nan       (nan)
+	............................................................new week............................................................
+	AST_serum_level_47                                                         | 2556	 (17893, 49)             | 18.00     (-0.50)
+	Basophil_count_22                                                          | 2556	 (17893, 49)             | 0.10      (-0.48)
+	Eosinophil_count_21                                                        | 2556	 (17893, 49)             | 0.30      (-0.45)
+	GFR_calculated_abbreviated_MDRD_34                                         | 2556	 (17893, 49)             | 60.00     (-0.30)
+	Haematocrit_15                                                             | 2556	 (17893, 49)             | 0.46      (-0.04)
+	Haemoglobin_A1c_level_8                                                    | 2556	 (17893, 49)             | 12.90     (-0.47)
+	Haemoglobin_estimation_9                                                   | 2556	 (17893, 49)             | 15.10     (-0.48)
+	Lymphocyte_count_20                                                        | 2556	 (17893, 49)             | 3.50      (-0.48)
+	Mean_corpusc_Hb_conc__MCHC__14                                             | 2556	 (17893, 49)             | 33.20     (-0.45)
+	Mean_corpusc_haemoglobin_MCH__13                                           | 2556	 (17893, 49)             | 30.00     (-0.21)
+	Mean_corpuscular_volume__MCV__11                                           | 2556	 (17893, 49)             | 90.20     (-0.17)
+	Monocyte_count_23                                                          | 2556	 (17893, 49)             | 0.60      (-0.47)
+	Neutrophil_count_19                                                        | 2556	 (17893, 49)             | 6.00      (-0.38)
+	Platelet_count_12                                                          | 2556	 (17893, 49)             | 297.13    (-0.50)
+	Red_blood_cell__RBC__count_10                                              | 2556	 (17893, 49)             | 5.05      (-0.49)
+	Red_blood_cell_distribution_width_17                                       | 2556	 (17893, 49)             | nan       (nan)
+	Serum_HDL_cholesterol_level_100                                            | 2556	 (17893, 49)             | 1.00      (-0.24)
+	Serum_LDL_cholesterol_level_102                                            | 2556	 (17893, 49)             | 0.80      (-0.47)
+	Serum_TSH_level_71                                                         | 2556	 (17893, 49)             | 2.64      (-0.49)
+	Serum_albumin_51                                                           | 2556	 (17893, 49)             | 48.00     (-0.24)
+	Serum_alkaline_phosphatase_50                                              | 2556	 (17893, 49)             | 65.00     (-0.50)
+	Serum_cholesterol_97                                                       | 2556	 (17893, 49)             | 2.70      (-0.48)
+	Serum_creatinine_31                                                        | 2556	 (17893, 49)             | 86.00     (-0.49)
+	Serum_potassium_26                                                         | 2556	 (17893, 49)             | 6.10      (0.11)
+	Serum_sodium_24                                                            | 2556	 (17893, 49)             | 139.00    (-0.05)
+	Serum_total_bilirubin_level_56                                             | 2556	 (17893, 49)             | 9.00      (-0.49)
+	Serum_triglycerides_105                                                    | 2556	 (17893, 49)             | 2.00      (-0.48)
+	Serum_urea_level_29                                                        | 2556	 (17893, 49)             | 6.50      (0.13)
+	Total_cholesterol_HDL_ratio_95                                             | 2556	 (17893, 49)             | 2.70      (-0.49)
+	Total_white_cell_count_18                                                  | 2556	 (17893, 49)             | 10.60     (-0.50)
+	............................................................new week............................................................
+	Diastolic_blood_pressure_5                                                 | 2558	 (17906, 49)             | 70.00     (-0.37)
+	Never_smoked_tobacco_85                                                    | 2558	 (17906, 49)             | nan       (nan)
+	Systolic_blood_pressure_4                                                  | 2558	 (17906, 49)             | 110.00    (-0.28)
+	ACE_Inhibitors_D2T                                                         | 2558	 (17906, 49)             | nan       (nan)
+	............................................................new week............................................................
+	Diastolic_blood_pressure_5                                                 | 2561	 (17928, 49)             | 90.00     (-0.32)
+	Systolic_blood_pressure_4                                                  | 2561	 (17928, 49)             | 170.00    (-0.12)
+	ACE_Inhibitors_D2T                                                         | 2561	 (17928, 49)             | nan       (nan)
+	All_Antiplatelets                                                          | 2561	 (17928, 49)             | nan       (nan)
+	Aspirin_OPTIMAL                                                            | 2561	 (17928, 49)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2561	 (17928, 49)             | nan       (nan)
+	Insulin_Aurum_v2                                                           | 2561	 (17928, 49)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2561	 (17928, 49)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2561	 (17928, 49)             | nan       (nan)
+	NSAIDS_oral_OPTIMAL_final                                                  | 2561	 (17928, 49)             | nan       (nan)
+	Statins                                                                    | 2561	 (17928, 49)             | nan       (nan)
+	............................................................new week............................................................
+	Diastolic_blood_pressure_5                                                 | 2565	 (17956, 49)             | 81.00     (-0.34)
+	Never_smoked_tobacco_85                                                    | 2565	 (17956, 49)             | nan       (nan)
+	O_E___weight_2                                                             | 2565	 (17956, 49)             | 75.00     (-0.38)
+	Systolic_blood_pressure_4                                                  | 2565	 (17956, 49)             | 128.00    (-0.24)
+	ACE_Inhibitors_D2T                                                         | 2565	 (17956, 49)             | nan       (nan)
+	All_Antiplatelets                                                          | 2565	 (17956, 49)             | nan       (nan)
+	Aspirin_OPTIMAL                                                            | 2565	 (17956, 49)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2565	 (17956, 49)             | nan       (nan)
+	Insulin_Aurum_v2                                                           | 2565	 (17956, 49)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2565	 (17956, 49)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2565	 (17956, 49)             | nan       (nan)
+	NSAIDS_oral_OPTIMAL_final                                                  | 2565	 (17956, 49)             | nan       (nan)
+	Statins                                                                    | 2565	 (17956, 49)             | nan       (nan)
+	............................................................new week............................................................
+	Diastolic_blood_pressure_5                                                 | 2578	 (18046, 49)             | 80.00     (-0.34)
+	Never_smoked_tobacco_85                                                    | 2578	 (18046, 49)             | nan       (nan)
+	O_E___height_1                                                             | 2578	 (18046, 49)             | 170.00    (0.10)
+	Systolic_blood_pressure_4                                                  | 2578	 (18046, 49)             | 125.00    (-0.24)
+	ACE_Inhibitors_D2T                                                         | 2578	 (18046, 49)             | nan       (nan)
+	All_Antiplatelets                                                          | 2578	 (18046, 49)             | nan       (nan)
+	Aspirin_OPTIMAL                                                            | 2578	 (18046, 49)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2578	 (18046, 49)             | nan       (nan)
+	Insulin_Aurum_v2                                                           | 2578	 (18046, 49)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2578	 (18046, 49)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2578	 (18046, 49)             | nan       (nan)
+	NSAIDS_oral_OPTIMAL_final                                                  | 2578	 (18046, 49)             | nan       (nan)
+	NSAIDS_oral_OPTIMAL_final                                                  | 2578	 (18046, 49)             | nan       (nan)
+	Statins                                                                    | 2578	 (18046, 49)             | nan       (nan)
+	............................................................new week............................................................
+	Body_mass_index_3                                                          | 2583	 (18087, 49)             | 26.20     (-0.33)
+	Diastolic_blood_pressure_5                                                 | 2583	 (18087, 49)             | 81.00     (-0.34)
+	O_E___weight_2                                                             | 2583	 (18087, 49)             | 76.00     (-0.38)
+	Systolic_blood_pressure_4                                                  | 2583	 (18087, 49)             | 151.00    (-0.17)
+	ACE_Inhibitors_D2T                                                         | 2583	 (18087, 49)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2583	 (18087, 49)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2583	 (18087, 49)             | nan       (nan)
+	Insulin_Aurum_v2                                                           | 2583	 (18087, 49)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2583	 (18087, 49)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2583	 (18087, 49)             | nan       (nan)
+	Statins                                                                    | 2583	 (18087, 49)             | nan       (nan)
+	............................................................new week............................................................
+	AST_serum_level_47                                                         | 2586	 (18108, 49)             | 19.00     (-0.50)
+	Basophil_count_22                                                          | 2586	 (18108, 49)             | 0.10      (-0.48)
+	Eosinophil_count_21                                                        | 2586	 (18108, 49)             | 0.50      (-0.43)
+	GFR_calculated_abbreviated_MDRD_34                                         | 2586	 (18108, 49)             | 60.00     (-0.30)
+	Haematocrit_15                                                             | 2586	 (18108, 49)             | 0.42      (-0.08)
+	Haemoglobin_A1c_level_8                                                    | 2586	 (18108, 49)             | 12.00     (-0.47)
+	Haemoglobin_estimation_9                                                   | 2586	 (18108, 49)             | 14.00     (-0.49)
+	Lymphocyte_count_20                                                        | 2586	 (18108, 49)             | 3.30      (-0.48)
+	Mean_corpusc_Hb_conc__MCHC__14                                             | 2586	 (18108, 49)             | 33.50     (-0.45)
+	Mean_corpusc_haemoglobin_MCH__13                                           | 2586	 (18108, 49)             | 30.10     (-0.21)
+	Mean_corpuscular_volume__MCV__11                                           | 2586	 (18108, 49)             | 89.80     (-0.17)
+	Monocyte_count_23                                                          | 2586	 (18108, 49)             | 0.60      (-0.47)
+	Neutrophil_count_19                                                        | 2586	 (18108, 49)             | 5.30      (-0.39)
+	Platelet_count_12                                                          | 2586	 (18108, 49)             | 253.02    (-0.50)
+	Red_blood_cell__RBC__count_10                                              | 2586	 (18108, 49)             | 4.67      (-0.49)
+	Red_blood_cell_distribution_width_17                                       | 2586	 (18108, 49)             | nan       (nan)
+	Serum_HDL_cholesterol_level_100                                            | 2586	 (18108, 49)             | 1.20      (-0.19)
+	Serum_LDL_cholesterol_level_102                                            | 2586	 (18108, 49)             | 0.90      (-0.47)
+	Serum_TSH_level_71                                                         | 2586	 (18108, 49)             | 2.88      (-0.49)
+	Serum_albumin_51                                                           | 2586	 (18108, 49)             | 51.00     (-0.22)
+	Serum_alkaline_phosphatase_50                                              | 2586	 (18108, 49)             | 68.00     (-0.50)
+	Serum_cholesterol_97                                                       | 2586	 (18108, 49)             | 2.60      (-0.48)
+	Serum_creatinine_31                                                        | 2586	 (18108, 49)             | 76.00     (-0.49)
+	Serum_potassium_26                                                         | 2586	 (18108, 49)             | 5.70      (0.07)
+	Serum_sodium_24                                                            | 2586	 (18108, 49)             | 140.00    (-0.05)
+	Serum_total_bilirubin_level_56                                             | 2586	 (18108, 49)             | 8.00      (-0.49)
+	Serum_triglycerides_105                                                    | 2586	 (18108, 49)             | 1.10      (-0.49)
+	Serum_urea_level_29                                                        | 2586	 (18108, 49)             | 6.10      (0.09)
+	Total_cholesterol_HDL_ratio_95                                             | 2586	 (18108, 49)             | 2.20      (-0.50)
+	Total_white_cell_count_18                                                  | 2586	 (18108, 49)             | 9.80      (-0.50)
+	............................................................new week............................................................
+	Diastolic_blood_pressure_5                                                 | 2590	 (18130, 49)             | 76.00     (-0.35)
+	Systolic_blood_pressure_4                                                  | 2590	 (18130, 49)             | 113.00    (-0.28)
+	ACE_Inhibitors_D2T                                                         | 2590	 (18130, 49)             | nan       (nan)
+	All_Antiplatelets                                                          | 2590	 (18130, 49)             | nan       (nan)
+	Aspirin_OPTIMAL                                                            | 2590	 (18130, 49)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2590	 (18130, 49)             | nan       (nan)
+	Insulin_Aurum_v2                                                           | 2590	 (18130, 49)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2590	 (18130, 49)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2590	 (18130, 49)             | nan       (nan)
+	NSAIDS_oral_OPTIMAL_final                                                  | 2590	 (18130, 49)             | nan       (nan)
+	Statins                                                                    | 2590	 (18130, 49)             | nan       (nan)
+	............................................................new week............................................................
+	Diastolic_blood_pressure_5                                                 | 2600	 (18200, 49)             | 80.00     (-0.34)
+	Systolic_blood_pressure_4                                                  | 2600	 (18200, 49)             | 136.00    (-0.21)
+	ACE_Inhibitors_D2T                                                         | 2600	 (18200, 49)             | nan       (nan)
+	All_Antiplatelets                                                          | 2600	 (18200, 49)             | nan       (nan)
+	Aspirin_OPTIMAL                                                            | 2600	 (18200, 49)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2600	 (18200, 49)             | nan       (nan)
+	Insulin_Aurum_v2                                                           | 2600	 (18200, 49)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2600	 (18200, 49)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2600	 (18200, 49)             | nan       (nan)
+	NSAIDS_oral_OPTIMAL_final                                                  | 2600	 (18200, 49)             | nan       (nan)
+	NSAIDS_oral_OPTIMAL_final                                                  | 2600	 (18200, 49)             | nan       (nan)
+	Statins                                                                    | 2600	 (18200, 49)             | nan       (nan)
+	............................................................new week............................................................
+	ACE_Inhibitors_D2T                                                         | 2608	 (18259, 50)             | nan       (nan)
+	All_Antiplatelets                                                          | 2608	 (18259, 50)             | nan       (nan)
+	Aspirin_OPTIMAL                                                            | 2608	 (18259, 50)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2608	 (18259, 50)             | nan       (nan)
+	Insulin_Aurum_v2                                                           | 2608	 (18259, 50)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2608	 (18259, 50)             | nan       (nan)
+	Metformin_612_A10BD2                                                       | 2608	 (18259, 50)             | nan       (nan)
+	NSAIDS_oral_OPTIMAL_final                                                  | 2608	 (18259, 50)             | nan       (nan)
+	Statins                                                                    | 2608	 (18259, 50)             | nan       (nan)
+
+========================================================================================================================
+DIAGNOSIS SUMMARY
+['TYPE2DIABETES', 'HYPERTENSION']
+========================================================================================================================
+
+
+PREDICTED FUTURE EVENTS
+========================================================================================================================
+	EVENT                                                                     | AGE IN WEEKS (days, years)  | VALUE
+	............................................................new week............................................................
+	Diastolic_blood_pressure_5                                                 | 2620	 (18343, 50)             | 76.97     (-0.35)
+	Systolic_blood_pressure_4                                                  | 2620	 (18343, 50)             | 135.54    (-0.21)
+	ACE_Inhibitors_D2T                                                         | 2620	 (18344, 50)             | nan       (nan)
+	All_Antiplatelets                                                          | 2620	 (18344, 50)             | nan       (nan)
+	............................................................new week............................................................
+	Aspirin_OPTIMAL                                                            | 2621	 (18352, 50)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2621	 (18352, 50)             | nan       (nan)
+	Insulin_Aurum_v2                                                           | 2621	 (18353, 50)             | nan       (nan)
+	............................................................new week............................................................
+	Body_mass_index_3                                                          | 2626	 (18383, 50)             | 29.78     (-0.30)
+	Diastolic_blood_pressure_5                                                 | 2626	 (18383, 50)             | 84.86     (-0.33)
+	Never_smoked_tobacco_85                                                    | 2626	 (18385, 50)             | 0.00      (3.10)
+	O_E___weight_2                                                             | 2626	 (18385, 50)             | 102.01    (-0.34)
+	............................................................new week............................................................
+	Serum_HDL_cholesterol_level_100                                            | 2627	 (18390, 50)             | 1.07      (-0.22)
+	Serum_LDL_cholesterol_level_102                                            | 2627	 (18390, 50)             | 1.66      (-0.44)
+	Serum_albumin_51                                                           | 2627	 (18390, 50)             | 39.53     (-0.29)
+	Serum_alkaline_phosphatase_50                                              | 2627	 (18390, 50)             | 87.76     (-0.50)
+	Serum_cholesterol_97                                                       | 2627	 (18392, 50)             | 2.77      (-0.48)
+	Serum_creatinine_31                                                        | 2627	 (18392, 50)             | 85.90     (-0.49)
+	Serum_potassium_26                                                         | 2627	 (18392, 50)             | 5.06      (0.00)
+	Serum_sodium_24                                                            | 2627	 (18392, 50)             | 137.58    (-0.07)
+	............................................................new week............................................................
+	ATOPICECZEMA                                                               | 2633	 (18434, 50)             | nan       (nan)
+	............................................................new week............................................................
+	Body_mass_index_3                                                          | 2637	 (18459, 50)             | 26.15     (-0.33)
+	Diastolic_blood_pressure_5                                                 | 2637	 (18459, 50)             | 93.24     (-0.31)
+	Never_smoked_tobacco_85                                                    | 2637	 (18459, 50)             | 0.00      (0.89)
+	O_E___height_1                                                             | 2637	 (18459, 50)             | 169.51    (0.09)
+	O_E___weight_2                                                             | 2637	 (18461, 50)             | 75.06     (-0.38)
+	Systolic_blood_pressure_4                                                  | 2637	 (18461, 50)             | 135.49    (-0.21)
+	............................................................new week............................................................
+	ICS_PUSHAsthma                                                             | 2639	 (18478, 50)             | nan       (nan)
+	............................................................new week............................................................
+	ACE_Inhibitors_D2T                                                         | 2641	 (18489, 50)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2641	 (18492, 50)             | nan       (nan)
+	............................................................new week............................................................
+	ACE_Inhibitors_D2T                                                         | 2642	 (18496, 50)             | nan       (nan)
+	All_Antiplatelets                                                          | 2642	 (18496, 50)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2642	 (18496, 50)             | nan       (nan)
+	............................................................new week............................................................
+	ACE_Inhibitors_D2T                                                         | 2651	 (18558, 50)             | nan       (nan)
+	All_Antiplatelets                                                          | 2651	 (18562, 50)             | nan       (nan)
+	............................................................new week............................................................
+	All_Antiplatelets                                                          | 2652	 (18564, 50)             | nan       (nan)
+	Aspirin_OPTIMAL                                                            | 2652	 (18565, 50)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2652	 (18567, 50)             | nan       (nan)
+	............................................................new week............................................................
+	Diastolic_blood_pressure_5                                                 | 2654	 (18580, 50)             | 79.45     (-0.34)
+	Systolic_blood_pressure_4                                                  | 2654	 (18580, 50)             | 125.70    (-0.24)
+	Diastolic_blood_pressure_5                                                 | 2654	 (18584, 50)             | 83.39     (-0.33)
+	Systolic_blood_pressure_4                                                  | 2654	 (18584, 50)             | 123.51    (-0.25)
+	............................................................new week............................................................
+	BetaBlockers_OPTIMAL                                                       | 2658	 (18609, 50)             | nan       (nan)
+	............................................................new week............................................................
+	CalciumChannelBlck_D2T                                                     | 2661	 (18629, 51)             | nan       (nan)
+	............................................................new week............................................................
+	Lipid_lowering_drugs_Optimal                                               | 2662	 (18638, 51)             | nan       (nan)
+	Lipid_lowering_drugs_Optimal                                               | 2662	 (18638, 51)             | nan       (nan)
+	Statins                                                                    | 2662	 (18638, 51)             | nan       (nan)
+	Statins                                                                    | 2662	 (18640, 51)             | nan       (nan)
+	............................................................new week............................................................
+	ACE_Inhibitors_D2T                                                         | 2673	 (18717, 51)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2676	 (18735, 51)             | nan       (nan)
+	............................................................new week............................................................
+	Insulin_Aurum_v2                                                           | 2678	 (18748, 51)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2681	 (18770, 51)             | nan       (nan)
+	AlphaBlocker                                                               | 2681	 (18770, 51)             | nan       (nan)
+	Insulin_Aurum_v2                                                           | 2681	 (18770, 51)             | nan       (nan)
+	............................................................new week............................................................
+	BetaBlockers_OPTIMAL                                                       | 2685	 (18801, 51)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2688	 (18816, 51)             | nan       (nan)
+	AlphaBlocker                                                               | 2688	 (18816, 51)             | nan       (nan)
+	Body_mass_index_3                                                          | 2688	 (18818, 51)             | 25.44     (-0.34)
+	Diastolic_blood_pressure_5                                                 | 2688	 (18819, 51)             | 83.36     (-0.33)
+	Systolic_blood_pressure_4                                                  | 2688	 (18819, 51)             | 130.22    (-0.23)
+	AlphaBlocker                                                               | 2688	 (18819, 51)             | nan       (nan)
+	............................................................new week............................................................
+	Insulin_Aurum_v2                                                           | 2689	 (18823, 51)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2692	 (18845, 51)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2694	 (18858, 51)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2694	 (18860, 51)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2697	 (18883, 51)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2698	 (18887, 51)             | nan       (nan)
+	AlphaBlocker                                                               | 2698	 (18892, 51)             | nan       (nan)
+	............................................................new week............................................................
+	CalciumChannelBlck_D2T                                                     | 2700	 (18905, 51)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2703	 (18925, 51)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2707	 (18955, 51)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2709	 (18969, 51)             | nan       (nan)
+	............................................................new week............................................................
+	ALLCANCER_NOHAEM_NOBCC                                                     | 2711	 (18980, 52)             | nan       (nan)
+	AlphaBlocker                                                               | 2711	 (18982, 52)             | nan       (nan)
+	............................................................new week............................................................
+	CalciumChannelBlck_D2T                                                     | 2712	 (18986, 52)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2713	 (18991, 52)             | nan       (nan)
+	AlphaBlocker                                                               | 2713	 (18993, 52)             | nan       (nan)
+	............................................................new week............................................................
+	Weak_Opioids_Final                                                         | 2716	 (19015, 52)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2717	 (19022, 52)             | nan       (nan)
+	............................................................new week............................................................
+	CalciumChannelBlck_D2T                                                     | 2719	 (19039, 52)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2722	 (19057, 52)             | nan       (nan)
+	............................................................new week............................................................
+	CalciumChannelBlck_D2T                                                     | 2723	 (19066, 52)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2725	 (19079, 52)             | nan       (nan)
+	............................................................new week............................................................
+	Diastolic_blood_pressure_5                                                 | 2727	 (19092, 52)             | 88.87     (-0.32)
+	Systolic_blood_pressure_4                                                  | 2727	 (19092, 52)             | 120.63    (-0.26)
+	AlphaBlocker                                                               | 2727	 (19093, 52)             | nan       (nan)
+	............................................................new week............................................................
+	Insulin_Aurum_v2                                                           | 2728	 (19101, 52)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2729	 (19106, 52)             | nan       (nan)
+	CalciumChannelBlck_D2T                                                     | 2729	 (19106, 52)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2732	 (19126, 52)             | nan       (nan)
+	AlphaBlocker                                                               | 2732	 (19128, 52)             | nan       (nan)
+	............................................................new week............................................................
+	Antihistamines_second_generation_H1_antagonists                            | 2736	 (19157, 52)             | nan       (nan)
+	............................................................new week............................................................
+	CalciumChannelBlck_D2T                                                     | 2739	 (19179, 52)             | nan       (nan)
+	............................................................new week............................................................
+	CalciumChannelBlck_D2T                                                     | 2744	 (19212, 52)             | nan       (nan)
+	............................................................new week............................................................
+	ICS_PUSHAsthma                                                             | 2745	 (19216, 52)             | nan       (nan)
+	asthma_combined_inhalers                                                   | 2745	 (19216, 52)             | nan       (nan)
+	............................................................new week............................................................
+	ARBs_Luyuan                                                                | 2754	 (19283, 52)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2755	 (19287, 52)             | nan       (nan)
+	............................................................new week............................................................
+	CalciumChannelBlck_D2T                                                     | 2758	 (19311, 52)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2770	 (19393, 53)             | nan       (nan)
+	............................................................new week............................................................
+	Insulin_Aurum_v2                                                           | 2772	 (19406, 53)             | nan       (nan)
+	............................................................new week............................................................
+	CalciumChannelBlck_D2T                                                     | 2773	 (19411, 53)             | nan       (nan)
+	Insulin_Aurum_v2                                                           | 2773	 (19417, 53)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2779	 (19459, 53)             | nan       (nan)
+	............................................................new week............................................................
+	Insulin_Aurum_v2                                                           | 2780	 (19461, 53)             | nan       (nan)
+	Insulin_Aurum_v2                                                           | 2780	 (19462, 53)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2783	 (19481, 53)             | nan       (nan)
+	............................................................new week............................................................
+	Antihistamines_second_generation_H1_antagonists                            | 2788	 (19521, 53)             | nan       (nan)
+	............................................................new week............................................................
+	Insulin_Aurum_v2                                                           | 2789	 (19526, 53)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2791	 (19543, 53)             | nan       (nan)
+	AlphaBlocker                                                               | 2791	 (19543, 53)             | nan       (nan)
+	............................................................new week............................................................
+	Insulin_Aurum_v2                                                           | 2792	 (19550, 53)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2805	 (19640, 53)             | nan       (nan)
+	Insulin_Aurum_v2                                                           | 2805	 (19640, 53)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2808	 (19658, 53)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2811	 (19682, 53)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2813	 (19694, 53)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2815	 (19707, 53)             | nan       (nan)
+	............................................................new week............................................................
+	CalciumChannelBlck_D2T                                                     | 2816	 (19716, 54)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2817	 (19724, 54)             | nan       (nan)
+	Serum_HDL_cholesterol_level_100                                            | 2817	 (19725, 54)             | 1.33      (-0.16)
+	............................................................new week............................................................
+	Serum_LDL_cholesterol_level_102                                            | 2818	 (19727, 54)             | 1.08      (-0.46)
+	Serum_cholesterol_97                                                       | 2818	 (19729, 54)             | 3.51      (-0.46)
+	............................................................new week............................................................
+	Serum_cholesterol_97                                                       | 2819	 (19733, 54)             | 3.93      (-0.45)
+	Serum_triglycerides_105                                                    | 2819	 (19736, 54)             | 1.48      (-0.49)
+	Total_cholesterol_HDL_ratio_95                                             | 2819	 (19736, 54)             | 7.61      (-0.47)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2820	 (19746, 54)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2823	 (19764, 54)             | nan       (nan)
+	............................................................new week............................................................
+	CalciumChannelBlck_D2T                                                     | 2824	 (19771, 54)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2827	 (19791, 54)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2829	 (19809, 54)             | nan       (nan)
+	............................................................new week............................................................
+	CalciumChannelBlck_D2T                                                     | 2832	 (19824, 54)             | nan       (nan)
+	AlphaBlocker                                                               | 2832	 (19830, 54)             | nan       (nan)
+	............................................................new week............................................................
+	Weak_Opioids_Final                                                         | 2833	 (19831, 54)             | nan       (nan)
+	AlphaBlocker                                                               | 2833	 (19831, 54)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2834	 (19839, 54)             | nan       (nan)
+	AlphaBlocker                                                               | 2834	 (19839, 54)             | nan       (nan)
+	............................................................new week............................................................
+	Ex_smoker_84                                                               | 2835	 (19846, 54)             | -183.38   (-2.79)
+	Serum_cholesterol_97                                                       | 2835	 (19846, 54)             | 4.56      (-0.44)
+	Serum_cholesterol_97                                                       | 2835	 (19846, 54)             | 4.06      (-0.45)
+	Serum_triglycerides_105                                                    | 2835	 (19846, 54)             | 0.31      (-0.50)
+	Insulin_Aurum_v2                                                           | 2835	 (19846, 54)             | nan       (nan)
+	Diastolic_blood_pressure_5                                                 | 2835	 (19846, 54)             | 86.66     (-0.32)
+	Systolic_blood_pressure_4                                                  | 2835	 (19848, 54)             | 136.29    (-0.21)
+	............................................................new week............................................................
+	Metformin_612_A10BD2                                                       | 2836	 (19852, 54)             | nan       (nan)
+	AlphaBlocker                                                               | 2836	 (19853, 54)             | nan       (nan)
+	............................................................new week............................................................
+	Metformin_612_A10BD2                                                       | 2837	 (19859, 54)             | nan       (nan)
+	............................................................new week............................................................
+	Insulin_Aurum_v2                                                           | 2840	 (19884, 54)             | nan       (nan)
+	............................................................new week............................................................
+	AlphaBlocker                                                               | 2841	 (19888, 54)             | nan       (nan)
+	............................................................new week............................................................
+	CalciumChannelBlck_D2T                                                     | 2842	 (19895, 54)             | nan       (nan)
+	Insulin_Aurum_v2                                                           | 2842	 (19895, 54)             | nan       (nan)

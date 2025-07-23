@@ -7,7 +7,19 @@ from CPRD.src.modules.head_layers.survival.desurv import ODESurvMultiple
 from typing import Optional
 
 class ODESurvCompetingRiskLayer(nn.Module):
-    """ Wrapper around competing risk version of DeSurv 
+    """
+    Neural ODE-based competing risks survival prediction layer.
+
+    Wraps around ODESurvMultiple, a DeSurv model, to predict survival curves (per risk) from input hidden states.
+    Supports both training (with loss computation) and generation (with sampling).
+
+    Args:
+        in_dim (int): Input embedding dimension (from encoder/transformer).
+        hidden_dim (int): Hidden dimension for the ODE survival model.
+        num_risks (int): Number of competing risk event types (excluding PAD token).
+        n (int): Number of quadrature samples for DeSurv.
+        concurrent_strategy (str): Strategy for handling concurrent events ("add_noise" or None).
+        device (str): Computation device ('cpu' or 'cuda'), for DeSurv dependency.
     """
 
     def __init__(self, in_dim, hidden_dim, num_risks, n=15, concurrent_strategy=None, device="cpu"):
@@ -15,17 +27,18 @@ class ODESurvCompetingRiskLayer(nn.Module):
         super().__init__()
         self.concurrent_strategy = concurrent_strategy
 
+        # Initialize underlying competing risks survival ODE model
         self.sr_ode = ODESurvMultiple(cov_dim=in_dim,
                                       hidden_dim=hidden_dim,
                                       num_risks=num_risks,        # do not include pad token as an event 
                                       device=device,
                                       n=n)                 
                                                                                                                        
-        # the time grid which we generate over - assuming time scales are standardised
+        # Normalized evaluation time grid to generate over (assuming input times scaled to [0,1])
         self.t_eval = np.linspace(0, 1, 1000)    
         self.device = device
 
-        # log setup information
+        # Log configuration
         logging.info(f"Using a DeSurv Competing-Risk head.")
         logging.info(f"\tWith concurrent strategy={self.concurrent_strategy} for handling simultaneous events.")
         logging.info(f"\tEvaluating on a time grid between [{self.t_eval.min()}, {self.t_eval.max()}] with {len(self.t_eval)} intervals")
@@ -70,7 +83,7 @@ class ODESurvCompetingRiskLayer(nn.Module):
             assert torch.all(tte_deltas >= 0), f"events must be given in time order, {tte_deltas[tte_deltas<0]}"
             # shape: torch.Size([bsz, seq_len - 1])
 
-            # Vectorise
+            # Flatten
             in_hidden_state = hidden_states[:, :-1, :].reshape((-1, hidden_states.shape[-1]))        # torch.Size([bsz * (seq_len-1), hidden_size])
             tte_deltas = tte_deltas.reshape(-1)                                                      # torch.Size([bsz * (seq_len-1)])
             tte_obs_mask = tte_obs_mask.reshape(-1)                                                  # torch.Size([bsz * (seq_len-1)])
@@ -163,29 +176,36 @@ class ODESurvCompetingRiskLayer(nn.Module):
 
         return preds, pis
 
-    def sample_surv(self, surv):
+    def sample_surv(self, surv: list):
         """ Generate samples from survival curves using inverse sampling
+
+        surv: a list of each of the potential outcome events. [risk_1, risk_2, ...., risk_236]
+              each risk_i is a tensor of shape (bsz, eval_time)
         """
-        assert surv[0].shape[0] == 1, "TODO: not implemented for batches"
+        # assert surv[0].shape[0] == 1, "TODO: not implemented for batches"
 
-        # Sample which event occurs next by sampling with probability proportional to the AUC
-        AUCs = [np.sum(_s[0, :]) for _s in surv]          
-        weights = torch.tensor(AUCs, dtype=torch.float)
-        next_index = torch.multinomial(weights, 1) 
-        logging.debug(f"Sampled token {next_index + 1} using area under curve")
+        # For each outcome considered, get the are under the survival curve 
+        #   Get AUCs of shape [np.Size([bsz, 1]) for _ in range(num_risks)]
+        AUCs = [np.sum(_s, axis=1, keepdims=True) for _s in surv]     
 
-        # And then sample at what time this event occurs
-        try:
-            rsample = np.random.uniform(0, surv[next_index][0,-1])                    # Randomly sample between 0 and the maximum cumulative prob
-        except:
-            print(next_index)
-            raise NotImplementedError
-            
-        logging.debug(f"competing-risk generation inverse transform random sample: {rsample}~U(0,{surv[next_index][0,-1]})")
-        time_index = np.sum(surv[next_index] <= rsample) - 1
-
-        delta_age = self.t_eval[time_index]
-
-        next_token_index = next_index.reshape(-1, 1).to(self.device) + 1   # add one as the survival curves do not include the PAD token, which has token index 0
+        # Sample the next event with probability proportional to this area
+        #   Get next_indices of shape torch.Size([bsz])
+        weights = torch.tensor(np.concatenate(AUCs, axis=-1))
+        next_indices = torch.multinomial(weights, 1)[:, 0]
+        logging.debug(f"Sampled tokens {next_indices + 1} using area under curve")
         
-        return next_token_index, delta_age
+        # Get the maximum y-axis risk for the sampled next event outcome, so we can sample the time-to-event from inverse CDF sampling
+        #   # Randomly sample between 0 and the maximum cumulative prob
+        max_risk_of_selected_indices = [surv[next_idx][batch_idx, -1] for batch_idx, next_idx in enumerate(next_indices)]
+        risk_level_samples = np.random.uniform(low=0, high=max_risk_of_selected_indices) 
+        # logging.debug(f"competing-risk generation inverse transform random sample: {rsample}~U(0,{surv[next_index][0,-1]})")
+        
+        # Get the randomly sampled time 
+        time_indices = [np.sum(surv[next_idx][batch_idx, :] <= rsample) - 1 
+                        for batch_idx, (next_idx, rsample) in enumerate(zip(next_indices, risk_level_samples))]
+        next_delta_ages = [self.t_eval[time_index] for time_index in time_indices]
+
+        # add one as the survival curves do not include the PADDING token, which has token index 0
+        next_token_indices = [next_index + 1 for next_index in next_indices.numpy()]
+        
+        return next_token_indices, next_delta_ages

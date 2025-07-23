@@ -209,14 +209,15 @@ def run(cfg : DictConfig):
                 logging.info(f"Creating new fine-tuned model at the path {supervised_ckpt_path}.")
                 logging.info(f"This is trained from a checkpointed pre-trained causal experiment, which can be found at {pre_trained_ckpt_path}.")
                 
-                assert cfg.experiment.train is True, f"If you are not training a new fine-tuned model, please load a valid checkpoint. {pre_trained_ckpt_path} is not valid."
+                assert cfg.experiment.train is True, f"If you are not training, please load a valid fine-tuned checkpoint. {supervised_ckpt_path} is not valid."
                 ft_ckpt = pre_trained_ckpt_path
                 mode = 'load_from_pretrain'
                 
             else:
-                logging.info(f"Creating new fine-tuned model from scratch.")
+                logging.info(f"Creating new fine-tuned model at the path {supervised_ckpt_path}.")
+                logging.info(f"This is trained from scratch, with randomly initialised backbone weights.")
                 
-                assert cfg.experiment.train is True, f"If you are not training a new fine-tuned model, please load a valid checkpoint. {pre_trained_ckpt_path} is not valid."
+                assert cfg.experiment.train is True, f"If you are not training, please load a valid fine-tuned checkpoint. {supervised_ckpt_path} is not valid."
                 ft_ckpt = None
                 mode = 'no_load'
                 

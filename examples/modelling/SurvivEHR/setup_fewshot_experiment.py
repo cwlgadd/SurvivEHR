@@ -4,18 +4,12 @@ import logging
 from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
 # from CPRD.data.foundational_loader import convert_batch_to_none_causal
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlateau, CosineAnnealingLR, LambdaLR, SequentialLR, ChainedScheduler
+
+import importlib
+import functools
+from itertools import islice
 from CPRD.src.models.base_callback import Embedding
-# from CPRD.src.models.survival.custom_callbacks.single_risk_clinical_prediction_model_eval import PerformanceMetrics
 from CPRD.src.models.survival.custom_callbacks.clinical_prediction_model import PerformanceMetrics
-
-import os
-# os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-
-def reset_module_parameters(module: torch.nn.Module):
-    for child in module.children():
-        reset_module_parameters(child)
-        if hasattr(child, 'reset_parameters'):
-            child.reset_parameters()
 
 class FewShotExperiment(pl.LightningModule):
 
@@ -192,16 +186,34 @@ class FewShotExperiment(pl.LightningModule):
 def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None, **kwargs):
 
     assert dm.is_supervised, "Datamodule for must be supervised for `setup_fewshot_experiment`."
-    assert cfg.experiment.fine_tune_outcomes is not None, "Must provide outcome list for `setup_fewshot_experiment`."
-
+    
+    #########################################################
+    # Get outcomes of interest                              #
+    #########################################################
     # Which tokens we want to predict as outcomes. 
-    #    In the few-shot/zero-shot setting these are used in the clinical prediction model callback to collapse the `vocab_size` outcomes into outcomes and none-outcome
-    #    but the model still predicts all `vocab_size` outcomes.
-    outcome_tokens =  dm.encode(cfg.experiment.fine_tune_outcomes)
-    outcome_dict = {_key: _value for _key, _value in zip(cfg.experiment.fine_tune_outcomes, outcome_tokens)}
+    #    In the fine-tuning setting these are used to construct a new head which can be fine-tuned.
+    #    TODO: a new clinical prediction model callback then needs to be made (or existing one editted) for this new case
+    if cfg.fine_tuning.fine_tune_outcomes is not None:
+        # Use outcomes provided directly
+        outcomes = cfg.fine_tuning.fine_tune_outcomes
+        logging.info("Setting outcome list based on cfg.fine_tuning.fine_tune_outcomes")
+    elif cfg.fine_tuning.custom_outcome_method._target_ is not None:
+        # Use outcomes decided by some custom criteria
+        module_name, function_name = cfg.fine_tuning.custom_outcome_method._target_.rsplit(".", 1)
+        outcome_method = getattr(importlib.import_module(module_name), function_name)
+        outcomes = outcome_method(dm)
+        logging.info("Setting outcome list based on cfg.fine_tuning.custom_outcome_method._target_")
+    else:
+        # As this is a supervised CPM experiment, we require there to be some outcomes.
+        raise NotImplementedError
+    outcome_tokens = dm.encode(outcomes)
+    outcome_dict = {_key: _value for _key, _value in zip(outcomes, outcome_tokens)}
     logging.info(f"Running few-shot experiment with outcomes {outcome_dict}")
-    # print(dm.train_set.tokenizer._stoi.keys())
 
+    #########################################################
+    # Load pre-trained model,                               #
+    #     overriding config where necessary                 #
+    #########################################################
     if checkpoint is not None:
         logging.info("Loading from checkpoint")
         use_adapter = cfg.transformer.use_fine_tune_adapter
@@ -213,12 +225,14 @@ def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None, 
         fewshot_experiment = FewShotExperiment(cfg=cfg, vocab_size=vocab_size, use_adapter=False)
     logging.debug(fewshot_experiment)
 
-    # Initialize wandb logger
+    ####################
+    # Use given logger #
+    ####################
     logger = logger if cfg.experiment.log == True else None
 
-    ####################
-    # Make all callbacks
-    ####################
+    #############################
+    # Make experiment callbacks #
+    #############################
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         dirpath=cfg.experiment.ckpt_dir,
         filename=cfg.experiment.run_id + "_" + cfg.experiment.fine_tune_id, 
@@ -226,36 +240,13 @@ def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None, 
         monitor="val_loss",
     )
     
-    # LR monitor
-    ############
     lr_monitor = pl.callbacks.LearningRateMonitor(logging_interval='step')
-    
-    # Add callbacks which apply to outcome prediction tasks
-    ############
-    # Create a hash map which maps the tokens of interset to their corresponding desurv output index
-    # For few-shot this is simply converting token to the index (PAD token takes value zero so we shift)
-    outcome_token_to_desurv_output_index = {token: token - 1 for token in outcome_tokens}        
-    metric_callback = PerformanceMetrics(outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
-                                         log_individual=True if cfg.head.SurvLayer.lower() == "sr" else False,
-                                         log_combined=True, # True if cfg.head.SurvLayer.lower() == "cr" else False,
-                                         log_ctd=True, 
-                                         log_ibs=True,
-                                         log_inbll=True)
-    # 
-    callbacks = [checkpoint_callback, lr_monitor, metric_callback]
 
-    # Optional callbacks
-    ######################
-    # Hidden state embedding
-    #    as we are fine-tuning the entire model the latent embeddings will be changed
-    logging.debug("Creating hidden state embedding callback.")
-    # We do not want to plot every single validation/test sample, so pass in a batch of each
-    embedding_callback = Embedding(val_batch=next(iter(dm.val_dataloader())),
-                                   test_batch=next(iter(dm.test_dataloader()))
-                                  )
-    callbacks.append(embedding_callback)
-        
-    # Early stopping callback
+    callbacks = [checkpoint_callback,
+                 lr_monitor,
+                 ]
+
+    # Early stopping
     if cfg.optim.early_stop:
         logging.debug("Creating early stopping callback")
         early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
@@ -265,7 +256,73 @@ def setup_fewshot_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None, 
             verbose=cfg.experiment.verbose,
         )
         callbacks.append(early_stop_callback)
+    else:
+        logging.warning(f"Early stopping is not being used: {cfg.optim.early_stop}")
 
+    ########################
+    # Validation callbacks #
+    ########################
+
+    # Get method for patient stratification to be used in some of the callbacks 
+    if cfg.fine_tuning.custom_stratification_method._target_ is not None:
+        logging.info(f"custom_stratification_method._target_ {cfg.fine_tuning.custom_stratification_method._target_}")
+        # Extract the list of targets
+        custom_strat_targets = OmegaConf.to_container(cfg.fine_tuning.custom_stratification_method._target_, resolve=True)
+
+        # For each target, create a partially initialised stratification strategy and label for the plot.
+        custom_stratification_methods, stratification_method_labels = [], []
+        for custom_strat_target in custom_strat_targets:
+            # partially initialise stratification method
+            module_name, function_name = custom_strat_target.rsplit(".", 1)
+            stratification_method = getattr(importlib.import_module(module_name), function_name)
+            # Add plotting strategy
+            custom_stratification_methods.append(functools.partial(stratification_method, dm=dm))
+            stratification_method_labels.append(function_name.replace("_", " "))
+    else:
+        custom_stratification_methods = [None]
+        stratification_method_labels = [" "]
+
+
+    # Hidden state embedding
+    ########################
+    config_embed = cfg.fine_tuning.use_callbacks.hidden_embedding
+    if config_embed.num_batches > 0:
+        # Collect data to be used for hidden embedding
+        num_batches = int(config_embed.num_batches)
+        val_batches = list(islice(iter(dm.val_dataloader()), num_batches))
+        test_batches = list(islice(iter(dm.test_dataloader()), num_batches))
+
+        # Create each callback, built on each different stratification strategy
+        for custom_stratification_method, stratification_method_label in zip(custom_stratification_methods, stratification_method_labels):
+            embedding_callback = Embedding(val_batch                    = val_batches,
+                                           test_batch                   = test_batches,
+                                           custom_stratification_method = custom_stratification_method,
+                                           stratification_title         = stratification_method_label,
+                                           mask_static                  = config_embed.mask_static,
+                                           mask_value                   = config_embed.mask_value,
+                                          )
+            callbacks.append(embedding_callback)
+            logging.info(f"Created hidden state embedding callback {stratification_method_label}")
+
+    
+    # CPM erformance metrics
+    ########################
+    if cfg.fine_tuning.use_callbacks.performance_metrics:
+        # Create a hash map which maps the tokens of interset to their corresponding desurv output index
+        # For few-shot this is simply converting token to the index (PAD token takes value zero so we shift)
+        outcome_token_to_desurv_output_index = {token: token - 1 for token in outcome_tokens}        
+        metric_callback = PerformanceMetrics(outcome_token_to_desurv_output_index=outcome_token_to_desurv_output_index,
+                                             log_individual=True if cfg.head.SurvLayer.lower() == "sr" else False,
+                                             log_combined=True, # True if cfg.head.SurvLayer.lower() == "cr" else False,
+                                             log_ctd=True, 
+                                             log_ibs=True,
+                                             log_inbll=True)
+        callbacks.append(metric_callback)
+  
+    
+    ######################
+    # Set up the Trainer #
+    ######################
     _trainer = pl.Trainer(
         logger=logger,
         callbacks=callbacks,
