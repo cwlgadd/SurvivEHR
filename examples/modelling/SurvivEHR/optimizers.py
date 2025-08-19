@@ -1,6 +1,9 @@
 import math
 import numpy as np
+from typing import Optional, Sequence
+
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
+
 
 class CosineAnnealingWarmRestartsDecay(CosineAnnealingWarmRestarts):
     def __init__(self, 

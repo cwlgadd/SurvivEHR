@@ -162,3 +162,5 @@ cython_debug/
 
 data/database/output/
 examples/modelling/SurvivEHR/outputs/
+*.out
+*.stats
