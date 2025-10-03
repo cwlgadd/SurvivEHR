@@ -1,22 +1,11 @@
 #!/bin/bash -l
-# CPU setup
-# SBATCH --account=gokhalkm-optimal
-# SBATCH --qos=bbdefault
-# SBATCH --time=15:00:0
-# SBATCH --ntasks=1
-# SBATCH --nodes=1
-# SBATCH --cpus-per-task=48
-
-# GPU setup
 #SBATCH --account=gokhalkm-optimal
-#SBATCH --qos=bbgpupriority3
-#SBATCH --time=2:00:0
-#SBATCH --gres gpu:a100:1
+#SBATCH --qos=bbdefault
+#SBATCH --time=15:00:0
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=12
-
-#SBATCH --output=build_dataset_output2.out
+#SBATCH --cpus-per-task=48
+#SBATCH --output=build_hypertension_dataset_output.out
 
 set -e   # Exit on first error
 
@@ -52,8 +41,8 @@ echo $VENV_PATH
 source ${VENV_PATH}/bin/activate
 
 # 
-echo "Build dataset from CPRD.db database of DeXTER output"
-cd /rds/homes/g/gaddcz/Projects/CPRD/examples/data/2_build_pre_training_dataset/
+echo "Build fine-tuning dataset predicting CVD from T2D patients, from CPRD.db database of DeXTER output"
+cd /rds/homes/g/gaddcz/Projects/CPRD/examples/data/3_build_fine_tuning_datasets/Study1_T2D/Hypertension/
 
 # Execute your Python scripts
-python build_dataset.py;
+python build_hypertension_dataset.py;

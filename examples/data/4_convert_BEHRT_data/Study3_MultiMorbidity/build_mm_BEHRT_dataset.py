@@ -77,7 +77,10 @@ if __name__ == "__main__":
             total=len(dataloader)
         ):
         
-            builder.add_batch(batch["tokens"], batch["ages"])
+            builder.add_batch(batch["tokens"], batch["ages"],
+							  target_event=batch["target_token"],
+							  target_time=batch["target_age_delta"],
+							 )
         
             if idx_batch % 10 == 0:
                 df_chunk = builder.flush()
@@ -96,8 +99,9 @@ if __name__ == "__main__":
             df.to_parquet(cfg.data.path_to_ds + f"BEHRT/{split}_dataset.parquet", index=False)
         
             print(len(df))
-            print(df["patid"][0])
-            print(df["caliber_id"][0])
-            print(df["age"][0])
+            print(df.head(3))
+            # print(df["patid"][0])
+            # print(df["caliber_id"][0])
+            # print(df["age"][0])
         else:
             logging.warning("No valid data")

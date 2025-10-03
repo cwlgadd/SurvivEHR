@@ -1,4 +1,6 @@
 EVENT_NAME_LONG_MAP = {
+	"PAD": "Special: padding",
+	"UNK": "Special: unknown",
     "ADDISONS_DISEASE": "Addison's disease",
     "CYSTICFIBROSIS": "Cystic Fibrosis",
     "SYSTEMIC_SCLEROSIS": "Systemic sclerosis",
@@ -266,6 +268,8 @@ EVENT_NAME_LONG_MAP = {
 }
 
 EVENT_NAME_SHORT_MAP = {
+	"PAD": "Special: padding",
+	"UNK": "Special: unknown",
     "ADDISONS_DISEASE": "Addison's",
     "CYSTICFIBROSIS": "CF",
     "SYSTEMIC_SCLEROSIS": "Systemic sclerosis",
