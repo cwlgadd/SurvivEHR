@@ -18,7 +18,7 @@ if __name__ == "__main__":
     # load the configuration file, override any settings 
     with initialize(version_base=None, 
                     config_path="../../../../modelling/SurvivEHR/confs", 
-                    job_name="dataset_creation_multimorbidity_job"):
+                    job_name="dataset_creation_hypertension_job"):
         cfg = compose(config_name="config_CompetingRisk11M", overrides=[])
         
     # Create new dataset 
