@@ -1,0 +1,22 @@
+Bootstrap: docker
+From: python:3.10.4-slim
+
+%labels
+    Maintainer "cwlgadd@gmail.com"
+    Purpose    "UV-managed Python 3.10.4 runtime for CPRD"
+    Created    "2025-10-30"
+
+%environment
+    export PATH="/root/.local/bin:$PATH"
+
+%post
+    set -e
+    apt-get update
+    apt-get install -y --no-install-recommends curl ca-certificates build-essential git
+    rm -rf /var/lib/apt/lists/*
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+
+%help
+    Minimal image with Python 3.10.4 + uv. Venvs & caches live on host (/rds).
+    Typical use:
+      apptainer exec uv-py3104.sif bash -lc 'uv python install 3.10.4'
