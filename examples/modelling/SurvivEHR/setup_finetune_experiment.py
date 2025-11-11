@@ -3,18 +3,20 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlateau, CosineAnnealingLR, LambdaLR, SequentialLR, ChainedScheduler
+import importlib
+import functools
+import math
+from itertools import islice
+
+from CPRD.src.models.base_callback import Embedding
+from CPRD.src.models.survival.custom_callbacks.clinical_prediction_model import PerformanceMetrics
+from CPRD.src.models.survival.custom_callbacks.mm_clinical_prediction_model import RestrictedMeanSurvivalTime
 from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
 from CPRD.src.modules.head_layers.survival.competing_risk import ODESurvCompetingRiskLayer
 from CPRD.src.modules.head_layers.survival.single_risk import ODESurvSingleRiskLayer
 from CPRD.src.modules.head_layers.value_layers import GaussianRegressionLayer
-
-import importlib
-import functools
-from itertools import islice
-from CPRD.src.models.base_callback import Embedding
-from CPRD.src.models.survival.custom_callbacks.clinical_prediction_model import PerformanceMetrics
-from CPRD.src.models.survival.custom_callbacks.mm_clinical_prediction_model import RestrictedMeanSurvivalTime
-
+from CPRD.examples.modelling.SurvivEHR.optimizers_utils import split_decay_groups, CosineAnnealingWarmRestartsDecay
+from CPRD.examples.modelling.SurvivEHR.optimizers_fine_tuning import ConfigureFTOptimizers
 
 class FineTuneExperiment(pl.LightningModule):
 
@@ -23,75 +25,83 @@ class FineTuneExperiment(pl.LightningModule):
                  outcome_tokens,
                  risk_model,         # 'single-risk', 'competing-risk', or (TODO) False (for case of predicting value but not survival risk)
                  vocab_size=265,
-                 use_adapter=False    # If True, we freeze the body and use an `Adapter` module to allow parameter efficient fine-tuning. If False, we train all parameters
                 ):
         
         super().__init__()
         self.save_hyperparameters()        
         self.cfg = cfg
-        self.use_adapter = use_adapter
-        self.reduced_hidden_dim = 384
+
+        # self.PEFT = 
+        # self.probe_epochs = int(getattr(self.cfg.fine_tuning.backbone, "linear_probe_epochs", 0))
+        # self.unfreeze_top_k = getattr(self.cfg.fine_tuning.backbone, "unfreeze_top_k", 1e6)
         
-        # Load the pre-trained Transformer
         ###################################
-        adapter_dim = cfg.transformer.adapter_dim if use_adapter is True else False
+        # Load the pre-trained Transformer
+        #  and remove previous causal heads
+        ###################################
+        adapter_dim = getattr(cfg.fine_tuning.PEFT, "adapter_dim", 8) if cfg.fine_tuning.PEFT.method == "adapter" else False
         self.model = SurvStreamGPTForCausalModelling(cfg, vocab_size, use_adapter=adapter_dim)
-        # logging.info(self.model)
+        self.model.surv_layer, self.model.value_layer = None, None
 
-        # Approaches for freezing the pre-trained model body whilst fine-tuning the new head
-        if self.use_adapter is True:
-            logging.info(f"Fixing Transformer parameters and fine-tuning using an Adapter mechanism.")
-            for name, param in self.model.named_parameters():
-                if "adapter" in name.lower() or "ln_" in name.lower():
-                    param.requires_grad = True
-                else:
-                    param.requires_grad = False
-                    
-        elif self.use_adapter == "fix":
-            logging.info(f"Fixing Transformer parameters.")
-            for name, param in self.model.named_parameters():
-                if ("ln_" in name.lower() or "layernorm" in name.lower()):
-                    param.requires_grad = True
-                else:
-                    param.requires_grad = False
-
-        else:
-            logging.info(f"Training all Transformer parameters")
-            for name, param in self.model.named_parameters():
-                param.requires_grad = True
+        # Initial block-wise freezing
+        # if (self.PEFT.method == "fix") or (self.probe_epochs > 0) or (self.unfreeze_top_k == "gradual"):
+        #     top_k = 0
+        # elif isinstance(self.unfreeze_top_k, int):
+        #     top_k = self.unfreeze_top_k
+        # else:
+        #     top_k = None
+        # self.constrain_backbone(top_k=top_k)
 
         # Drop down network to compress GPT hidden dimensions before new heads
-        self.reduce_hidden = torch.nn.Sequential(
-            torch.nn.Linear(self.model.n_embd, self.reduced_hidden_dim),
-            torch.nn.ReLU()
-        )
+        self.use_compression = getattr(self.cfg.fine_tuning, "compression_layer", False)
+        if self.use_compression:
+            reduce_hidden_dim = self.use_compression if isinstance(self.use_compression, int) else 384
+            self.reduce_hidden = torch.nn.Sequential(
+                torch.nn.Linear(self.model.n_embd, reduce_hidden_dim),
+                torch.nn.ReLU()
+            )
+            # Using Layer-Norm speeds up training, but will require new default configuration
+            # self.reduce_hidden = torch.nn.Sequential(
+            #     torch.nn.LayerNorm(self.model.n_embd),
+            #     torch.nn.Linear(self.model.n_embd, reduce_hidden_dim),
+            #     torch.nn.GELU(),
+            #     torch.nn.Dropout(p=0.1),
+            # )
+            hidden_dimensions = reduce_hidden_dim
+        else:
+            hidden_dimensions = self.model.n_embd
 
+        ##################
         # Create new heads
         ##################
         total_weight = cfg.fine_tuning.head.surv_weight + cfg.fine_tuning.head.value_weight
         self.surv_weight = cfg.fine_tuning.head.surv_weight / total_weight
         self.value_weight = cfg.fine_tuning.head.value_weight / total_weight
+        assert self.surv_weight > 0 or self.value_weight > 0
                     
         # Create a new survival head
-        hidden_dimensions = self.reduced_hidden_dim #self.model.n_embd - self.model.n_embd_private
-        match risk_model.replace('-', '').replace(' ', '').lower():
-            case "singlerisk" | "sr":
-                # Combine each of the given outcomes into a single event, and treat it as a single risk
-                #    e.g. This could be a single event, or all events that constitute some form of umbrella, e.g. cardiovascular disease
-                self.surv_layer = ODESurvSingleRiskLayer(outcome_tokens, hidden_dimensions, [32, 32], device="cuda")
-                # Create a method which reduces batch["tokens"] from the causal k={1,2,3,4,5,...\vocab_size} form to the single risk 
-                #    form k={\null, 1} that surv_layer is expecting
-                self.reduce_to_outcomes = lambda target_token: target_token
-                
-            case "competingrisk" | "cr":
-                # Treat each risk as a competing risk
-                self.surv_layer = ODESurvCompetingRiskLayer(hidden_dimensions, [32, 32], num_risks=len(outcome_tokens), device="cuda")
-                # Create a method which reduces batch["tokens"] from the causal k={1,2,3,4,5,...\vocab_size} form to the competing risk 
-                #    form k={1,2,3,..., K} that surv_layer is expecting
-                self.reduce_to_outcomes = lambda target_token: sum([torch.where(target_token==i, idx+1, 0) for idx, i in enumerate(outcome_tokens)])
-
-            case _:
-                raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
+        if self.surv_weight > 0:
+            desurv_device = "cuda" if torch.cuda.is_available() else "cpu"
+            match risk_model.replace('-', '').replace(' ', '').lower():
+                case "singlerisk" | "sr":
+                    # Combine each of the given outcomes into a single event, and treat it as a single risk
+                    #    e.g. This could be a single event, or all events that constitute some form of umbrella, e.g. cardiovascular disease
+                    self.surv_layer = ODESurvSingleRiskLayer(outcome_tokens, hidden_dimensions, [32, 32], device=desurv_device)
+                    # Create a method which reduces batch["tokens"] from the causal k={1,2,3,4,5,...\vocab_size} form to the single risk 
+                    #    form k={\null, 1} that surv_layer is expecting
+                    self.reduce_to_outcomes = lambda target_token: target_token
+                    
+                case "competingrisk" | "cr":
+                    # Treat each risk as a competing risk
+                    self.surv_layer = ODESurvCompetingRiskLayer(hidden_dimensions, [32, 32], num_risks=len(outcome_tokens), device=desurv_device)
+                    # Create a method which reduces batch["tokens"] from the causal k={1,2,3,4,5,...\vocab_size} form to the competing risk 
+                    #    form k={1,2,3,..., K} that surv_layer is expecting
+                    self.reduce_to_outcomes = lambda target_token: sum([torch.where(target_token==i, idx+1, 0) for idx, i in enumerate(outcome_tokens)])
+    
+                case _:
+                    raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
+        else:
+            logging.debug(f"Did not create survival layer as weighting set to zero")
 
         # Create a new value head
         if self.value_weight > 0:
@@ -102,9 +112,7 @@ class FineTuneExperiment(pl.LightningModule):
             logging.debug(f"Created value layer:\n{self.value_layer}")
         else:
             logging.debug(f"Did not create value layer as weighting set to zero")
-
         
-
     def forward(self, batch, is_generation=False, return_loss=True, return_generation=False):
         # Because of how DeSurv is coded we have the loss returned in the forward, so we have some redundancy
 
@@ -142,8 +150,14 @@ class FineTuneExperiment(pl.LightningModule):
             assert sum(gen_mask[idx, :]) == 1
             in_hidden_state[idx, :] = hidden_states[idx, gen_mask[idx, :]==1, :]
 
+        # Replace the gen_mask loop with a vectorised gather?
+        # lengths = attention_mask.sum(dim=1) - 1                                 # (bsz,)
+        # idx = lengths.clamp(min=0).view(-1, 1, 1).expand(-1, 1, hidden_states.size(-1))
+        # in_hidden_state = hidden_states.gather(1, idx).squeeze(1)               # (bsz, hid)
+
         # Reduce hidden dimension
-        in_hidden_state = self.reduce_hidden(in_hidden_state)
+        if getattr(self, "reduce_hidden", False):
+            in_hidden_state = self.reduce_hidden(in_hidden_state)
         
         # The hidden states, made of the last hidden state of input sequence, and a padded zero
         # Note, we add the hidden state again as the padding target, as in generation this will be what is forwarded
@@ -162,18 +176,22 @@ class FineTuneExperiment(pl.LightningModule):
         target_attention_mask = torch.ones_like(target_tokens, device=self.device) == 1
 
         # survival time to event head (survival curve until next token)
-        surv_dict, losses_desurv = self.surv_layer.predict(in_hidden_state,
-                                                           target_tokens=self.reduce_to_outcomes(target_tokens),
-                                                           target_ages=target_ages,
-                                                           attention_mask=target_attention_mask,
-                                                           is_generation=is_generation,
-                                                           return_loss=return_loss,
-                                                           return_cdf=return_generation,
-                                                           )
+        if self.surv_weight > 0:
+            surv_dict, losses_desurv = self.surv_layer.predict(in_hidden_state,
+                                                               target_tokens=self.reduce_to_outcomes(target_tokens),
+                                                               target_ages=target_ages,
+                                                               attention_mask=target_attention_mask,
+                                                               is_generation=is_generation,
+                                                               return_loss=return_loss,
+                                                               return_cdf=return_generation,
+                                                               )
+        else:
+            surv_dict = None
+            losses_desurv = [torch.zeros(1)]
 
         # regression head (values of next token if applicable)
         if self.value_weight > 0:
-            values_dist, loss_values = self.value_layer.predict(in_hidden_states,
+            values_dist, loss_values = self.value_layer.predict(in_hidden_state,
                                                                 target_tokens=target_tokens,
                                                                 target_values=target_values,
                                                                 attention_mask=target_attention_mask,
@@ -219,112 +237,103 @@ class FineTuneExperiment(pl.LightningModule):
         for _key in loss_dict.keys():
             self.log(f"test_" + _key, loss_dict[_key], prog_bar=False, logger=True, sync_dist=True)
         return loss_dict['loss'] 
-
+        
     def configure_optimizers(self):
 
-        # Split parameters by those in new fine-tuning head and those in backbone
-        head_params = list(self.surv_layer.parameters())
-        if self.value_weight > 0:
-            head_params += list(self.value_layer.parameters())
+        ft_opt = ConfigureFTOptimizers(self)
+        return ft_opt.get_optim_cfg
+   
         
-        # Set head learning rate to 
-        backbone_lr = self.cfg.optim.learning_rate
-        head_lr = self.cfg.fine_tuning.head.learning_rate
-        
-        match self.use_adapter:
-            case "fix":
-                optimizer = torch.optim.AdamW(head_params, lr=head_lr)
-                logging.info(f"Fixing backbone, and using head learning rate {head_lr}")
-                
-            case True:
-                body_params = [p for n, p in self.model.named_parameters() if p.requires_grad and not any(h is p for h in head_params)]
-                
-                optimizer = torch.optim.AdamW([
-                    {'params': body_params, 'lr': backbone_lr}, 
-                    {'params': head_params, 'lr': head_lr}
-                    ])
-                logging.info(f"Using adpater on backbone with learning rate {backbone_lr}, and using head learning rate {head_lr}")
+    # def constrain_backbone(
+    #     self, 
+    #     *, 
+    #     top_k: int | None = None, 
+    #     constrain_embeddings: bool = False,
+    # ) -> None:
+    #     """
+    #     Constrain the Transformer backbone.
 
-            case "llrd":
-                
-                # Apply LLRD from top (closer to output) to bottom layers
-                lr = backbone_lr
-                decay = 0.9         # With 6 layer model the earliest layers have 0.7**6 (10\%) of the top layer's LR
-                backbone_params = []
-                for i, block in enumerate(reversed(self.model.transformer.blocks)):
-                    backbone_params.append({'params': block.parameters(), 'lr': lr})
-                    lr *= decay
-                
-                # Add non-block components (e.g., embeddings, final LN) at base LR
-                backbone_params += [
-                    {'params': self.model.transformer.wte.parameters(), 'lr': lr},
-                    {'params': self.model.transformer.wpe.parameters(), 'lr': lr},
-                    {'params': self.model.transformer.ln_f.parameters(), 'lr': backbone_lr},
-                ]
+    #     TODO: move this into SurvStreamGPTForCausalModelling class
+    
+    #     Args:
+    #         top_k:                How many top_k blocks are trainable; if None, unfreeze all
+    #     """
 
-                optimizer = torch.optim.AdamW(
-                    backbone_params + [{'params': head_params, 'lr': head_lr}]
-                )
-                logging.info(f"Using layer-wise learning rate decay (LLRD) on backbone with learning rate {lr}->{backbone_lr}, and using head learning rate {head_lr}")
-                
-                
-            case _:
-                body_params = [p for n, p in self.model.named_parameters() if p.requires_grad and not any(h is p for h in head_params)]
-                
-                optimizer = torch.optim.AdamW([
-                    {'params': body_params, 'lr': backbone_lr}, 
-                    {'params': head_params, 'lr': head_lr}
-                    ])
-                logging.info(f"Full training backbone with learning rate {backbone_lr}, and using head learning rate {head_lr}")
-
-        for i, g in enumerate(optimizer.param_groups):
-            logging.info(f"Group {i} LR: {g['lr']}")
-        
-        freq = 1
-        match self.cfg.optim.scheduler.lower():
-            case 'cawarmrestarts':
-                logging.info("Using CosineAnnealingWarmRestarts scheduler")
-                scheduler = CosineAnnealingWarmRestarts(optimizer, 
-                                                        T_0=int(self.cfg.optim.scheduler_periods),
-                                                        T_mult=2,
-                                                        eta_min=self.cfg.optim.learning_rate / 5)
-            case 'cosineannealinglr':
-                logging.info("Using CosineAnnealingLR scheduler")
-                scheduler = CosineAnnealingLR(optimizer,
-                                              T_max=self.cfg.optim.lr_cosine_decay_period / self.cfg.data.batch_size,
-                                              eta_min=self.cfg.optim.learning_rate / 5)
-            case 'reduceonplateau':
-                logging.info("Using ReduceLROnPlateau scheduler")
-                # scheduler = ReduceLROnPlateau(optimizer, factor=0.9, min_lr=self.cfg.optim.learning_rate/10, patience=20)
-                scheduler = ReduceLROnPlateau(optimizer, factor=0.9, min_lr=1e-6, patience=3)
-                freq = self.cfg.optim.val_check_interval
-            case _:
-                raise ValueError(f"Invalid scheduler {self.cfg.optim.scheduler}.")
-
-        if self.cfg.optim.scheduler_warmup:
-            logging.info(f"Using warm-up in scheduler for {self.cfg.optim.scheduler_periods} steps")
-            # Create scheduler with linear warmup followed by Cosine Annealing with warm restarts.
-            warmup = int(self.cfg.optim.scheduler_periods)
-            lambda1 = lambda step: float(step) / warmup if step < warmup else 1
-            # lambdas = [lambda step: (step / warmup if step < warmup else 1.0) for _ in optimizer.param_groups]
-            scheduler_warm = LambdaLR(optimizer, lr_lambda=lambda1)
-            scheduler = SequentialLR(optimizer, schedulers=[scheduler_warm, scheduler], milestones=[warmup])     
-        else:
-            logging.info("Not using warm-up in scheduler")
+    #     if top_k == None:
+    #         return
             
-        lr_scheduler_config = {
-            "frequency": freq,                                                          # How many epochs/steps should pass between calls to `scheduler.step()`
-            "scheduler": scheduler,                                                     # The scheduler instance
-            "interval": "epoch",         #step                                                # The unit of the scheduler's step size
-            "monitor": "val_loss",                                                      # Metric to monitor for scheduler, if needed
-            "strict": True,              #False                                              # Enforce that "val_loss" is available when the scheduler is updated
-            "name": 'Scheduler',                                                        # For `LearningRateMonitor`, specify a custom logged name
-        }
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": lr_scheduler_config
-        }
+    #     blocks = self.model.transformer.blocks
+    #     top_k = top_k if top_k is not None else len(blocks)
+    #     freeze_until = max(0, len(blocks) - int(top_k))
 
+    #     # Start by freezing all parameters
+    #     for p in self.model.transformer.parameters():
+    #         p.requires_grad = False
+        
+    #     # Keep only the last top_k blocks trainable; keep earlier frozen
+    #     for i, blk in enumerate(blocks):
+    #         req = (i >= freeze_until)
+    #         for n, p in blk.named_parameters():
+    #             if self.PEFT.method in ["adapter"]:
+    #                 # For adapters where we train a subset of old or new parameters
+    #                 # Do gradual unfreezing of adaption parameters
+    #                 p.requires_grad = req if "adapter" in n.lower() else False
+                    
+    #             elif self.PEFT.method in ["fix"]:
+    #                 # If we fix backbone never unfreeze, regardless of top_k settings
+    #                 p.requires_grad = False
+                    
+    #             else:
+    #                 # Do gradual unfreezing of `all` parameters
+    #                 p.requires_grad = req
+
+    #     if constrain_embeddings:
+    #         # Never unfreeze embeddings
+    #         pass
+    #     else:
+    #         # Only unfreeze initial embedding layers if
+    #         #    - we also unfreeze all blocks under full tuning
+    #         #    - we have not specified to fix the entire backbone
+    #         if freeze_until == 0 and self.PEFT.method not in ["fix"]:
+    #             subs = ("wte", "wpe")
+    #             for n, p in self.model.transformer.named_parameters():
+    #                 if any(s in n for s in subs):
+    #                     p.requires_grad = True
+
+    #     # Always unfreeze, regardless of setup
+    #     subs = ("layernorm", "ln_")
+    #     for n, p in self.model.transformer.named_parameters():
+    #         if any(s in n for s in subs):
+    #             p.requires_grad = True
+
+    #     print(f"Unfroze top-{len(blocks) - freeze_until} backbone layers.")
+
+    #     # DEBUG: Report remaining unfrozen params
+    #     # for n, p in self.model.transformer.named_parameters():
+    #     #     if p.requires_grad == False:
+    #     #         print(f"Frozen {n}")
+    #     #     else:
+    #     #         print(f"Trainable {n}")
+    
+    # def on_train_epoch_start(self):
+    #     # If we have specified a scheme in which trainable parameters can change over the training cycle
+
+    #     if self.unfreeze_top_k == 'gradual':
+    #         # Gradual layer-wise unfreezing, with or without probe
+    #         top_k = self.current_epoch - self.probe_epochs + 1
+    #         if top_k >= 0:
+    #             self.constrain_backbone(top_k=top_k)
+    #             logging.info(f"Gradual layerwise unfreezing: Unfreezing top {top_k} layers")
+            
+    #     elif self.probe_epochs > 0 and self.current_epoch == self.probe_epochs:
+    #         # No Gradual + linear probe, 
+    #         self.constrain_backbone(top_k=self.unfreeze_top_k)
+    #         logging.info(f"Linear probe ending: Unfreezing top {self.unfreeze_top_k} layers")
+            
+    #     else:
+    #         # No gradual, no linear probe
+    #         pass
+            
 def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger=None, **kwargs):
     """
     Set up the fine-tuning experiment module, trainer, and callbacks for training or evaluation.
@@ -389,22 +398,23 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
             assert checkpoint is not None
             logging.info(f"Loading fine-tuned checkpoint from {checkpoint}")
             finetune_experiment = FineTuneExperiment.load_from_checkpoint(checkpoint, cfg=cfg, outcome_tokens=outcome_tokens, risk_model=risk_model)
+            
         case "load_from_pretrain":
             assert checkpoint is not None
             logging.info(f"Loading pre-trained model from checkpoint from {checkpoint}.")
-            finetune_experiment = FineTuneExperiment.load_from_checkpoint(checkpoint, cfg=cfg, outcome_tokens=outcome_tokens, risk_model=risk_model,
-                                                                          use_adapter=cfg.transformer.use_fine_tune_adapter, strict=False)
+            finetune_experiment = FineTuneExperiment.load_from_checkpoint(checkpoint, cfg=cfg, outcome_tokens=outcome_tokens, risk_model=risk_model, strict=False)
         case "no_load":
-            assert cfg.transformer.use_fine_tune_adapter is False, "If fine-tuning from scratch do not freeze any Transformer parameters through the adapter module."
+            assert cfg.fine_tuning.PEFT.method is None, "If fine-tuning from scratch do not use any PEFT such as the adapter module."
             logging.info(f"Fine-tuning from scratch")
-            finetune_experiment = FineTuneExperiment(cfg, outcome_tokens, risk_model=risk_model, use_adapter=False, ) 
+            finetune_experiment = FineTuneExperiment(cfg, outcome_tokens, risk_model=risk_model) 
         case _:
             raise NotImplementedError
 
     # if torch.cuda.is_available():
     #     finetune_experiment = torch.compile(finetune_experiment)
             
-    logging.debug(finetune_experiment)
+    # logging.info(finetune_experiment)
+    print(finetune_experiment)
 
     ####################
     # Use given logger #
@@ -519,13 +529,21 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
                                                          custom_stratification_method=custom_stratification_method
                                                         )
             callbacks.append(metric_callback)
-
+        
     ######################
     # Set up the Trainer #
     ######################
+    if  torch.cuda.is_available():
+        if torch.cuda.is_bf16_supported():
+            precision = "bf16-mixed"
+        else:
+            precision = "16-mixed"
+    else:
+        precision = 32
+        
     _trainer = pl.Trainer(
         logger=logger,
-        # precision="bf16-mixed" if torch.cuda.is_bf16_supported() else "16-mixed",
+        # precision=precision,
         callbacks=callbacks,
         max_epochs=cfg.optim.num_epochs,
         log_every_n_steps=cfg.optim.log_every_n_steps,
@@ -533,7 +551,8 @@ def setup_finetune_experiment(cfg, dm, mode, risk_model, checkpoint=None, logger
         limit_val_batches=cfg.optim.limit_val_batches,
         limit_test_batches=cfg.optim.limit_test_batches,
         accumulate_grad_batches=cfg.optim.accumulate_grad_batches,
-        gradient_clip_val=1.0,
+        # gradient_clip_val=1.0,
+        # gradient_clip_algorithm="norm",
     )
 
     return finetune_experiment, FineTuneExperiment, _trainer

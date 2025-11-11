@@ -43,6 +43,14 @@ fine_tuning:
       mask_value: False
     performance_metrics: True
     rmst: False
+  compression_layer: False           # Whether to add an additional layer (LayerNorm -> Linear -> GELU -> drop) after backbone, and before FT head. True uses 384 hdims, else set with int
+  llrd: null                         # Layer-wise learning rate decay. Float between 0 and 1
+  PEFT:
+    method: null                     # Which method {'fix', 'adapter', None}. Freeze the Transformer body, add an adapter module, or no PEFT
+    adapter_dim: 8
+  backbone:
+    linear_probe_epochs: 0          # How many epochs to freeze backbone for at start of fine-tuning
+    unfreeze_top_k: null            # After ``linear_probe_epochs``, how many blocks of backbone to unfreeze.
   head:
     surv_weight: 1
     value_weight: 0
@@ -78,8 +86,7 @@ transformer:
   private_heads: 0                   # The number of heads to make private for value and survival prediction.
                                      #    E.g. if private_heads == 2, we have 2 MHA blocks whose n_embd//n_head dimensions are only used to predict values,
                                      #         and another two only used to predict survival curves - and the remainder are shared.
-  use_fine_tune_adapter: False        # Whether to freeze the Transformer body in fine-tuning and add an adapter module to reduce parameter count
-  adapter_dim: 8
+
 
 head:
   # survival head
