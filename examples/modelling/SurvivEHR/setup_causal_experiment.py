@@ -213,6 +213,8 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
     _trainer : pl.Trainer
         The configured PyTorch Lightning trainer with callbacks.
     """
+    
+    USE_GPU = torch.cuda.is_available()
 
     #########################################################
     # Load existing pre-trained model,                      #
@@ -227,7 +229,7 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
     # if torch.cuda.is_available():
     #     causal_experiment = torch.compile(causal_experiment)
     
-    logging.debug(causal_experiment)
+    logging.info(causal_experiment)
 
     ####################
     # Use given logger #
@@ -323,11 +325,21 @@ def setup_causal_experiment(cfg, dm, vocab_size, checkpoint=None, logger=None):
     ######################
     # Set up the Trainer #
     ######################
-    logging.info(f"Interactive job = {is_interactive()}")
+    if is_interactive():
+        strategy = "auto"
+        logging.info(f"Interactive job")
+    elif USE_GPU:
+        strategy = "ddp"
+        logging.info(f"GPu job")
+    else:
+        strategy = "auto"
+        logging.info(f"cpu job")
+    logging.info(f"Using {strategy} strategy")
+        
     _trainer = pl.Trainer(
         logger=logger,
         # precision="bf16-mixed" if torch.cuda.is_bf16_supported() else "16-mixed",
-        strategy="auto" if is_interactive() else "ddp",
+        strategy=strategy,
         callbacks=callbacks,
         max_epochs=cfg.optim.num_epochs,
         log_every_n_steps=cfg.optim.log_every_n_steps,
