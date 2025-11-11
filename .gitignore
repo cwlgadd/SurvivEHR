@@ -159,8 +159,18 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# Containers
+.venv
+*.sif
+*.img
+*.squashfs
+wheelhouse/
+uv-cache/
+tmp/
 
 data/database/output/
 examples/modelling/SurvivEHR/outputs/
+out/
+results/
 *.out
 *.stats
