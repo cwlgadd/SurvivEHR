@@ -26,7 +26,7 @@ def convert_to_discrete_pycox(x, t, e, label_transform=None, **kwargs):
     return (x, y)
 
 
-def convert_to_desurv(x, t, e, batch_size=256, **kwargs):
+def convert_to_desurv(x, t, e, batch_size=512, **kwargs):
     """
     Convert from format produced in ``get_dataloaders`` to the native DeSurv format.
     """
@@ -53,16 +53,22 @@ def convert_to_sklearn_RSF(x, t, e, competing_risk=False, **kwargs):
     return (X, y)
 
     
-def get_dataloaders(dataset, competing_risk, benchmark, sample_size=None, seed=None, **kwargs):
+def get_dataloaders(
+    dataset_path,
+    competing_risk,
+    benchmark,
+    sample_size=None,
+    seed=None,
+    **kwargs):
     """
     Load cross-sectional benchmark data, which was converted from the FastEHR format to be suitable for cross-sectional benchmarks
     """
 
     # Training samples
     if sample_size is not None:
-        save_path =  f"/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_{dataset}/" + f"benchmark_data/N={sample_size}_seed{seed}.pickle" 
+        save_path = dataset_path + f"N={sample_size}_seed{seed}.pickle" 
     else:
-        save_path = f"/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_{dataset}/" + "benchmark_data/all.pickle"
+        save_path = dataset_path + "all.pickle"
         
     with open(save_path, "rb") as handle:
         print(f"Loading training dataset from {save_path}")
@@ -80,10 +86,8 @@ def get_dataloaders(dataset, competing_risk, benchmark, sample_size=None, seed=N
     data["y_train"] = data_train["y_train"]
 
     # Test and validation samples
-
-    save_path = f"/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_{dataset}/" + "benchmark_data/all.pickle"
-    with open(save_path, "rb") as handle:
-        print(f"Loading validation/test datasets from {save_path}")
+    with open(dataset_path + "all.pickle", "rb") as handle:
+        print(f"Loading validation/test datasets from {dataset_path}all.pickle")
         data_val_test = pickle.load(handle)
         
     data["X_val"] = data_val_test["X_val"]
