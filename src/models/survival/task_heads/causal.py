@@ -2,13 +2,15 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 import numpy as np
+from typing import Optional
+import logging
+
 from CPRD.src.models.TTE.base import TTETransformer
 from CPRD.src.modules.head_layers.survival.competing_risk import ODESurvCompetingRiskLayer
 from CPRD.src.modules.head_layers.survival.single_risk import ODESurvSingleRiskLayer
+from CPRD.src.modules.head_layers.survival.single_risk_for_causal import CausalODESurvSingleRiskLayer
 from CPRD.src.modules.head_layers.value_layers import GaussianRegressionLayer
 
-from typing import Optional
-import logging
 
 class SurvStreamGPTForCausalModelling(nn.Module):
     r"""    
@@ -34,20 +36,33 @@ class SurvStreamGPTForCausalModelling(nn.Module):
         self.transformer = TTETransformer(cfg, vocab_size, use_adapter=use_adapter)
 
         match cfg.head.SurvLayer.lower():
-            # Removing padding token from vocab size as this is not considered an event in either case.
+            # Note: We are removing padding token from vocab size in both cases
             case "single-risk" | "sr":
-                raise NotImplementedError    #  this has been replaced with a SingleRisk layer, which must now be wrapped with a new class for the causal case
-                # self.surv_layer = ODESurvSingleRiskLayer(self.n_embd - self.n_embd_private, [], num_risks=vocab_size - 1, device="cuda")
+                # A 1 vs All single risk pre-training strategy
+                #   This still follows the Causal Language Modelling strategy of next-event
+                #   That is, each independent SR model still look at the same next event, but
+                #   each model interprets a different token as the positive example and the
+                #   remainder as censored targets.
+                self.surv_layer = CausalODESurvSingleRiskLayer(
+                    self.n_embd - self.n_embd_private, 
+                    hidden_dim=32,
+                    num_risks=vocab_size-1,
+                    concurrent_strategy=concurrent_strategy,
+                    device='cuda' if torch.cuda.is_available() else 'cpu'
+                    )
             case "competing-risk" | "cr":
-
-                self.surv_layer = ODESurvCompetingRiskLayer(self.n_embd - self.n_embd_private, 
-                                                            hidden_dim=32,
-                                                            num_risks=vocab_size-1,
-                                                            concurrent_strategy=concurrent_strategy,
-                                                            device='cuda' if torch.cuda.is_available() else 'cpu')
+                # A competing-risk strategy. 
+                #   Acknowledging that the next event is truly a competing-risk, as only one event
+                #   may occur next. This is the motivation of SurvivEHR.
+                self.surv_layer = ODESurvCompetingRiskLayer(
+                    self.n_embd - self.n_embd_private, 
+                    hidden_dim=32,
+                    num_risks=vocab_size-1,
+                    concurrent_strategy=concurrent_strategy,
+                    device='cuda' if torch.cuda.is_available() else 'cpu'
+                )
             case _:
                 raise ValueError(f"Survival head must be either 'single-risk' or 'competing-risk'")
-
 
         # Regression layers, create a separate regression layer for each measurement
         #   In the case we want to include private_heads, then 

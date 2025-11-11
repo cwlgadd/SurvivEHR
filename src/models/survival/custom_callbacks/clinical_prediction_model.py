@@ -91,6 +91,12 @@ class PerformanceMetrics(Callback):
             })
 
     def get_metrics(self, cdf, lbls, target_ages, _trainer, _pl_module, log_name, suppress_warnings=False):
+
+        # Get causal pre-training, or supervised fine tuning survival layer
+        if _pl_module.model.surv_layer is not None:
+            t_eval = _pl_module.model.surv_layer.t_eval
+        else:
+            t_eval = _pl_module.surv_layer.t_eval
         
         if np.sum(lbls) == 0 and suppress_warnings is False:
             logging.warning(f"Only censored events in batch. Evaluating metrics will be unstable.")
@@ -98,11 +104,11 @@ class PerformanceMetrics(Callback):
         metric_dict = {}
         try:
             # Evaluate concordance. Scale using the head layers internal scaling.
-            surv = pd.DataFrame(np.transpose((1 - cdf)), index=_pl_module.model.surv_layer.t_eval)
+            surv = pd.DataFrame(np.transpose((1 - cdf)), index=t_eval)
             ev = EvalSurv(surv, target_ages, lbls, censor_surv='km')
     
             # Calculate and log desired metrics
-            time_grid = np.linspace(start=0, stop=_pl_module.model.surv_layer.t_eval.max() , num=300)
+            time_grid = np.linspace(start=0, stop=t_eval.max(), num=300)
             if self.log_ctd:
                 ctd = ev.concordance_td()                           # Time-dependent Concordance Index
                 metric_dict = {**metric_dict, log_name+"ctd": ctd}
@@ -114,10 +120,14 @@ class PerformanceMetrics(Callback):
                 metric_dict = {**metric_dict, log_name+"inbll": inbll}
 
             self.log_dict(metric_dict)
-        except:
+        except Exception as e:
             if suppress_warnings is False:
-                logging.warning("Unable to calculate metrics, this batch will be skipped - this will bias metrics.")
-                logging.warning(f"{lbls}, {target_ages}")
+                logging.warning(
+                    "Unable to calculate metrics; this batch will be skipped (bias risk). "
+                    "Exception: %s: %s", e.__class__.__name__, e
+                )
+                
+                logging.warning("lbls=%s; target_ages=%s", lbls, target_ages)
             else:
                 pass
         
