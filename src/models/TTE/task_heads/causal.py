@@ -2,12 +2,12 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 import numpy as np
-from CPRD.src.models.TTE.base import TTETransformer
-from CPRD.src.modules.head_layers.tte_layers import GeometricTTELayer, ExponentialTTELayer
-
-
 from typing import Optional
 import logging
+
+from SurvivEHR.src.models.TTE.base import TTETransformer
+from SurvivEHR.src.modules.head_layers.tte_layers import GeometricTTELayer, ExponentialTTELayer
+
 
 class TTETransformerForCausalSequenceModelling(nn.Module):
     r"""    

@@ -18,7 +18,7 @@ export HYDRA_FULL_ERROR=1
 export PYTHONFAULTHANDLER=1
 
 # ---  ---
-REPO_DIR="/rds/homes/g/gaddcz/Projects/CPRD"
+REPO_DIR="/rds/homes/g/gaddcz/Projects/SurvivEHR"
 
 set -euo pipefail
 

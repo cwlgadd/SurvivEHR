@@ -4,7 +4,7 @@ import torch.nn as nn
 import logging
 from typing import Optional
 
-from CPRD.src.modules.head_layers.survival.desurv import ODESurvSingle
+from SurvivEHR.src.modules.head_layers.survival.desurv import ODESurvSingle
 
 
 class CausalODESurvSingleRiskLayer(nn.Module):

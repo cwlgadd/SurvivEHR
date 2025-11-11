@@ -2,9 +2,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import logging
-from CPRD.src.modules.head_layers.survival.desurv import ODESurvMultiple
-
 from typing import Optional
+
+from SurvivEHR.src.modules.head_layers.survival.desurv import ODESurvMultiple
+
 
 class ODESurvCompetingRiskLayer(nn.Module):
     """

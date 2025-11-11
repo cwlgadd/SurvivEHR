@@ -6,7 +6,7 @@ import torch
 import wandb
 from hydra import compose, initialize
 
-from CPRD.examples.modelling.SurvivEHR.run_experiment import run
+from SurvivEHR.examples.modelling.SurvivEHR.run_experiment import run
 
 
 def record_results(summary, task, pre_trained_model, train_set, eval_set, seed, recorded_metrics):
@@ -64,7 +64,7 @@ def run_job(task, pre_trained_model, train_set, eval_set, seed, sweep, record_me
                       overrides=[# Experiment setup
                                  "experiment.project_name='SurvivEHR-regional-fine-tuning'",
                                  f"experiment.run_id='{pre_trained_model}'",
-                                 f"experiment.fine_tune_id='RegionalTask{task}_tr{train_set}/ce9091d_4LN_{seed}_{sweep_name}'",
+                                 f"experiment.fine_tune_id='RegionalTask{task}_tr{train_set}/ce9091d_refactored_{seed}_{sweep_name}'",
                                  f"experiment.seed={seed}",
                                  # Dataloader
                                  f"data.path_to_ds=/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/ByRegion/{task}_{train_set}/",

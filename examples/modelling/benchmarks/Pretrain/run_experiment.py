@@ -5,10 +5,10 @@ import torch
 import pytorch_lightning as pl
 import logging
 from pathlib import Path
+
 from FastEHR.dataloader.foundational_loader import FoundationalDataModule
-# Load the different experiment types
-from CPRD.examples.modelling.benchmarks.Pretrain.setup_causal_t_mlp_experiment import CausalTMLPExperiment, setup_t_mlp_experiment
-from CPRD.examples.modelling.benchmarks.Pretrain.setup_causal_mlp_experiment import CausalMLPExperiment, setup_mlp_experiment
+from SurvivEHR.examples.modelling.benchmarks.Pretrain.setup_causal_t_mlp_experiment import CausalTMLPExperiment, setup_t_mlp_experiment
+from SurvivEHR.examples.modelling.benchmarks.Pretrain.setup_causal_mlp_experiment import CausalMLPExperiment, setup_mlp_experiment
 
 
 @hydra.main(version_base=None, config_path="../../SurvivEHR/confs", config_name="default")

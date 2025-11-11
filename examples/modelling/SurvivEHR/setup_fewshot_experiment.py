@@ -1,15 +1,14 @@
 import pytorch_lightning as pl
 import torch
 import logging
-from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
-# from CPRD.data.foundational_loader import convert_batch_to_none_causal
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlateau, CosineAnnealingLR, LambdaLR, SequentialLR, ChainedScheduler
-
 import importlib
 import functools
 from itertools import islice
-from CPRD.src.models.base_callback import Embedding
-from CPRD.src.models.survival.custom_callbacks.clinical_prediction_model import PerformanceMetrics
+
+from SurvivEHR.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
+from SurvivEHR.src.models.base_callback import Embedding
+from SurvivEHR.src.models.survival.custom_callbacks.clinical_prediction_model import PerformanceMetrics
 
 class FewShotExperiment(pl.LightningModule):
 

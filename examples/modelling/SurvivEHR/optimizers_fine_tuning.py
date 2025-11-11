@@ -6,7 +6,7 @@ from torch.optim import Optimizer
 from torch.nn import Parameter
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlateau, CosineAnnealingLR, LambdaLR, SequentialLR, ChainedScheduler
 
-from CPRD.examples.modelling.SurvivEHR.optimizers_utils import split_decay_groups, _uniq_params, CosineAnnealingWarmRestartsDecay
+from SurvivEHR.examples.modelling.SurvivEHR.optimizers_utils import split_decay_groups, _uniq_params, CosineAnnealingWarmRestartsDecay
 
 
 class ConfigureFTOptimizers():

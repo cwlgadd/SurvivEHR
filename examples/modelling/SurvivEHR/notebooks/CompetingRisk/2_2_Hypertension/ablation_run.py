@@ -6,7 +6,7 @@ import torch
 import wandb
 from hydra import compose, initialize
 
-from CPRD.examples.modelling.SurvivEHR.run_experiment import run
+from SurvivEHR.examples.modelling.SurvivEHR.run_experiment import run
 
 
 def record_results(summary, task, pre_trained_model, seed, recorded_metrics):

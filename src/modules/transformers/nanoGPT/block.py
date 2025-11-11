@@ -3,7 +3,9 @@ import torch
 from torch import nn
 from typing import Optional
 import logging 
-from CPRD.src.modules.transformers.nanoGPT.self_attention import MultiHeadedSelfAttention
+
+from SurvivEHR.src.modules.transformers.nanoGPT.self_attention import MultiHeadedSelfAttention
+
 
 class LayerNorm(nn.Module):
     """ LayerNorm but with an optional bias. PyTorch doesn't support simply bias=False """

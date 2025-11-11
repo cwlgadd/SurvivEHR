@@ -1,5 +1,4 @@
 # Create custom callbacks for our pytorch-lightning model
-
 import numpy as np
 from pytorch_lightning import Callback
 import torch
@@ -7,8 +6,6 @@ from sklearn.manifold import TSNE
 import umap
 import wandb
 import matplotlib.pyplot as plt
-from CPRD.src.models.base_callback import BaseCallback
-# from CPRD.data.foundational_loader import convert_batch_to_none_causal
 from pycox.evaluation import EvalSurv
 from scipy.integrate import trapz
 import pandas as pd
@@ -16,6 +13,8 @@ import seaborn as sns
 import logging
 import copy
 import traceback
+
+from SurvivEHR.src.models.base_callback import BaseCallback
 
 
 class RestrictedMeanSurvivalTime(Callback):

@@ -2,12 +2,13 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 import numpy as np
-from CPRD.src.models.TTE.base import TTETransformer
-from CPRD.src.modules.head_layers.tte_layers import GeometricTTELayer, ExponentialTTELayer
-from CPRD.src.modules.head_layers.value_layers import GaussianRegressionLayer
-
 from typing import Optional
 import logging
+
+from SurvivEHR.src.models.TTE.base import TTETransformer
+from SurvivEHR.src.modules.head_layers.tte_layers import GeometricTTELayer, ExponentialTTELayer
+from SurvivEHR.src.modules.head_layers.value_layers import GaussianRegressionLayer
+
 
 class TTETransformerForCausalTimeSeriesModelling(nn.Module):
     r"""    

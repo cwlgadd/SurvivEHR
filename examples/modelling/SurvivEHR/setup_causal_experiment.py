@@ -5,14 +5,14 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlateau, CosineAnnealingLR, LambdaLR, SequentialLR, ConstantLR, ChainedScheduler, ExponentialLR
-from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
-from CPRD.examples.modelling.SurvivEHR.helpers import is_interactive
-
 import importlib
 import functools
 from itertools import islice
-from CPRD.src.models.base_callback import Embedding
-from CPRD.src.models.survival.custom_callbacks.causal_eval import PerformanceMetrics
+
+from SurvivEHR.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
+from SurvivEHR.examples.modelling.SurvivEHR.helpers import is_interactive
+from SurvivEHR.src.models.base_callback import Embedding
+from SurvivEHR.src.models.survival.custom_callbacks.causal_eval import PerformanceMetrics
 
 
 class CausalExperiment(pl.LightningModule):

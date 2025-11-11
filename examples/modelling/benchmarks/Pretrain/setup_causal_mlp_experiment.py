@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 import logging
-from CPRD.examples.modelling.SurvivEHR.helpers import is_interactive
-from CPRD.src.models.survival.custom_callbacks.causal_eval import PerformanceMetrics
+from SurvivEHR.examples.modelling.SurvivEHR.helpers import is_interactive
+from SurvivEHR.src.models.survival.custom_callbacks.causal_eval import PerformanceMetrics
 
 class CausalMLPExperiment(pl.LightningModule):
     def __init__(

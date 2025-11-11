@@ -11,7 +11,7 @@
 #SBATCH --job-name=regional_run
 
 # ---  ---
-REPO_DIR="/rds/homes/g/gaddcz/Projects/CPRD"
+REPO_DIR="/rds/homes/g/gaddcz/Projects/SurvivEHR"
 
 set -euo pipefail
 

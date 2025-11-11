@@ -4,53 +4,14 @@ from typing import Tuple
 import torch
 from torch import nn, Tensor
 from torch.nn import functional as F
-# from transformers import PreTrainedModel
-from transformers.modeling_utils import ModuleUtilsMixin               
-from CPRD.src.modules.positions.positional_encoding import PositionalEncoding
-from CPRD.src.modules.positions.positional_embedding import PositionalEmbedding
-from CPRD.src.modules.data_embeddings.data_embedding_layer import DataEmbeddingLayer
-from CPRD.src.modules.block import Block
-
+from transformers.modeling_utils import ModuleUtilsMixin
 import logging
 from typing import Optional
 
-# class GPTPreTrainedModel(PreTrainedModel):
-#     """
-#     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
-#     models.
-#     """
-
-#     # config_class = GPTNeoConfig
-#     # load_tf_weights = load_tf_weights_in_gpt_neo
-#     # base_model_prefix = "transformer"
-#     # supports_gradient_checkpointing = True
-#     # _no_split_modules = ["GPTNeoBlock"]
-#     # _skip_keys_device_placement = "past_key_values"
-    
-#     def __init__(self, *inputs, **kwargs):
-#         super().__init__(*inputs, **kwargs)
-
-#     def _init_weights(self, module, init_std=0.1):
-#         """Initialize the weights."""
-#         if isinstance(module, (nn.Linear,)):
-#             # Slightly different from TF versions which use truncated_normal for initialization
-#             # cf https://github.com/pytorch/pytorch/pull/5617
-#             module.weight.data.normal_(mean=0.0, std=init_std)
-#             if module.bias is not None:
-#                 module.bias.data.zero_()
-#         elif isinstance(module, nn.Embedding):
-#             module.weight.data.normal_(mean=0.0, std=init_std)
-#             if module.padding_idx is not None:
-#                 module.weight.data[module.padding_idx].zero_()
-#         elif isinstance(module, nn.LayerNorm):
-#             module.bias.data.zero_()
-#             module.weight.data.fill_(1.0)
-
-#     def _set_gradient_checkpointing(self, module, gradient_checkpointing_func=None):
-#         if isinstance(module, GPTModel):
-#             module.gradient_checkpointing_func = gradient_checkpointing_func
-#             module.gradient_checkpointing = gradient_checkpointing_func is not None
-
+from SurvivEHR.src.modules.positions.positional_encoding import PositionalEncoding
+from SurvivEHR.src.modules.positions.positional_embedding import PositionalEmbedding
+from SurvivEHR.src.modules.data_embeddings.data_embedding_layer import DataEmbeddingLayer
+from SurvivEHR.src.modules.block import Block
 
             
 class Transformer(nn.Module, ModuleUtilsMixin):

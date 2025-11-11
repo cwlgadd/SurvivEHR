@@ -1,6 +1,5 @@
 # Create custom callbacks for our pytorch-lightning model
 import logging
-
 import numpy as np
 import pandas as pd
 import torch

@@ -4,17 +4,16 @@ from typing import Tuple
 import torch
 from torch import nn, Tensor
 from torch.nn import functional as F
-# from transformers import PreTrainedModel
 from transformers.modeling_utils import ModuleUtilsMixin               
-from CPRD.src.modules.positions.positional_encoding import TemporalPositionalEncoding
-from CPRD.src.modules.data_embeddings.data_embedding_layer import DataEmbeddingLayer
-from CPRD.src.modules.transformers.nanoGPT.block import Block as NanoBlock
-from CPRD.src.modules.transformers.neoGPT.block import Block as NeoBlock
-# from CPRD.src.modules.transformers.hybridGPT.block import Block as HybridBlock
 import logging
 from typing import Optional
 
-            
+from SurvivEHR.src.modules.positions.positional_encoding import TemporalPositionalEncoding
+from SurvivEHR.src.modules.data_embeddings.data_embedding_layer import DataEmbeddingLayer
+from SurvivEHR.src.modules.transformers.nanoGPT.block import Block as NanoBlock
+from SurvivEHR.src.modules.transformers.neoGPT.block import Block as NeoBlock
+
+
 class TTETransformer(nn.Module, ModuleUtilsMixin):
     r"""The bare GPT Model transformer for modelling time-to-event, outputting raw hidden-states without any specific head on top.
     

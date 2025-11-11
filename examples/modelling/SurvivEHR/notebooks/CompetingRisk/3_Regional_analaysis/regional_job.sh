@@ -15,7 +15,7 @@
 #SBATCH --output=out/job-%j.out
 
 # ---  ---
-REPO_DIR="/rds/homes/g/gaddcz/Projects/CPRD"
+REPO_DIR="/rds/homes/g/gaddcz/Projects/SurvivEHR"
 
 set -euo pipefail
 

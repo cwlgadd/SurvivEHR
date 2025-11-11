@@ -3,7 +3,9 @@ import torch
 from torch import nn
 from typing import Optional
 import logging 
-from CPRD.src.modules.transformers.neoGPT.self_attention import MultiHeadedSelfAttention
+
+from SurvivEHR.src.modules.transformers.neoGPT.self_attention import MultiHeadedSelfAttention
+
 
 class Adapter(nn.Module):
     """

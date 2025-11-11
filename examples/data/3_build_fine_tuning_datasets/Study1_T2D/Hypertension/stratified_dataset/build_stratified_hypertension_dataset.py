@@ -5,7 +5,7 @@ from omegaconf import OmegaConf
 import logging
 import time
 
-from CPRD.examples.data.study_criteria import t2d_inclusion_method
+from SurvivEHR.examples.data.study_criteria import t2d_inclusion_method
 from FastEHR.dataloader.foundational_loader import FoundationalDataModule
 
 

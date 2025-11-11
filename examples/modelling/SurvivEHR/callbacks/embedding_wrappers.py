@@ -1,11 +1,11 @@
 # Callbacks for embedding labels which are specific to the token lists used in SurvivEHR paper
-
 import torch
 import numpy as np
 from typing import Dict, List, Optional
-from CPRD.examples.modelling.SurvivEHR.helpers import custom_mm_outcomes, expand_batch_to_context_on_tokens, filter_batch_by_context_length
-from CPRD.examples.modelling.SurvivEHR.callbacks.embedding_labels import number_of_preexisting_by_token, static
-from CPRD.examples.data.map_to_reduced_names import EVENT_NAME_LONG_MAP, EVENT_NAME_SHORT_MAP, convert_event_names
+
+from SurvivEHR.examples.modelling.SurvivEHR.helpers import custom_mm_outcomes, expand_batch_to_context_on_tokens, filter_batch_by_context_length
+from SurvivEHR.examples.modelling.SurvivEHR.callbacks.embedding_labels import number_of_preexisting_by_token, static
+from SurvivEHR.examples.data.map_to_reduced_names import EVENT_NAME_LONG_MAP, EVENT_NAME_SHORT_MAP, convert_event_names
 
 
 def filter_batch(batch: Dict[str, torch.Tensor],

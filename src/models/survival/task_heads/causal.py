@@ -5,11 +5,11 @@ import numpy as np
 from typing import Optional
 import logging
 
-from CPRD.src.models.TTE.base import TTETransformer
-from CPRD.src.modules.head_layers.survival.competing_risk import ODESurvCompetingRiskLayer
-from CPRD.src.modules.head_layers.survival.single_risk import ODESurvSingleRiskLayer
-from CPRD.src.modules.head_layers.survival.single_risk_for_causal import CausalODESurvSingleRiskLayer
-from CPRD.src.modules.head_layers.value_layers import GaussianRegressionLayer
+from SurvivEHR.src.models.TTE.base import TTETransformer
+from SurvivEHR.src.modules.head_layers.survival.competing_risk import ODESurvCompetingRiskLayer
+from SurvivEHR.src.modules.head_layers.survival.single_risk import ODESurvSingleRiskLayer
+from SurvivEHR.src.modules.head_layers.survival.single_risk_for_causal import CausalODESurvSingleRiskLayer
+from SurvivEHR.src.modules.head_layers.value_layers import GaussianRegressionLayer
 
 
 class SurvStreamGPTForCausalModelling(nn.Module):

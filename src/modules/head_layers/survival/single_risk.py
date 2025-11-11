@@ -2,8 +2,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import logging
-from CPRD.src.modules.head_layers.survival.desurv import ODESurvSingle
 from typing import Optional
+
+from SurvivEHR.src.modules.head_layers.survival.desurv import ODESurvSingle
+
 
 class ODESurvSingleRiskLayer(nn.Module):
     """ Wrapper around single-risk version of DeSurv

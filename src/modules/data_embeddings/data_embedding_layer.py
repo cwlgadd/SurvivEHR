@@ -3,7 +3,9 @@ from torch import nn
 import math
 from typing import Optional
 import logging
-from CPRD.src.modules.data_embeddings.dynamic_embedding_layer import JointDynamicEmbeddingLayer, SplitDynamicEmbeddingLayer
+
+from SurvivEHR.src.modules.data_embeddings.dynamic_embedding_layer import JointDynamicEmbeddingLayer, SplitDynamicEmbeddingLayer
+
 
 class DataEmbeddingLayer(torch.nn.Module):
     r""" This class embeds a PyTorch Batch into a fixed size embedding.

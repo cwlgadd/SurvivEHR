@@ -8,15 +8,15 @@ import functools
 import math
 from itertools import islice
 
-from CPRD.src.models.base_callback import Embedding
-from CPRD.src.models.survival.custom_callbacks.clinical_prediction_model import PerformanceMetrics
-from CPRD.src.models.survival.custom_callbacks.mm_clinical_prediction_model import RestrictedMeanSurvivalTime
-from CPRD.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
-from CPRD.src.modules.head_layers.survival.competing_risk import ODESurvCompetingRiskLayer
-from CPRD.src.modules.head_layers.survival.single_risk import ODESurvSingleRiskLayer
-from CPRD.src.modules.head_layers.value_layers import GaussianRegressionLayer
-from CPRD.examples.modelling.SurvivEHR.optimizers_utils import split_decay_groups, CosineAnnealingWarmRestartsDecay
-from CPRD.examples.modelling.SurvivEHR.optimizers_fine_tuning import ConfigureFTOptimizers
+from SurvivEHR.src.models.base_callback import Embedding
+from SurvivEHR.src.models.survival.custom_callbacks.clinical_prediction_model import PerformanceMetrics
+from SurvivEHR.src.models.survival.custom_callbacks.mm_clinical_prediction_model import RestrictedMeanSurvivalTime
+from SurvivEHR.src.models.survival.task_heads.causal import SurvStreamGPTForCausalModelling
+from SurvivEHR.src.modules.head_layers.survival.competing_risk import ODESurvCompetingRiskLayer
+from SurvivEHR.src.modules.head_layers.survival.single_risk import ODESurvSingleRiskLayer
+from SurvivEHR.src.modules.head_layers.value_layers import GaussianRegressionLayer
+from SurvivEHR.examples.modelling.SurvivEHR.optimizers_fine_tuning import ConfigureFTOptimizers
+
 
 class FineTuneExperiment(pl.LightningModule):
 

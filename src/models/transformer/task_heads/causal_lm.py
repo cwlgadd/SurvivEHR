@@ -2,10 +2,11 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 import numpy as np
-from CPRD.src.models.transformer.base import Transformer
-
 from typing import Optional
 import logging
+
+from SurvivEHR.src.models.transformer.base import Transformer
+
 
 class TransformerForCausalLM(nn.Module):
     r"""    
@@ -141,8 +142,6 @@ def test_slm():
     """ Test model with survival head
     """
     raise NotImplementedError
-    
-
     
 if __name__ == "__main__":
     
