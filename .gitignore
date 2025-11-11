@@ -174,3 +174,5 @@ out/
 results/
 *.out
 *.stats
+*.ckpt
+*.pt
