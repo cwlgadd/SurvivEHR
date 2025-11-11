@@ -85,7 +85,8 @@ def run(cfg : DictConfig):
                     logging.warning(f"Further training on a checkpoint {pre_trained_ckpt_path} which will create a new checkpoint. Ensure evaluation is not on the original checkpoint.")
                     
                 load_from_checkpoint = pre_trained_ckpt_path
-                new_checkpoint = None  # Not implemented a versioning control on iterative checkpointing
+                new_checkpoint = pre_trained_ckpt_path.split(".")
+                new_checkpoint = new_checkpoint[0] + "-v1." + new_checkpoint[1]
                 
             else:
                 # Create new experiment
