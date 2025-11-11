@@ -18,8 +18,6 @@ from sklearn import set_config
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder
 
-from sksurv.datasets import load_gbsg2
-from sksurv.preprocessing import OneHotEncoder
 from CPRD.src.modules.head_layers.survival.desurv import ODESurvSingle
 from pycox.evaluation import EvalSurv
 
@@ -97,18 +95,24 @@ def run(experiment, sample_size, seed):
     
     # load the configuration file, override any settings 
     with initialize(version_base=None, config_path="../../modelling/SurvivEHR/confs", job_name="testing_notebook"):
-        cfg = compose(config_name="config_CompetingRisk37M") 
+        cfg = compose(config_name="config_CompetingRisk11M") 
         cfg.transformer.block_size=1000000     # Ensure all records get included
 
     match experiment.lower():
         case "cvd":
             cfg.data.path_to_ds="/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_CVD/"
+        case "cvd_ne":
+            cfg.data.path_to_ds="/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/ByRegion/CVD_North East/"
         case "hypertension":
             cfg.data.path_to_ds="/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_Hypertension/"
+        case "hypertension_ne":
+            cfg.data.path_to_ds="/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/ByRegion/Hypertension_North East/"
         case "mm":
-            # cfg.data.path_to_ds="/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_MultiMorbidity2/"
             cfg.data.path_to_ds="/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_MultiMorbidity50+/"
-            
+        case "mm_ne":
+            cfg.data.path_to_ds="/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/ByRegion/MM_North East/"
+        case _:
+            raise NotImplementedError
 
     supervised = True 
     logging.info("="*100)
@@ -142,13 +146,13 @@ def run(experiment, sample_size, seed):
     logging.debug(OmegaConf.to_yaml(cfg))
 
     match experiment.lower():
-        case "cvd":
+        case "cvd" | "cvd_ne":
             conditions = ["IHDINCLUDINGMI_OPTIMALV2", "ISCHAEMICSTROKE_V2", "MINFARCTION", "STROKEUNSPECIFIED_V2", "STROKE_HAEMRGIC"]
             cfg.fine_tuning.fine_tune_outcomes=conditions
-        case "hypertension":
+        case "hypertension" | "hypertension_ne":
             conditions = ["HYPERTENSION"]
             cfg.fine_tuning.fine_tune_outcomes=conditions
-        case "mm":
+        case "mm" | "mm_ne":
             conditions = (
                 dm.tokenizer._event_counts.filter((pl.col("COUNT") > 0) &
                     (pl.col("EVENT").str.contains(r'^[A-Z0-9_]+$')))
@@ -157,6 +161,8 @@ def run(experiment, sample_size, seed):
                   .to_list()
             )
             cfg.fine_tuning.fine_tune_outcomes=conditions
+        case _:
+            raise NotImplementedError
     
     target_tokens = dm.encode(conditions)
 
@@ -173,6 +179,8 @@ def run(experiment, sample_size, seed):
         
         with open(save_path, "rb") as handle:
             data = pickle.load(handle)
+
+        print(f"Loaded {save_path}")
     
     except:
         print(f"Loading failed, creating dataset")
@@ -218,7 +226,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run evaluation script")
     parser.add_argument("--experiment", type=str, required=True, help="Which experiment's data to convert (cvd, hypertension, mm)")
     parser.add_argument("--n_sample", type=int, default=None, help="Number of sub-samples (for ablation). Default is to convert all the data.",)
-    parser.add_argument("--seed", type=int, default=32, help="Seed for splitting data.",)
+    parser.add_argument("--seed", type=int, default=1, help="Seed for splitting data. If n_sample is None this does not do anything.",)
     
     args = parser.parse_args()
 

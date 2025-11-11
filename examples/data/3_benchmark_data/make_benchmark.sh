@@ -3,36 +3,38 @@
 #SBATCH --account=gokhalkm-optimal
 #SBATCH --qos=bbdefault
 #SBATCH --time=10:0:0
-
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=36
 
-#SBATCH --output=/rds/homes/g/gaddcz/Projects/CPRD/examples/data/0_benchmark_data/out_%A.out
+#SBATCH --output=out/NE_CVD_%A.out
+#SBATCH --job-name=regional_run
 
-set -e   # Exit on first error
+# ---  ---
+REPO_DIR="/rds/homes/g/gaddcz/Projects/CPRD"
 
-module purge; module load bluebear
-module load bear-apps/2022a/live 
-module load PyTorch/2.0.1-foss-2022a-CUDA-11.7.0
-module load PyTorch-Lightning/2.1.0-foss-2022a-CUDA-11.7.0
-module load sklearn-pandas/2.2.0-foss-2022a
-module load Hydra/1.3.2-GCCcore-11.3.0
-module load polars/0.17.12-foss-2022a
-module load wandb/0.13.6-GCC-11.3.0
-module load Seaborn/0.12.1-foss-2022a
-module load umap-learn/0.5.3-foss-2022a
+set -euo pipefail
 
-echo $BB_CPU
+echo "$SLURM_JOB_PARTITION"
+nvidia-smi || echo "no nvidia-smi"
 
-export VENV_PATH="/rds/homes/g/gaddcz/Projects/CPRD/virtual-envTorch2.0-${BB_CPU}"
-echo $VENV_PATH
+# --- Diagnostics (optional) ---
+echo "HOST=$(hostname)"
+echo "OS=$(sed -n 's/^PRETTY_NAME=//p' /etc/os-release)"
+echo "CPU=$(lscpu | sed -n 's/^Model name: *//p')"
+echo "PARTITION=${SLURM_JOB_PARTITION:-}"
+echo "CONSTRAINT=${SLURM_JOB_CONSTRAINT:-}"
 
-# Activate the virtual environment
-source ${VENV_PATH}/bin/activate
 
 # 
 echo "Making cross-sectional dataset"
 
 # Competing-Risk
-python make_xsectional_datasets.py  --experiment=mm --seed=5 --n_sample=20000
+# python make_xsectional_datasets.py  --experiment=mm_ne --seed=1
+# python make_xsectional_datasets.py  --experiment=hypertension_ne --seed=1
+
+# --- Run code inside the container with the venv ---
+bash "$REPO_DIR/containers/run_in_container.sh" \
+    examples/data/3_benchmark_data/make_xsectional_datasets.py \
+  --experiment=cvd_ne \
+  --seed=1
