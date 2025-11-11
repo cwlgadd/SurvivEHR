@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=48
-#SBATCH --output=build_mm_BEHRT_dataset_output.out
+#SBATCH --output=build_mm_NE_BEHRT_dataset_output.out
 
 set -e   # Exit on first error
 
@@ -37,7 +37,6 @@ source ${VENV_PATH}/bin/activate
 
 # 
 echo "Build BEHRT fine-tuning dataset from the existing SurvivEHR dataset"
-# cd /rds/homes/g/gaddcz/Projects/CPRD/examples/data/4_BEHRT_data/Study1_T2D/CVD/
 
 # Execute your Python scripts
 python build_mm_BEHRT_dataset.py;

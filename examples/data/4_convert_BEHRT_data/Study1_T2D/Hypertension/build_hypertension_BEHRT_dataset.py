@@ -25,7 +25,8 @@ if __name__ == "__main__":
         cfg = compose(config_name="config_CompetingRisk11M", overrides=[])
     
     # Create new dataset 
-    cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_Hypertension/"
+    # cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_Hypertension/"
+    cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/ByRegion/Hypertension_North East/"
     # Removing windowing applied to SurvivEHR by default so BEHRT can set it's own windowing
     cfg.transformer.block_size = 1e6
     

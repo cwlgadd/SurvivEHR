@@ -25,8 +25,7 @@ if __name__ == "__main__":
         cfg = compose(config_name="config_CompetingRisk11M", overrides=[])
     
     # Create new dataset 
-    # cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/FineTune_MultiMorbidity50+/"
-    cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/ByRegion/MM_North East/"
+    cfg.data.path_to_ds = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/ByRegion/PreTrain_North East/" 
     # Removing windowing applied to SurvivEHR by default so BEHRT can set it's own windowing
     cfg.transformer.block_size = 1e6
     
@@ -39,10 +38,9 @@ if __name__ == "__main__":
         load=True,
         overwrite_practice_ids = "/rds/projects/g/gokhalkm-optimal/OPTIMAL_MASTER_DATASET/data/FoundationalModel/PreTrain/practice_id_splits.pickle",
         overwrite_meta_information=cfg.data.meta_information_path,
-        num_threads=12,
-        supervised=True,
+        num_threads=1,
+        supervised=False,
         adapter="BEHRT",
-        subsample_training=20000,
     )
     
     vocab_size = dm.train_set.tokenizer.vocab_size
@@ -79,8 +77,8 @@ if __name__ == "__main__":
         ):
         
             builder.add_batch(batch["tokens"], batch["ages"],
-							  target_event=batch["target_token"],
-							  target_time=batch["target_age_delta"],
+							  target_event=None,
+							  target_time=None,
 							 )
         
             if idx_batch % 10 == 0:
