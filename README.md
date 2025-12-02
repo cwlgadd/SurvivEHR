@@ -130,3 +130,9 @@ The repository includes an examples/ directory containing scripts and Jupyter no
 If you use or reference SurvivEHR in your research or work, please cite the accompanying paper:
 
 ```Charles Gadd et al. (2025). SurvivEHR: a competing risks, time-to-event foundation model for multiple long-term conditions from primary care electronic health records. medRxiv. DOI: 10.1101/2025.08.04.25332916.```
+
+# Copyright
+
+© 2025 Charles Gadd, University of Oxford. All rights reserved where applicable.
+
+Distributed under the GNU GPL v3.0 (or later). See LICENSE for details.
